@@ -49,7 +49,7 @@ void XmlWriter::clearMessage()
  *
  * \return Message string
  */
-std::string XmlWriter::getMessage()
+std::string XmlWriter::getMessage() const
 {
     return m_message;
 }

@@ -24,37 +24,72 @@
  * 
  * For more information, please refer to <http://unlicense.org>
  */
-#include <string>
-#include "Attribute.h"
+#include "XmlReader.h"
 
-namespace MiniSaxCpp
-{
+using namespace MiniSaxCpp;
+
 /**
- * XML Writer class can be used to create a XML document
+ * Constructor
  */
-class XmlWriter
+XmlReader::XmlReader()
+    : m_state(State_Idle),
+      m_dataBuffer(),
+      m_lastParsingResult(ParsingResult_None),
+      m_name(),
+      m_attributeList(),
+      m_textNode(),
+      m_comment()
 {
-public:
-    XmlWriter();
+}
 
-    void clearMessage();
-    std::string getMessage() const;
+/**
+ * Clear internal state
+ */
+void XmlReader::clear()
+{
+    m_state = State_Idle;
+    m_dataBuffer.clear();
+    
+    m_lastParsingResult = ParsingResult_None;
+    m_name.clear();
+    m_attributeList.clear();
+    m_textNode.clear();
+    m_comment.clear();
+}
 
-    bool addProcessingInstruction ( const std::string &name, const AttributeList &attributeList );
+void XmlReader::addData(const std::string &data)
+{
+    m_dataBuffer.append(data);
+}
 
-    bool addSelfClosingElement ( const std::string &elementName,
-                                 const AttributeList &attributeList = AttributeList() );
-    bool startElement ( const std::string &elementName,
-                        const AttributeList &attributeList = AttributeList() );
-    bool endElement ( const std::string &elementName );
+XmlReader::ParsingResult XmlReader::Parse()
+{
+    // TODO: implement
+    
+    return ParsingResult_Error;
+}
 
-    void addTextNode ( const std::string &textNode );
+XmlReader::ParsingResult XmlReader::getLastParsingResult()
+{
+    return m_lastParsingResult;
+}
 
-    void addComment ( const std::string &text );
+std::string XmlReader::getName() const
+{
+    return m_name;
+}
 
-private:
-    static std::string createAttributeString ( const Attribute &attribute );
+AttributeList XmlReader::getAttributeList() const
+{
+    return m_attributeList;
+}
 
-    std::string m_message;
-};
+std::string XmlReader::getTextNode() const
+{
+    return m_textNode;
+}
+
+std::string XmlReader::getComment() const
+{
+    return m_comment;
 }
