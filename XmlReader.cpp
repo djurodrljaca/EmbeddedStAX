@@ -122,12 +122,8 @@ XmlReader::State XmlReader::handleStateIdle()
     }
     else
     {
-        if (position > 0UL)
-        {
-            m_dataBuffer.erase(0UL, position);
-        }
-        
-        // TODO: check next characters
+        m_dataBuffer.erase(0UL, position + 1UL);
+        m_state = State_ReadingTagType
     }
 
     return nextState;

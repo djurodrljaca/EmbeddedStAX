@@ -5,11 +5,15 @@ set(minisaxcpp_SOURCES
         main.cpp
         Attribute.cpp
         XmlReader.cpp
-        XmlWriter.cpp)
+        XmlValidator.cpp
+        XmlWriter.cpp
+        Utf.cpp)
 set(minisaxcpp_HEADERS
         Attribute.h
         XmlReader.h
-        XmlWriter.h)
+        XmlValidator.h
+        XmlWriter.h
+        Utf.h)
 
 add_executable(minisaxcpp ${minisaxcpp_SOURCES} ${minisaxcpp_HEADERS})
 

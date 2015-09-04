@@ -24,50 +24,22 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
-#include "Attribute.h"
+#include <string>
 
 namespace MiniSaxCpp
 {
-/**
- * XML Writer class can be used to create a XML document
- */
-class XmlWriter
+namespace Utf
 {
-public:
-    XmlWriter();
-
-    void clearMessage();
-    std::string getMessage() const;
-
-    bool setXmlDeclaration();
-    void addComment(const std::string &comment);
-
-    bool startElement(const std::string &elementName);
-    bool addAttribute(const Attribute &attribute);
-    void addTextNode(const std::string &textNode);
-    bool endElement();
-    
-
-private:
-    enum State
-    {
-        State_Empty,
-        State_DocumentStarted,
-        State_ElementStarted,
-        State_InElement,
-        State_DocumentEnded
-    };
-    
-    static std::string createAttributeString(const Attribute &attribute);
-    static std::string createStartOfElementString(const std::string &elementName,
-            const AttributeList &attributeList = AttributeList());
-
-    State m_state;
-    bool m_xmlDeclarationSet;
-    std::list<std::string> m_elementNameList;
-    // TODO: attribute name list for the currently started element?
-    std::string m_message;
-    
-    // TODO: pretty printing?
+enum Result
+{
+    Result_Success,
+    Result_Incomplete,
+    Result_Error
 };
+
+Result unicodeCharacterFromUtf8(const std::string &utf8,
+                                const size_t startPosition,
+                                size_t *nextCharacterPosition,
+                                uint32_t *unicodeCharacter);
+}
 }

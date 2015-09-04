@@ -31,45 +31,45 @@ int main(int argc, char **argv)
 {
 	MiniSaxCpp::XmlWriter xmlWriter;
 	
-	MiniSaxCpp::AttributeList attributeList;
-	attributeList.push_back(MiniSaxCpp::Attribute("version", "1.0"));
-	attributeList.push_back(MiniSaxCpp::Attribute("encoding", "UTF-8"));
-	
-	bool success = xmlWriter.addProcessingInstruction("xml", attributeList);
-	
-	if (success)
-	{
-		attributeList.clear();
-		attributeList.push_back(MiniSaxCpp::Attribute("attr1", "val1"));
-		attributeList.push_back(MiniSaxCpp::Attribute("attr2", "val2"));
-		success = xmlWriter.startElement("root", attributeList);
-	}
-	
-	if (success)
-	{
-		xmlWriter.addComment(" Comment ");
-		success = xmlWriter.addSelfClosingElement("child1", attributeList);
-	}
-	
-	if (success)
-	{
-		success = xmlWriter.startElement("child2");
-	}
-	
-	if (success)
-	{
-		xmlWriter.addTextNode("text");
-		success = xmlWriter.endElement("child2");
-	}
-	
-	if (success)
-	{
-		success = xmlWriter.endElement("root");
-	}
-	
-	if (success)
-	{
-	    std::cout << "XML document:" << std::endl << xmlWriter.getMessage();
-	}
+// 	MiniSaxCpp::AttributeList attributeList;
+// 	attributeList.push_back(MiniSaxCpp::Attribute("version", "1.0"));
+// 	attributeList.push_back(MiniSaxCpp::Attribute("encoding", "UTF-8"));
+// 	
+// 	bool success = xmlWriter.addProcessingInstruction("xml", attributeList);
+// 	
+// 	if (success)
+// 	{
+// 		attributeList.clear();
+// 		attributeList.push_back(MiniSaxCpp::Attribute("attr1", "val1"));
+// 		attributeList.push_back(MiniSaxCpp::Attribute("attr2", "val2"));
+// 		success = xmlWriter.startElement("root", attributeList);
+// 	}
+// 	
+// 	if (success)
+// 	{
+// 		xmlWriter.addComment(" Comment ");
+// 		success = xmlWriter.addSelfClosingElement("child1", attributeList);
+// 	}
+// 	
+// 	if (success)
+// 	{
+// 		success = xmlWriter.startElement("child2");
+// 	}
+// 	
+// 	if (success)
+// 	{
+// 		xmlWriter.addTextNode("text");
+// 		success = xmlWriter.endElement("child2");
+// 	}
+// 	
+// 	if (success)
+// 	{
+// 		success = xmlWriter.endElement("root");
+// 	}
+// 	
+// 	if (success)
+// 	{
+// 	    std::cout << "XML document:" << std::endl << xmlWriter.getMessage();
+// 	}
     return 0;
 }

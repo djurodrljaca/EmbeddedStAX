@@ -39,7 +39,7 @@ public:
         ParsingResult_None,
         ParsingResult_NeedMoreData,
         ParsingResult_Error,
-        ParsingResult_ProcessingInstruction,
+        ParsingResult_XmlDeclaration,
         ParsingResult_SelfClosingElement,
         ParsingResult_StartOfElement,
         ParsingResult_EndOfElement,
