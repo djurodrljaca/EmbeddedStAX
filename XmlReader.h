@@ -24,7 +24,6 @@
  * 
  * For more information, please refer to <http://unlicense.org>
  */
-#include <string>
 #include "Attribute.h"
 
 namespace MiniSaxCpp
@@ -34,20 +33,6 @@ namespace MiniSaxCpp
  */
 class XmlReader
 {
-public:
-    XmlReader();
-
-    void clear();
-    void addData(const std::string &data);
-    
-    ParsingResult Parse();
-    ParsingResult getLastParsingResult();
-
-    std::string getName() const;
-    AttributeList getAttributeList() const;
-    std::string getTextNode() const;
-    std::string getComment() const;
-    
 public:
     enum ParsingResult
     {
@@ -61,7 +46,21 @@ public:
         ParsingResult_TextNode,
         ParsingResult_Comment
     };
+   
+public:
+    XmlReader();
 
+    void clear();
+    void addData(const std::string &data);
+    
+    ParsingResult Parse();
+    ParsingResult getLastParsingResult();
+
+    std::string getName() const;
+    AttributeList getAttributeList() const;
+    std::string getTextNode() const;
+    std::string getComment() const;
+     
 private:
     enum State
     {
@@ -82,6 +81,9 @@ private:
         
         State_ReadingComment
     };
+    
+private:
+    State handleStateIdle();
     
     State m_state;
     std::string m_dataBuffer;

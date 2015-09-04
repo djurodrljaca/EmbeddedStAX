@@ -13,4 +13,4 @@ set(minisaxcpp_HEADERS
 
 add_executable(minisaxcpp ${minisaxcpp_SOURCES} ${minisaxcpp_HEADERS})
 
-install(TARGETS minisaxcpp RUNTIME file:///home/djuro/Projects/MiniSaxCpp/XmlWriter.h bin)
+install(TARGETS minisaxcpp RUNTIME DESTINATION bin)

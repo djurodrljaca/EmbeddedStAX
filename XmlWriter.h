@@ -24,7 +24,6 @@
  * 
  * For more information, please refer to <http://unlicense.org>
  */
-#include <string>
 #include "Attribute.h"
 
 namespace MiniSaxCpp
