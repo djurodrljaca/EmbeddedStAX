@@ -25,6 +25,7 @@
  * For more information, please refer to <http://unlicense.org>
  */
 #include "Attribute.h"
+#include "Common.h"
 
 namespace MiniSaxCpp
 {
@@ -36,17 +37,20 @@ class XmlWriter
 public:
     XmlWriter();
 
-    void clearMessage();
-    std::string getMessage() const;
+    void clearDocument();
+    std::string getXmlString() const;
 
     bool setXmlDeclaration();
-    void addComment(const std::string &comment);
+    bool setDocumentType(const std::string &documentType);
+    bool addComment(const std::string &commentText);
+    bool addProcessingInstruction(const std::string &piTarget, const std::string &piValue);
+
 
     bool startElement(const std::string &elementName);
-    bool addAttribute(const Attribute &attribute);
-    void addTextNode(const std::string &textNode);
+    bool addAttribute(const Attribute &attribute,
+                      const Common::QuotationMark quotationMark = Common::QuotationMark_Quote);
+    bool addTextNode(const std::string &textNode);
     bool endElement();
-    
 
 private:
     enum State
@@ -57,17 +61,30 @@ private:
         State_InElement,
         State_DocumentEnded
     };
-    
-    static std::string createAttributeString(const Attribute &attribute);
-    static std::string createStartOfElementString(const std::string &elementName,
-            const AttributeList &attributeList = AttributeList());
+
+    struct ElementInfo
+    {
+        ElementInfo(const std::string &name = std::string(), const bool contentEmpty = true)
+            : name(name),
+              contentEmpty(contentEmpty)
+        {
+        }
+
+        std::string name;
+        bool contentEmpty;
+    };
+
+    static std::string escapeAttValue(const std::string &unescapedAttValue,
+                                      const Common::QuotationMark quotationMark);
 
     State m_state;
     bool m_xmlDeclarationSet;
-    std::list<std::string> m_elementNameList;
-    // TODO: attribute name list for the currently started element?
-    std::string m_message;
-    
+    std::string m_documentType;
+    std::list<ElementInfo> m_parentElementList;
+    ElementInfo m_currentElementInfo;
+    std::list<std::string> m_attributeNameList;
+    std::string m_xmlString;
+
     // TODO: pretty printing?
 };
 }

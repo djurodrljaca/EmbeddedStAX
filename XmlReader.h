@@ -24,74 +24,74 @@
  * 
  * For more information, please refer to <http://unlicense.org>
  */
-#include "Attribute.h"
-
-namespace MiniSaxCpp
-{
-/**
- * XML Reader class can be used to parse a XML document
- */
-class XmlReader
-{
-public:
-    enum ParsingResult
-    {
-        ParsingResult_None,
-        ParsingResult_NeedMoreData,
-        ParsingResult_Error,
-        ParsingResult_XmlDeclaration,
-        ParsingResult_SelfClosingElement,
-        ParsingResult_StartOfElement,
-        ParsingResult_EndOfElement,
-        ParsingResult_TextNode,
-        ParsingResult_Comment
-    };
-   
-public:
-    XmlReader();
-
-    void clear();
-    void addData(const std::string &data);
-    
-    ParsingResult Parse();
-    ParsingResult getLastParsingResult();
-
-    std::string getName() const;
-    AttributeList getAttributeList() const;
-    std::string getTextNode() const;
-    std::string getComment() const;
-     
-private:
-    enum State
-    {
-        State_Idle,
-        
-        State_ReadingTagType,
-        
-        State_ReadingProcessingInformationName,
-        State_ReadingProcessingInformationAttributeName,
-        State_ReadingProcessingInformationAttributeValue,
-        
-        State_ReadingStartOfElement,
-        State_ReadingElementAttributeName,
-        State_ReadingElementAttributeValue,
-        State_ReadingTextNode,
-        
-        State_ReadingEndOfElement,
-        
-        State_ReadingComment
-    };
-    
-private:
-    State handleStateIdle();
-    
-    State m_state;
-    std::string m_dataBuffer;
-    
-    ParsingResult m_lastParsingResult;
-    std::string m_name;
-    AttributeList m_attributeList;
-    std::string m_textNode;
-    std::string m_comment;
-};
-}
+// #include "Attribute.h"
+// 
+// namespace MiniSaxCpp
+// {
+// /**
+//  * XML Reader class can be used to parse a XML document
+//  */
+// class XmlReader
+// {
+// public:
+//     enum ParsingResult
+//     {
+//         ParsingResult_None,
+//         ParsingResult_NeedMoreData,
+//         ParsingResult_Error,
+//         ParsingResult_XmlDeclaration,
+//         ParsingResult_SelfClosingElement,
+//         ParsingResult_StartOfElement,
+//         ParsingResult_EndOfElement,
+//         ParsingResult_TextNode,
+//         ParsingResult_Comment
+//     };
+//    
+// public:
+//     XmlReader();
+// 
+//     void clear();
+//     void addData(const std::string &data);
+//     
+//     ParsingResult Parse();
+//     ParsingResult getLastParsingResult();
+// 
+//     std::string getName() const;
+//     AttributeList getAttributeList() const;
+//     std::string getTextNode() const;
+//     std::string getComment() const;
+//      
+// private:
+//     enum State
+//     {
+//         State_Idle,
+//         
+//         State_ReadingTagType,
+//         
+//         State_ReadingProcessingInformationName,
+//         State_ReadingProcessingInformationAttributeName,
+//         State_ReadingProcessingInformationAttributeValue,
+//         
+//         State_ReadingStartOfElement,
+//         State_ReadingElementAttributeName,
+//         State_ReadingElementAttributeValue,
+//         State_ReadingTextNode,
+//         
+//         State_ReadingEndOfElement,
+//         
+//         State_ReadingComment
+//     };
+//     
+// private:
+//     State handleStateIdle();
+//     
+//     State m_state;
+//     std::string m_dataBuffer;
+//     
+//     ParsingResult m_lastParsingResult;
+//     std::string m_name;
+//     AttributeList m_attributeList;
+//     std::string m_textNode;
+//     std::string m_comment;
+// };
+// }

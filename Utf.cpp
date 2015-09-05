@@ -146,4 +146,3 @@ Utf::Result Utf::unicodeCharacterFromUtf8(const std::string &utf8,
 
     return result;
 }
-

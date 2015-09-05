@@ -25,16 +25,19 @@
  * For more information, please refer to <http://unlicense.org>
  */
 #include <string>
-#include "Common.h"
 
 namespace MiniSaxCpp
 {
-namespace XmlValidator
+namespace Common
 {
-bool validateNameString(const std::string &name);
-bool validateCommentString(const std::string &commentText);
-bool validatePiTargetString(const std::string &piTarget);
-bool validatePiValueString(const std::string &piValue);
-bool validateAttValueString(const std::string &attValue, const Common::QuotationMark quotationMark);
+enum QuotationMark
+{
+    QuotationMark_Quote,
+    QuotationMark_Apostrophe
+};
+
+std::string escapeSpecialCharacter(const char specialCharacter);
+std::string escapeCharacterDecimal(const uint32_t unicodeCharacter);
+std::string escapeCharacterHexadecimal(const uint32_t unicodeCharacter);
 }
 }

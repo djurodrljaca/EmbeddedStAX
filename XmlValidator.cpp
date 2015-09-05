@@ -29,9 +29,9 @@
 
 using namespace MiniSaxCpp;
 
-static bool validateNameStartChar(const uint32_t nameStartChar);
-static bool validateNameChar(const uint32_t nameChar);
-static bool validateChar(const uint32_t character);
+static bool isNameStartChar(const uint32_t nameStartChar);
+static bool isNameChar(const uint32_t nameChar);
+static bool isChar(const uint32_t character);
 
 /**
  * This function can be used to validate a "NameStartChar"
@@ -59,7 +59,7 @@ static bool validateChar(const uint32_t character);
  *       * [0xFDF0 - 0xFFFD]
  *       * [0x10000 - 0xEFFFF]
  */
-static bool validateStartNameChar(const uint32_t nameStartChar)
+static bool isNameStartChar(const uint32_t nameStartChar)
 {
     bool valid = false;
 
@@ -152,9 +152,9 @@ static bool validateStartNameChar(const uint32_t nameStartChar)
  *       * [0x0300 - 0x036F]
  *       * [0x203F - 0x2040]
  */
-static bool validateNameChar(const uint32_t nameChar)
+static bool isNameChar(const uint32_t nameChar)
 {
-    bool valid = validateNameStartChar();
+    bool valid = isNameStartChar();
 
     if (!valid)
     {
@@ -207,7 +207,7 @@ static bool validateNameChar(const uint32_t nameChar)
  *       * [0xE000 - 0xFFFD]
  *       * [0x10000 - 0x10FFFF]
  */
-static bool validateChar(const uint32_t character)
+static bool isChar(const uint32_t character)
 {
     bool valid = false;
 
@@ -250,7 +250,7 @@ static bool validateChar(const uint32_t character)
  *
  * \retval true     Valid
  * \retval false    Invalid
- * 
+ *
  * Valid Name string format:
  * \code{.unparsed}
  * Name ::= NameStartChar (NameChar)*
@@ -275,7 +275,7 @@ bool XmlValidator::validateNameString(const std::string &name)
 
         if (result == Utf::Result_Success)
         {
-            if (validateNameStartChar(unicodeCharacter))
+            if (isNameStartChar(unicodeCharacter))
             {
                 // NameStartChar is valid
                 valid = true;
@@ -297,9 +297,9 @@ bool XmlValidator::validateNameString(const std::string &name)
 
             if (result == Utf::Result_Success)
             {
-                if (validateNameStartChar(unicodeCharacter))
+                if (isNameChar(unicodeCharacter))
                 {
-                    // NameStartChar is valid
+                    // NameChar is valid
                     valid = true;
                 }
             }
@@ -312,21 +312,21 @@ bool XmlValidator::validateNameString(const std::string &name)
 /**
  * This function can be used to validate a Comment string
  *
- * \param name  UTF-8 encoded Name string
+ * \param commentText   UTF-8 encoded Comment string
  *
  * \retval true     Valid
  * \retval false    Invalid
- * 
+ *
  * Valid Comment string format:
  * \code{.unparsed}
  * Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
  * \endcode
  */
-bool XmlValidator::validateCommentString(const std::string &comment)
+bool XmlValidator::validateCommentString(const std::string &commentText)
 {
     bool valid = false;
 
-    if (comment.empty())
+    if (commentText.empty())
     {
         // Comment can be empty
         valid = true;
@@ -334,7 +334,7 @@ bool XmlValidator::validateCommentString(const std::string &comment)
     else
     {
         // Comment must not be a single '-' character
-        if (comment != "-")
+        if (commentText != "-")
         {
             valid = true;
         }
@@ -352,7 +352,7 @@ bool XmlValidator::validateCommentString(const std::string &comment)
             {
                 // Validate character
                 Utf::Result result = Utf::unicodeCharacterFromUtf8(
-                                         comment,
+                                         commentText,
                                          currentPosition,
                                          &nextPosition,
                                          &unicodeCharacter);
@@ -362,13 +362,13 @@ bool XmlValidator::validateCommentString(const std::string &comment)
                 if (result == Utf::Result_Success)
                 {
                     // Check if Char character
-                    if (validateChar(unicodeCharacter))
+                    if (isChar(unicodeCharacter))
                     {
                         // Character is valid
                         valid = true;
                     }
                 }
-                
+
                 if (valid)
                 {
                     // Check for "--" sequence
@@ -379,7 +379,7 @@ bool XmlValidator::validateCommentString(const std::string &comment)
                         valid = false;
                     }
                 }
-                
+
                 if (valid)
                 {
                     // Prepare for next loop cycle
@@ -387,7 +387,7 @@ bool XmlValidator::validateCommentString(const std::string &comment)
                     lastUnicodeCharacter = unicodeCharacter;
                 }
             }
-            while (valid && (nextPosition < comment.size()));
+            while (valid && (nextPosition < commentText.size()));
 
             // Comment must not end with a '-' character
             if (valid)
@@ -399,6 +399,221 @@ bool XmlValidator::validateCommentString(const std::string &comment)
                 }
             }
         }
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a PITarget string
+ *
+ * \param piTarget  UTF-8 encoded PITarget string
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * PITarget ::= Name - (('X' | 'x') ('M' | 'm') ('L' | 'l'))
+ * \endcode
+ */
+bool XmlValidator::validatePiTargetString(const std::string &piTarget)
+{
+    bool valid = false;
+
+    if (!piTarget.empty())
+    {
+        // PITarget must not equal "xml" (case-insensitive)
+        if (piTarget.size() == 3U)
+        {
+            if ((piTarget.at(0U) != 'x') && (piTarget.at(0U) != 'X') &&
+                (piTarget.at(1U) != 'm') && (piTarget.at(1U) != 'M') &&
+                (piTarget.at(2U) != 'l') && (piTarget.at(2U) != 'L'))
+            {
+                valid = true;
+            }
+        }
+        else
+        {
+            valid = true;
+        }
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a PI's value string
+ *
+ * \param piValue   UTF-8 encoded PI's value string
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * value ::= (Char* - (Char* '?>' Char*)))?
+ * \endcode
+ */
+bool XmlValidator::validatePiValueString(const std::string &piValue)
+{
+    bool valid = false;
+
+    if (piValue.empty())
+    {
+        // PI's value can be empty
+        valid = true;
+    }
+    else
+    {
+        // PI's value must not contain "?>" sequence
+        uint32_t lastUnicodeCharacter = 0U;
+        uint32_t unicodeCharacter = 0U;
+        size_t currentPosition = 0U;
+        size_t nextPosition = 0U;
+
+        do
+        {
+            // Validate character
+            Utf::Result result = Utf::unicodeCharacterFromUtf8(
+                                     piValue,
+                                     currentPosition,
+                                     &nextPosition,
+                                     &unicodeCharacter);
+
+            valid = false;
+
+            if (result == Utf::Result_Success)
+            {
+                // Check if Char character
+                if (isChar(unicodeCharacter))
+                {
+                    // Character is valid
+                    valid = true;
+                }
+            }
+
+            if (valid)
+            {
+                // Check for "?>" sequence
+                if ((lastUnicodeCharacter == (uint32_t)'?') &&
+                    (unicodeCharacter == (uint32_t)'>'))
+                {
+                    // Error, "?>" sequence detected
+                    valid = false;
+                }
+            }
+
+            if (valid)
+            {
+                // Prepare for next loop cycle
+                currentPosition = nextPosition;
+                lastUnicodeCharacter = unicodeCharacter;
+            }
+        }
+        while (valid && (nextPosition < piValue.size()));
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a AttValue string
+ *
+ * \param attValue      UTF-8 encoded AttValue string
+ * \param quotationMark Quotation mark
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Valid AttValue string format:
+ * \code{.unparsed}
+ * AttValue with quote quotation mark      ::= ([^<&"] | Reference)*
+ * AttValue with apostrophe quotation mark ::= ([^<&'] | Reference)*
+ * 
+ * Reference ::=  EntityRef | CharRef
+ * \endcode
+ * 
+ * \note This function only checks the actual value (without the outer quotes)
+ */
+bool XmlValidator::validateAttValueString(const std::string &attValue,
+                                          const Common::QuotationMark quotationMark)
+{
+    bool valid = false;
+
+    if (attValue.empty())
+    {
+        // AttValue can be empty
+        valid = true;
+    }
+    else
+    {
+        // AttValue must not contain characters: '<', '&' and ('"' or '\'')
+        uint32_t unicodeCharacter = 0U;
+        size_t currentPosition = 0U;
+        size_t nextPosition = 0U;
+
+        do
+        {
+            // Validate character
+            Utf::Result result = Utf::unicodeCharacterFromUtf8(
+                                     attValue,
+                                     currentPosition,
+                                     &nextPosition,
+                                     &unicodeCharacter);
+
+            valid = false;
+
+            if (result == Utf::Result_Success)
+            {
+                switch (unicodeCharacter)
+                {
+                    case (uint32_t)'<':
+                    {
+                        // Error, invalid character
+                        break;
+                    }
+                    
+                    case (uint32_t)'&':
+                    {
+                        // Check for Reference (EntityRef or CharRef)
+                        // TODO: implement
+                        break;
+                    }
+                    
+                    case (uint32_t)'"':
+                    {
+                        if (quotationMark == Common::QuotationMark_Apostrophe)
+                        {
+                            valid = true;
+                        }
+                        break;
+                    }
+                    
+                    case (uint32_t)'\'':
+                    {
+                        if (quotationMark == Common::QuotationMark_Quote)
+                        {
+                            valid = true;
+                        }
+                        break;
+                    }
+                    
+                    default:
+                    {
+                        valid = true;
+                        break;
+                    }
+                }
+            }
+
+            if (valid)
+            {
+                // Prepare for next loop cycle
+                currentPosition = nextPosition;
+            }
+        }
+        while (valid && (nextPosition < attValue.size()));
     }
 
     return valid;
