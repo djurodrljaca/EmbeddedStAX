@@ -130,9 +130,12 @@ Utf::Result Utf::unicodeCharacterFromUtf8(const std::string &utf8,
                     if (!error)
                     {
                         // Unicode character's value was successfully read from the utf8 string
-                        *unicodeCharacter = value;
-                        *nextCharacterPosition = minSize;
-                        result = Result_Success;
+                        if (isUnicodeCharacterValid(value))
+                        {
+                            *unicodeCharacter = value;
+                            *nextCharacterPosition = minSize;
+                            result = Result_Success;
+                        }
                     }
                 }
                 else
@@ -145,4 +148,16 @@ Utf::Result Utf::unicodeCharacterFromUtf8(const std::string &utf8,
     }
 
     return result;
+}
+
+bool Utf::isUnicodeCharacterValid(const uint32_t unicodeCharacter)
+{
+    bool valid = false;
+    
+    if (unicodeCharacter <= 0x10FFFF)
+    {
+        valid = true;
+    }
+    
+    return valid;
 }

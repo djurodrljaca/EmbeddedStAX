@@ -32,6 +32,12 @@ using namespace MiniSaxCpp;
 static bool isNameStartChar(const uint32_t nameStartChar);
 static bool isNameChar(const uint32_t nameChar);
 static bool isChar(const uint32_t character);
+static bool parseDigit(const char digitCharacter, const uint32_t base, uint32_t *digitValue);
+static bool validateNumberInCharRefString(
+    const std::string &str,
+    const size_t startPosition,
+    const uint32_t base,
+    size_t *nextCharacterPosition = NULL);
 
 /**
  * This function can be used to validate a "NameStartChar"
@@ -238,6 +244,193 @@ static bool isChar(const uint32_t character)
     else
     {
         // Error, invalid value
+    }
+
+    return valid;
+}
+
+/**
+ * Parse digit
+ *
+ * \param      digitCharacter   Digit character
+ * \param      base             Digit's base (10 for decimal and 16 for hexadecimal)
+ * \param[out] digitValue       Output for the parsed digit value
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+static bool parseDigit(const char digitCharacter, const uint32_t base, uint32_t *digitValue)
+{
+    bool success = false;
+
+    if (digitValue != NULL)
+    {
+        switch (base)
+        {
+            case 10U:
+            {
+                if (('0' <= digitCharacter) && (digitCharacter <= '9'))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - '0');
+                    success = true;
+                }
+
+                break;
+            }
+
+            case 16U:
+            {
+                if (('0' <= digitCharacter) && (digitCharacter <= '9'))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - '0');
+                    success = true;
+                }
+                else if (('a' <= digitCharacter) && (digitCharacter <= 'f'))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - 'a');
+                    success = true;
+                }
+                else if (('A' <= digitCharacter) && (digitCharacter <= 'F'))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - 'A');
+                    success = true;
+                }
+                else
+                {
+                    // Error, invalid digit
+                }
+
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid base
+                break;
+            }
+        }
+    }
+
+    return success;
+}
+
+/**
+ * This is a helper function for validateCharRefString function.
+ *
+ * \param      str                      UTF-8 encoded string
+ * \param      startPosition            Position of the first digit in str (after "&#" or "&#x"
+ *                                      sequence)
+ * \param      base                     Digit's base (10 for decimal and 16 for hexadecimal)
+ * \param[out] nextCharacterPosition    Optional output for next character after the valid CharRef
+ *                                      string
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+static bool validateNumberInCharRefString(
+    const std::string &str,
+    const size_t startPosition,
+    const uint32_t base,
+    size_t *nextCharacterPosition = NULL)
+{
+    bool valid = false;
+
+    enum State
+    {
+        State_Started,
+        State_Parsing,
+        State_Success,
+        State_Error
+    };
+
+    uint32_t unicodeCharacter = 0U;
+    State state = State_Started;
+    size_t position = startPosition;
+
+    while ((position < str.size()) &&
+           (state != State_Success) &&
+           (state != State_Error))
+    {
+        const char character = str.at(position);
+
+        switch (state)
+        {
+            case State_Started:
+            {
+                // Get first digit
+                uint32_t value = 0U;
+
+                if (parseDigit(character, base, &value))
+                {
+                    unicodeCharacter = value;
+                    state = State_Parsing;
+                }
+                else
+                {
+                    // Error invalid digit value
+                    state = State_Error;
+                }
+
+                break;
+            }
+
+            case State_Parsing:
+            {
+                // Check for end of CharRef
+                if (character == ';')
+                {
+                    // Check if unicodeCharacter is valid
+                    if (Utf::isUnicodeCharacterValid(unicodeCharacter))
+                    {
+                        // Successfully validate the CharRef
+                        if (nextCharacterPosition != NULL)
+                        {
+                            *nextCharacterPosition = position + 1U;
+                        }
+
+                        state = State_Success;
+                        valid = true;
+                    }
+                }
+                else
+                {
+                    // Get next digit
+                    uint32_t value = 0U;
+
+                    if (parseDigit(character, base, &value))
+                    {
+                        unicodeCharacter = (unicodeCharacter * base) + value;
+
+                        // Check if unicode character is valid
+                        const bool unicodeCharacterValid =
+                            Utf::isUnicodeCharacterValid(unicodeCharacter);
+
+                        if (!unicodeCharacterValid)
+                        {
+                            // Error invalid unicode character value
+                            state = State_Error;
+                        }
+                    }
+                    else
+                    {
+                        // Error invalid digit value
+                        state = State_Error;
+                    }
+                }
+
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid state
+                state = State_Error;
+                break;
+            }
+        }
+
+        // Check next character
+        position++;
     }
 
     return valid;
@@ -530,14 +723,14 @@ bool XmlValidator::validatePiValueString(const std::string &piValue)
  * \code{.unparsed}
  * AttValue with quote quotation mark      ::= ([^<&"] | Reference)*
  * AttValue with apostrophe quotation mark ::= ([^<&'] | Reference)*
- * 
+ *
  * Reference ::=  EntityRef | CharRef
  * \endcode
- * 
+ *
  * \note This function only checks the actual value (without the outer quotes)
  */
-bool XmlValidator::validateAttValueString(const std::string &attValue,
-                                          const Common::QuotationMark quotationMark)
+bool XmlValidator::validateAttValueString(
+    const std::string &attValue, const Common::QuotationMark quotationMark)
 {
     bool valid = false;
 
@@ -573,32 +766,47 @@ bool XmlValidator::validateAttValueString(const std::string &attValue,
                         // Error, invalid character
                         break;
                     }
-                    
+
                     case (uint32_t)'&':
                     {
                         // Check for Reference (EntityRef or CharRef)
-                        // TODO: implement
+                        if (attValue.size() > (currentPosition + 2U))
+                        {
+                            // Check for CharRef (starts with "&#" sequence)
+                            if (attValue.at(nextPosition) == '#')
+                            {
+                                valid = validateCharRefString(attValue, currentPosition);
+                            }
+                            // Check for EntityRef (starts with '&' character)
+                            else
+                            {
+                                valid = validateEntityRefString(attValue, currentPosition);
+                            }
+                        }
+
                         break;
                     }
-                    
+
                     case (uint32_t)'"':
                     {
                         if (quotationMark == Common::QuotationMark_Apostrophe)
                         {
                             valid = true;
                         }
+
                         break;
                     }
-                    
+
                     case (uint32_t)'\'':
                     {
                         if (quotationMark == Common::QuotationMark_Quote)
                         {
                             valid = true;
                         }
+
                         break;
                     }
-                    
+
                     default:
                     {
                         valid = true;
@@ -614,6 +822,168 @@ bool XmlValidator::validateAttValueString(const std::string &attValue,
             }
         }
         while (valid && (nextPosition < attValue.size()));
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a TextNode string
+ *
+ * \param textNode  UTF-8 encoded TextNode string
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * TextNode  ::=  CharData? (Reference CharData?)*
+ * 
+ * Reference ::=  EntityRef | CharRef
+ * CharData  ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+ * \endcode
+ * 
+ * \note The "TextNode" is a custom entity and it combines CharData and References
+ */
+bool XmlValidator::validateTextNodeString(const std::string &textNode)
+{
+    bool valid = false;
+    
+    // TODO: implement, first check for '&' character (start of Reference) and then for CharData
+    
+    return valid;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Check if str contains a CharRef at the specified position
+ *
+ * \param      str                      UTF-8 encoded string
+ * \param      startPosition            Position of the '&' character in str where CharRef should be
+ *                                      located
+ * \param[out] nextCharacterPosition    Optional output for next character after the valid CharRef
+ *                                      string
+ *
+ * Valid AttValue string format:
+ * \code{.unparsed}
+ * CharRef in decimal format     ::= '&#' [0-9]+ ';'
+ * CharRef in hexadecimal format ::= '&#x' [0-9a-fA-F]+ ';'
+ * \endcode
+ */
+bool XmlValidator::validateCharRefString(
+    const std::string &str, const size_t startPosition, size_t *nextCharacterPosition)
+{
+    bool valid = false;
+
+    // Check for CharRef in hexadecimal format
+    if (str.substr(startPosition, 3U) == std::string("&#x"))
+    {
+        // Validate CharRef in hexadecimal format
+        valid = validateNumberInCharRefString(str, startPosition + 3U, 16U, nextCharacterPosition);
+    }
+    // Check for CharRef in decimal format
+    else if (str.substr(startPosition, 2U) == std::string("&#"))
+    {
+        // Validate CharRef in decimal format
+        valid = validateNumberInCharRefString(str, startPosition + 2U, 10U, nextCharacterPosition);
+    }
+    else
+    {
+        // Error, invalid CharRef string
+    }
+
+    return valid;
+}
+
+/**
+ * Check if str contains a EntityRef at the specified position
+ *
+ * \param      str                      UTF-8 encoded string
+ * \param      startPosition            Position of the '&' character in str where EntityRef should
+ *                                      be located
+ * \param[out] nextCharacterPosition    Optional output for next character after the valid EntityRef
+ *                                      string
+ *
+ * Valid AttValue string format:
+ * \code{.unparsed}
+ * EntityRef ::= '&' Name ';'
+ * \endcode
+ */
+bool XmlValidator::validateEntityRefString(
+    const std::string &str, const size_t startPosition, size_t *nextCharacterPosition)
+{
+    bool valid = false;
+
+    if (str.size() > (startPosition + 2U))
+    {
+        if (str.at(startPosition) == '&')
+        {
+            // Validate start character
+            uint32_t unicodeCharacter = 0U;
+            size_t currentPosition = startPosition + 1;
+            size_t nextPosition = 0U;
+
+            Utf::Result result = Utf::unicodeCharacterFromUtf8(
+                                     str,
+                                     currentPosition,
+                                     &nextPosition,
+                                     &unicodeCharacter);
+
+            if (result == Utf::Result_Success)
+            {
+                if (isNameStartChar(unicodeCharacter))
+                {
+                    // NameStartChar is valid
+                    valid = true;
+                }
+            }
+
+            // Validate the rest of the characters
+            while (valid && (nextPosition < str.size()))
+            {
+                // Validate next character
+                currentPosition = nextPosition;
+                result = Utf::unicodeCharacterFromUtf8(
+                             str,
+                             currentPosition,
+                             &nextPosition,
+                             &unicodeCharacter);
+
+                valid = false;
+
+                if (result == Utf::Result_Success)
+                {
+                    // Check for end of EntityRef
+                    if (unicodeCharacter == (uint32_t)';')
+                    {
+                        // End of EntityRef found, finish validation
+                        if (nextCharacterPosition != NULL)
+                        {
+                            *nextCharacterPosition = nextPosition;
+                        }
+                        
+                        valid = true;
+                        break;
+                    }
+                    // Check for NameChar
+                    else if (isNameChar(unicodeCharacter))
+                    {
+                        // NameChar is valid
+                        valid = true;
+                    }
+                }
+            }
+        }
     }
 
     return valid;

@@ -80,7 +80,7 @@ private:
     State m_state;
     bool m_xmlDeclarationSet;
     std::string m_documentType;
-    std::list<ElementInfo> m_parentElementList;
+    std::list<ElementInfo> m_openedElementList;
     ElementInfo m_currentElementInfo;
     std::list<std::string> m_attributeNameList;
     std::string m_xmlString;

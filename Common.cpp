@@ -25,6 +25,7 @@
  * For more information, please refer to <http://unlicense.org>
  */
 #include "Common.h"
+#include "Utf.h"
 #include <cinttypes>
 #include <cstdio>
 
@@ -110,7 +111,7 @@ std::string Common::escapeCharacterDecimal(const uint32_t unicodeCharacter)
 {
     std::string escapedString;
  
-    if (unicodeCharacter <= 0x10FFFF)
+    if (Utf::isUnicodeCharacterValid(unicodeCharacter))
     {
         // The maximal allowed value unicode value encoded in UTF-8 is "0x10FFFF". This is
         // equivalent to "1114111" in decimal format. From that we can see that max string size to
@@ -144,7 +145,7 @@ std::string Common::escapeCharacterHexadecimal(const uint32_t unicodeCharacter)
 {
     std::string escapedString;
  
-    if (unicodeCharacter <= 0x10FFFF)
+    if (Utf::isUnicodeCharacterValid(unicodeCharacter))
     {
         // The maximal allowed value unicode value encoded in UTF-8 is "0x10FFFF". From that we can
         // see that max string size to represent the max UTF-8 value in a string is 6. If we add

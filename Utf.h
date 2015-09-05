@@ -41,5 +41,7 @@ Result unicodeCharacterFromUtf8(const std::string &utf8,
                                 const size_t startPosition,
                                 size_t *nextCharacterPosition,
                                 uint32_t *unicodeCharacter);
+
+bool isUnicodeCharacterValid(const uint32_t unicodeCharacter);
 }
 }

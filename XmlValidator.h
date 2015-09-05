@@ -36,5 +36,14 @@ bool validateCommentString(const std::string &commentText);
 bool validatePiTargetString(const std::string &piTarget);
 bool validatePiValueString(const std::string &piValue);
 bool validateAttValueString(const std::string &attValue, const Common::QuotationMark quotationMark);
+bool validateTextNodeString(const std::string &textNode);
+
+// TODO: move these functions to source file?
+bool validateCharRefString(const std::string &str,
+                           const size_t startPosition,
+                           size_t *nextCharacterPosition = NULL);
+bool validateEntityRefString(const std::string &str,
+                             const size_t startPosition,
+                             size_t *nextCharacterPosition = NULL);
 }
 }

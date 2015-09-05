@@ -47,7 +47,7 @@ void XmlWriter::clearDocument()
     m_state = State_Empty;
     m_xmlDeclarationSet = false;
     m_documentType;
-    m_parentElementList.clear();
+    m_openedElementList.clear();
     m_currentElementInfo = ElementInfo();
     m_attributeNameList.clear();
     m_xmlString.clear();
@@ -90,7 +90,7 @@ bool XmlWriter::setXmlDeclaration()
     if (m_state == State_Empty)
     {
         // Set XML Declaration string
-        m_xmlString = std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        m_xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
         m_xmlDeclarationSet = true;
         m_state = State_DocumentStarted;
@@ -189,6 +189,8 @@ bool XmlWriter::addComment(const std::string &commentText)
         if (closeStartTag)
         {
             m_xmlString.append(">");
+            m_currentElementInfo.contentEmpty = false;
+            m_attributeNameList.clear();
         }
 
         m_xmlString.append("<!--").append(commentText).append("-->");
@@ -256,6 +258,8 @@ bool XmlWriter::addProcessingInstruction(const std::string &piTarget, const std:
         if (closeStartTag)
         {
             m_xmlString.append(">");
+            m_currentElementInfo.contentEmpty = false;
+            m_attributeNameList.clear();
         }
 
         m_xmlString.append("<?").append(piTarget);
@@ -284,7 +288,6 @@ bool XmlWriter::startElement(const std::string &elementName)
 {
     bool success = false;
     bool closeStartTag = false;
-    bool rootElement = false;
 
     if (XmlValidator::validateNameString(elementName))
     {
@@ -292,9 +295,6 @@ bool XmlWriter::startElement(const std::string &elementName)
         {
             case State_DocumentStarted:
             {
-                // This is the root element
-                rootElement = true;
-
                 // No validation of root element name is required if document type is not set
                 if (m_documentType.empty())
                 {
@@ -314,7 +314,6 @@ bool XmlWriter::startElement(const std::string &elementName)
             }
 
             case State_Empty:
-            case State_DocumentEnded:
             case State_InElement:
             {
                 success = true;
@@ -341,18 +340,22 @@ bool XmlWriter::startElement(const std::string &elementName)
         if (closeStartTag)
         {
             m_xmlString.append(">");
+            m_currentElementInfo.contentEmpty = false;
+            m_attributeNameList.clear();
+        }
+
+        if (!m_currentElementInfo.name.empty())
+        {
+            // Add current element info to opened element list. If current element's name is empty
+            // this can only mean that we have just started the root element, so there is noting to
+            // add to the list yet.
+            m_openedElementList.push_back(m_currentElementInfo);
         }
 
         // Open start tag
         m_xmlString.append("<").append(elementName);
 
-        if (!rootElement)
-        {
-            m_parentElementList.push_back(m_currentElementInfo);
-        }
-
         m_currentElementInfo = ElementInfo(elementName);
-        m_attributeNameList.clear();
         m_state = State_ElementStarted;
         success = true;
     }
@@ -377,45 +380,64 @@ bool XmlWriter::addAttribute(const Attribute &attribute, const Common::Quotation
     {
         if (XmlValidator::validateNameString(attribute.name))
         {
-            const std::string escapedAttrValue = escapeAttValue(attribute.value, quotationMark);
+            // Check if an attribute with the same name has already been added to the element
+            bool attributeNameFound = false;
             
-            if ((escapedAttrValue.empty() && attribute.value.empty()) ||
-                (!escapedAttrValue.empty() && !attribute.value.empty()))
+            for (size_t i = 0U; i < m_attributeNameList.size(); i++)
             {
-                // AttValue was successfully escaped
-                if (XmlValidator::validateAttValueString(escapedAttrValue))
+                if (attribute.name == m_attributeNameList.at(i))
                 {
-                    char quotationMarkCharacter;
+                    // Error, an attribute with the same name is already in the list
+                    attributeNameFound = true;
+                    break;
+                }
+            }
 
-                    switch (quotationMark)
+            // Attribute names must be unique within an elements start tag
+            if (!attributeNameFound)
+            {
+                const std::string escapedAttrValue = escapeAttValue(attribute.value, quotationMark);
+
+                if ((escapedAttrValue.empty() && attribute.value.empty()) ||
+                    (!escapedAttrValue.empty() && !attribute.value.empty()))
+                {
+                    // AttValue was successfully escaped
+                    if (XmlValidator::validateAttValueString(escapedAttrValue))
                     {
-                        case Common::QuotationMark_Quote:
+                        char quotationMarkCharacter;
+
+                        switch (quotationMark)
                         {
-                            quotationMarkCharacter = '"';
+                            case Common::QuotationMark_Quote:
+                            {
+                                quotationMarkCharacter = '"';
+                                success = true;
+                                break;
+                            }
+
+                            case Common::QuotationMark_Apostrophe:
+                            {
+                                quotationMarkCharacter = '\'';
+                                success = true;
+                                break;
+                            }
+
+                            default:
+                            {
+                                // Error, invalid quotation mark
+                                break;
+                            }
+                        }
+
+                        if (success)
+                        {
+                            m_attributeNameList.append(attribute.name);
+                            
+                            m_xmlString.append(" ").append(attribute.name);
+                            m_xmlString.append("=").append(1U, quotationMarkCharacter);
+                            m_xmlString.append(escapedAttrValue).append(1U, quotationMarkCharacter);
                             success = true;
-                            break;
                         }
-
-                        case Common::QuotationMark_Apostrophe:
-                        {
-                            quotationMarkCharacter = '\'';
-                            success = true;
-                            break;
-                        }
-
-                        default:
-                        {
-                            // Error, invalid quotation mark
-                            break;
-                        }
-                    }
-
-                    if (success)
-                    {
-                        m_xmlString.append(" ").append(attribute.name);
-                        m_xmlString.append("=").append(1U, quotationMarkCharacter);
-                        m_xmlString.append(escapedAttrValue).append(1U, quotationMarkCharacter);
-                        success = true;
                     }
                 }
             }
@@ -425,15 +447,64 @@ bool XmlWriter::addAttribute(const Attribute &attribute, const Common::Quotation
     return success;
 }
 
-
-
-//-----------------------------------------------
-
-
+/**
+ * Add a text node
+ *
+ * \param textNode  UTF-8 encoded unescaped string
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
 bool XmlWriter::addTextNode(const std::string &textNode)
 {
+    bool success = false;
+    bool closeStartTag = false;
+    
+    // TODO: escape text node string
 
+    if (XmlValidator::validateTextNodeString(textNode))
+    {
+        switch (m_state)
+        {
+            case State_InElement:
+            {
+                success = true;
+                break;
+            }
+
+            case State_ElementStarted:
+            {
+                // Close start tag of current element
+                closeStartTag = true;
+                success = true;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        if (closeStartTag)
+        {
+            m_xmlString.append(">");
+            m_currentElementInfo.contentEmpty = false;
+            m_attributeNameList.clear();
+        }
+
+        m_xmlString.append(textNode);
+        m_state = State_ElementStarted;
+        success = true;
+    }
+
+    return success;
 }
+
+//-----------------------------------------------
 
 
 bool XmlWriter::endElement()
@@ -454,7 +525,7 @@ bool XmlWriter::endElement()
  *
  * \param rawAttValue   Unescaped UTF-8 encoded AttValue string
  * \param quotationMark Quotation mark for the attribute
- * 
+ *
  * \return Escaped AttValue string
  * \return Empty string on error
  */
@@ -496,7 +567,7 @@ std::string XmlWriter::escapeAttValue(const std::string &unescapedAttValue,
                         if ((unicodeCharacter == (uint32_t)'"') &&
                             (quotationMark == Common::QuotationMark_Apostrophe))
                         {
-                            // No need to escape a quote character if the quotation mark is an 
+                            // No need to escape a quote character if the quotation mark is an
                             // apostrophe
                         }
                         else if ((unicodeCharacter == (uint32_t)'\'') &&
@@ -531,7 +602,7 @@ std::string XmlWriter::escapeAttValue(const std::string &unescapedAttValue,
                                 success = true;
                             }
                         }
-                        
+
                         break;
                     }
 
