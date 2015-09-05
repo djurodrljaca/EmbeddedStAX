@@ -24,8 +24,11 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
-#include "Attribute.h"
+#ifndef MINISAXCPP_XMLWRITER_H
+#define MINISAXCPP_XMLWRITER_H
+
 #include "Common.h"
+#include <list>
 
 namespace MiniSaxCpp
 {
@@ -47,9 +50,11 @@ public:
 
 
     bool startElement(const std::string &elementName);
-    bool addAttribute(const Attribute &attribute,
+    bool addAttribute(const std::string &name,
+                      const std::string &value,
                       const Common::QuotationMark quotationMark = Common::QuotationMark_Quote);
     bool addTextNode(const std::string &textNode);
+    bool addCDataSection(const std::string &cData);
     bool endElement();
 
 private:
@@ -74,9 +79,6 @@ private:
         bool contentEmpty;
     };
 
-    static std::string escapeAttValue(const std::string &unescapedAttValue,
-                                      const Common::QuotationMark quotationMark);
-
     State m_state;
     bool m_xmlDeclarationSet;
     std::string m_documentType;
@@ -88,3 +90,5 @@ private:
     // TODO: pretty printing?
 };
 }
+
+#endif // MINISAXCPP_XMLWRITER_H

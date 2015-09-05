@@ -24,7 +24,11 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+#ifndef MINISAXCPP_UTF_H
+#define MINISAXCPP_UTF_H
+
 #include <string>
+#include <stdint.h>
 
 namespace MiniSaxCpp
 {
@@ -45,3 +49,5 @@ Result unicodeCharacterFromUtf8(const std::string &utf8,
 bool isUnicodeCharacterValid(const uint32_t unicodeCharacter);
 }
 }
+
+#endif // MINISAXCPP_UTF_H

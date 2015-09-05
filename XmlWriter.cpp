@@ -118,7 +118,7 @@ bool XmlWriter::setDocumentType(const std::string &documentType)
     if (m_documentType.empty())
     {
         if ((m_state == State_Empty) ||
-            (m_state == State_DocumentStarted))
+                (m_state == State_DocumentStarted))
         {
             if (XmlValidator::validateNameString(documentType))
             {
@@ -270,7 +270,7 @@ bool XmlWriter::addProcessingInstruction(const std::string &piTarget, const std:
         }
 
         m_xmlString.append("?>");
-        m_state = State_ElementStarted;
+        m_state = nextState;
     }
 
     return success;
@@ -341,7 +341,6 @@ bool XmlWriter::startElement(const std::string &elementName)
         {
             m_xmlString.append(">");
             m_currentElementInfo.contentEmpty = false;
-            m_attributeNameList.clear();
         }
 
         if (!m_currentElementInfo.name.empty())
@@ -355,6 +354,7 @@ bool XmlWriter::startElement(const std::string &elementName)
         // Open start tag
         m_xmlString.append("<").append(elementName);
 
+        m_attributeNameList.clear();
         m_currentElementInfo = ElementInfo(elementName);
         m_state = State_ElementStarted;
         success = true;
@@ -372,20 +372,26 @@ bool XmlWriter::startElement(const std::string &elementName)
  * \retval true     Success
  * \retval false    Error
  */
-bool XmlWriter::addAttribute(const Attribute &attribute, const Common::QuotationMark quotationMark)
+bool XmlWriter::addAttribute(const std::string &name,
+                             const std::string &value,
+                             const Common::QuotationMark quotationMark)
 {
     bool success = false;
 
     if (m_state == State_ElementStarted)
     {
-        if (XmlValidator::validateNameString(attribute.name))
+        if (XmlValidator::validateNameString(name))
         {
             // Check if an attribute with the same name has already been added to the element
             bool attributeNameFound = false;
             
-            for (size_t i = 0U; i < m_attributeNameList.size(); i++)
+            for (std::list<std::string>::const_iterator it = m_attributeNameList.begin();
+                 it != m_attributeNameList.end();
+                 it++)
             {
-                if (attribute.name == m_attributeNameList.at(i))
+                const std::string &attributeName = *it;
+                
+                if (name == attributeName)
                 {
                     // Error, an attribute with the same name is already in the list
                     attributeNameFound = true;
@@ -396,48 +402,41 @@ bool XmlWriter::addAttribute(const Attribute &attribute, const Common::Quotation
             // Attribute names must be unique within an elements start tag
             if (!attributeNameFound)
             {
-                const std::string escapedAttrValue = escapeAttValue(attribute.value, quotationMark);
-
-                if ((escapedAttrValue.empty() && attribute.value.empty()) ||
-                    (!escapedAttrValue.empty() && !attribute.value.empty()))
+                if (XmlValidator::validateAttValueString(value, quotationMark))
                 {
-                    // AttValue was successfully escaped
-                    if (XmlValidator::validateAttValueString(escapedAttrValue))
+                    char quotationMarkCharacter;
+
+                    switch (quotationMark)
                     {
-                        char quotationMarkCharacter;
-
-                        switch (quotationMark)
+                        case Common::QuotationMark_Quote:
                         {
-                            case Common::QuotationMark_Quote:
-                            {
-                                quotationMarkCharacter = '"';
-                                success = true;
-                                break;
-                            }
-
-                            case Common::QuotationMark_Apostrophe:
-                            {
-                                quotationMarkCharacter = '\'';
-                                success = true;
-                                break;
-                            }
-
-                            default:
-                            {
-                                // Error, invalid quotation mark
-                                break;
-                            }
-                        }
-
-                        if (success)
-                        {
-                            m_attributeNameList.append(attribute.name);
-                            
-                            m_xmlString.append(" ").append(attribute.name);
-                            m_xmlString.append("=").append(1U, quotationMarkCharacter);
-                            m_xmlString.append(escapedAttrValue).append(1U, quotationMarkCharacter);
+                            quotationMarkCharacter = '"';
                             success = true;
+                            break;
                         }
+
+                        case Common::QuotationMark_Apostrophe:
+                        {
+                            quotationMarkCharacter = '\'';
+                            success = true;
+                            break;
+                        }
+
+                        default:
+                        {
+                            // Error, invalid quotation mark
+                            break;
+                        }
+                    }
+
+                    if (success)
+                    {
+                        m_attributeNameList.push_back(name);
+
+                        m_xmlString.append(" ").append(name);
+                        m_xmlString.append("=").append(1U, quotationMarkCharacter);
+                        m_xmlString.append(value).append(1U, quotationMarkCharacter);
+                        success = true;
                     }
                 }
             }
@@ -450,7 +449,7 @@ bool XmlWriter::addAttribute(const Attribute &attribute, const Common::Quotation
 /**
  * Add a text node
  *
- * \param textNode  UTF-8 encoded unescaped string
+ * \param textNode  UTF-8 encoded string
  *
  * \retval true     Success
  * \retval false    Error
@@ -459,8 +458,6 @@ bool XmlWriter::addTextNode(const std::string &textNode)
 {
     bool success = false;
     bool closeStartTag = false;
-    
-    // TODO: escape text node string
 
     if (XmlValidator::validateTextNodeString(textNode))
     {
@@ -497,163 +494,112 @@ bool XmlWriter::addTextNode(const std::string &textNode)
         }
 
         m_xmlString.append(textNode);
-        m_state = State_ElementStarted;
+        m_state = State_InElement;
         success = true;
     }
 
     return success;
 }
 
-//-----------------------------------------------
-
-
-bool XmlWriter::endElement()
-{
-
-}
-
-
-//-----------------------------------------------
-
-
-
-
-
-
 /**
- * Create an escaped AttValue string
+ * Add a CDATA section
  *
- * \param rawAttValue   Unescaped UTF-8 encoded AttValue string
- * \param quotationMark Quotation mark for the attribute
+ * \param cData UTF-8 encoded string
  *
- * \return Escaped AttValue string
- * \return Empty string on error
+ * \retval true     Success
+ * \retval false    Error
  */
-std::string XmlWriter::escapeAttValue(const std::string &unescapedAttValue,
-                                      const Common::QuotationMark quotationMark)
+bool XmlWriter::addCDataSection(const std::string &cData)
 {
-    std::string escapedString;
+    bool success = false;
+    bool closeStartTag = false;
 
-    if (!unescapedAttValue.empty())
+    if (XmlValidator::validateCDataString(cData))
     {
-        escapedString.reserve(unescapedAttValue.size());  // Minimize allocations
-
-        bool characterEscaped = false;
-        bool success = false;
-        uint32_t unicodeCharacter = 0U;
-        size_t currentPosition = 0U;
-        size_t nextPosition = 0U;
-
-        do
+        switch (m_state)
         {
-            Utf::Result result = Utf::unicodeCharacterFromUtf8(
-                                     unescapedAttValue,
-                                     currentPosition,
-                                     &nextPosition,
-                                     &unicodeCharacter);
-
-            success = false;
-
-            if (result == Utf::Result_Success)
+            case State_InElement:
             {
-                // Check if character has to be escaped
-                switch (unicodeCharacter)
-                {
-                    case (uint32_t)'<':
-                    case (uint32_t)'&':
-                    case (uint32_t)'"':
-                    case (uint32_t)'\'':
-                    {
-                        if ((unicodeCharacter == (uint32_t)'"') &&
-                            (quotationMark == Common::QuotationMark_Apostrophe))
-                        {
-                            // No need to escape a quote character if the quotation mark is an
-                            // apostrophe
-                        }
-                        else if ((unicodeCharacter == (uint32_t)'\'') &&
-                                 (quotationMark == Common::QuotationMark_Quote))
-                        {
-                            // No need to escape an apostrophe character if the quotation mark is a
-                            // quote
-                        }
-                        else
-                        {
-                            // Escape all others
-                            const std::string escapedSpecialCharacter =
-                                Common::escapeSpecialCharacter(unicodeCharacter);
-
-                            if (!escapedSpecialCharacter.empty())
-                            {
-                                if (!characterEscaped)
-                                {
-                                    // This is the first escaped character in the string. Copy the
-                                    // raw string up to the escaped character
-                                    const size_t len = currentPosition;
-
-                                    if (len > 0U)
-                                    {
-                                        escapedString.append(unescapedAttValue.substr(0U, len));
-                                    }
-
-                                    characterEscaped = true;
-                                }
-
-                                escapedString.append(escapedSpecialCharacter);
-                                success = true;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    default:
-                    {
-                        if (characterEscaped)
-                        {
-                            const size_t len = nextPosition - currentPosition;
-
-                            if (len == 1U)
-                            {
-                                // Single byte unicode character
-                                escapedString.append(1U, unescapedAttValue.at(currentPosition));
-                            }
-                            else
-                            {
-                                // Multibyte unicode character
-                                escapedString.append(unescapedAttValue.substr(currentPosition, len));
-                            }
-                        }
-
-                        success = true;
-                        break;
-                    }
-                }
-
-                if (success)
-                {
-                    currentPosition = nextPosition;
-                }
+                success = true;
+                break;
             }
-        }
-        while (success && (nextPosition < unescapedAttValue.size()));
 
-        if (success)
-        {
-            if (!characterEscaped)
+            case State_ElementStarted:
             {
-                // No character was escaped, so we can just copy the raw string
-                escapedString = unescapedAttValue;
+                // Close start tag of current element
+                closeStartTag = true;
+                success = true;
+                break;
             }
-        }
-        else
-        {
-            // On error make sure that the escapedString is empty
-            if (!escapedString.empty())
+
+            default:
             {
-                escapedString.clear();
+                break;
             }
         }
     }
 
-    return escapedString;
+    if (success)
+    {
+        if (closeStartTag)
+        {
+            m_xmlString.append(">");
+            m_currentElementInfo.contentEmpty = false;
+            m_attributeNameList.clear();
+        }
+
+        m_xmlString.append("<![CDATA[").append(cData).append("]]>");
+        m_state = State_InElement;
+        success = true;
+    }
+
+    return success;
+}
+
+/**
+ *
+ * Ends an element in the XML document
+ *
+ * \param elementName   Element name
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::endElement()
+{
+    bool success = false;
+
+    if ((m_state == State_ElementStarted) ||
+            (m_state == State_InElement))
+    {
+        if (m_currentElementInfo.contentEmpty)
+        {
+            // Close an empty element
+            m_xmlString.append("/>");
+        }
+        else
+        {
+            // Close a non-empty element
+            m_xmlString.append("</").append(m_currentElementInfo.name).append(">");
+        }
+
+        if (m_openedElementList.empty())
+        {
+            // Currently open element is the root element - close it and end the XML document
+            m_currentElementInfo = ElementInfo();
+            m_state = State_DocumentEnded;
+        }
+        else
+        {
+            // Take the last opened element info from the list and replace the current element info
+            // with it
+            m_currentElementInfo = m_openedElementList.back();
+            m_openedElementList.pop_back();
+            m_state = State_InElement;
+        }
+
+        success = true;
+    }
+
+    return success;
 }

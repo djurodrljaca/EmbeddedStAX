@@ -24,6 +24,9 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+#ifndef MINISAXCPP_XMLVALIDATOR_H
+#define MINISAXCPP_XMLVALIDATOR_H
+
 #include <string>
 #include "Common.h"
 
@@ -37,13 +40,8 @@ bool validatePiTargetString(const std::string &piTarget);
 bool validatePiValueString(const std::string &piValue);
 bool validateAttValueString(const std::string &attValue, const Common::QuotationMark quotationMark);
 bool validateTextNodeString(const std::string &textNode);
+bool validateCDataString(const std::string &cData);
+}
+}
 
-// TODO: move these functions to source file?
-bool validateCharRefString(const std::string &str,
-                           const size_t startPosition,
-                           size_t *nextCharacterPosition = NULL);
-bool validateEntityRefString(const std::string &str,
-                             const size_t startPosition,
-                             size_t *nextCharacterPosition = NULL);
-}
-}
+#endif // MINISAXCPP_XMLVALIDATOR_H

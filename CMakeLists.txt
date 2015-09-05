@@ -2,18 +2,18 @@ cmake_minimum_required(VERSION 2.6)
 project(minisaxcpp)
 
 set(minisaxcpp_SOURCES
+        Common.cpp
         main.cpp
-        Attribute.cpp
+        Utf.cpp
         XmlReader.cpp
         XmlValidator.cpp
-        XmlWriter.cpp
-        Utf.cpp)
+        XmlWriter.cpp)
 set(minisaxcpp_HEADERS
-        Attribute.h
+        Common.h
+        Utf.h
         XmlReader.h
         XmlValidator.h
-        XmlWriter.h
-        Utf.h)
+        XmlWriter.h)
 
 add_executable(minisaxcpp ${minisaxcpp_SOURCES} ${minisaxcpp_HEADERS})
 

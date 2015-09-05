@@ -24,6 +24,9 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+#ifndef MINISAXCPP_COMMON_H
+#define MINISAXCPP_COMMON_H
+
 #include <string>
 
 namespace MiniSaxCpp
@@ -36,8 +39,10 @@ enum QuotationMark
     QuotationMark_Apostrophe
 };
 
-std::string escapeSpecialCharacter(const char specialCharacter);
-std::string escapeCharacterDecimal(const uint32_t unicodeCharacter);
-std::string escapeCharacterHexadecimal(const uint32_t unicodeCharacter);
+std::string escapeAttributeValueString(const std::string &attributeValue,
+                                       const Common::QuotationMark quotationMark);
+std::string escapeTextNodeString(const std::string &textNode);
 }
 }
+
+#endif // MINISAXCPP_COMMON_H

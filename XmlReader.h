@@ -24,6 +24,9 @@
  * 
  * For more information, please refer to <http://unlicense.org>
  */
+#ifndef MINISAXCPP_XMLREADER_H
+#define MINISAXCPP_XMLREADER_H
+
 // #include "Attribute.h"
 // 
 // namespace MiniSaxCpp
@@ -95,3 +98,5 @@
 //     std::string m_comment;
 // };
 // }
+
+#endif // MINISAXCPP_XMLREADER_H
