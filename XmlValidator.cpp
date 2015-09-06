@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #include "XmlValidator.h"
 #include "Utf.h"
 
@@ -56,22 +57,22 @@ static bool validateReferenceString(const std::string &str,
  * \retval false    NameStartChar is not valid
  *
  * Allowed values for NameStartChar:
- *       * ":"
- *       * [A - Z]
- *       * "_"
- *       * [a - z]
- *       * [0xC0 - 0xD6]
- *       * [0xD8 - 0xF6]
- *       * [0xF8 - 0x2FF]
- *       * [0x370 - 0x37D]
- *       * [0x37F - 0x1FFF]
- *       * [0x200C - 0x200D]
- *       * [0x2070 - 0x218F]
- *       * [0x2C00 - 0x2FEF]
- *       * [0x3001 - 0xD7FF]
- *       * [0xF900 - 0xFDCF]
- *       * [0xFDF0 - 0xFFFD]
- *       * [0x10000 - 0xEFFFF]
+ *  - ':'
+ *  - [A - Z]
+ *  - '_'
+ *  - [a - z]
+ *  - [0xC0 - 0xD6]
+ *  - [0xD8 - 0xF6]
+ *  - [0xF8 - 0x2FF]
+ *  - [0x370 - 0x37D]
+ *  - [0x37F - 0x1FFF]
+ *  - [0x200C - 0x200D]
+ *  - [0x2070 - 0x218F]
+ *  - [0x2C00 - 0x2FEF]
+ *  - [0x3001 - 0xD7FF]
+ *  - [0xF900 - 0xFDCF]
+ *  - [0xFDF0 - 0xFFFD]
+ *  - [0x10000 - 0xEFFFF]
  */
 static bool isNameStartChar(const uint32_t nameStartChar)
 {
@@ -158,13 +159,13 @@ static bool isNameStartChar(const uint32_t nameStartChar)
  * \retval false    NameChar is not valid
  *
  * Allowed values for NameChar:
- *       * NameStartChar
- *       * "-"
- *       * "."
- *       * [0 - 9]
- *       * 0xB7
- *       * [0x0300 - 0x036F]
- *       * [0x203F - 0x2040]
+ *  - NameStartChar
+ *  - '-'
+ *  - '.'
+ *  - [0 - 9]
+ *  - 0xB7
+ *  - [0x0300 - 0x036F]
+ *  - [0x203F - 0x2040]
  */
 static bool isNameChar(const uint32_t nameChar)
 {
@@ -214,12 +215,12 @@ static bool isNameChar(const uint32_t nameChar)
  * \retval false    Char is not valid
  *
  * Allowed values for Char:
- *       * 0x9
- *       * 0xA
- *       * 0xD
- *       * [0x20 - 0xD7FF]
- *       * [0xE000 - 0xFFFD]
- *       * [0x10000 - 0x10FFFF]
+ *  - 0x9
+ *  - 0xA
+ *  - 0xD
+ *  - [0x20 - 0xD7FF]
+ *  - [0xE000 - 0xFFFD]
+ *  - [0x10000 - 0x10FFFF]
  */
 static bool isChar(const uint32_t character)
 {
@@ -355,8 +356,8 @@ static bool validateNumberInCharRefString(const std::string &str,
     size_t position = startPosition;
 
     while ((position < str.size()) &&
-            (state != State_Success) &&
-            (state != State_Error))
+           (state != State_Success) &&
+           (state != State_Error))
     {
         const char character = str.at(position);
 
@@ -410,7 +411,7 @@ static bool validateNumberInCharRefString(const std::string &str,
 
                         // Check if unicode character is valid
                         const bool unicodeCharacterValid =
-                            Utf::isUnicodeCharacterValid(unicodeCharacter);
+                                Utf::isUnicodeCharacterValid(unicodeCharacter);
 
                         if (!unicodeCharacterValid)
                         {
@@ -586,7 +587,7 @@ static bool validateReferenceString(const std::string &str,
                                     size_t *nextCharacterPosition)
 {
     bool valid = false;
-    
+
     // Check for Reference (EntityRef or CharRef)
     if (str.size() > (startPosition + 2U))
     {
@@ -601,7 +602,7 @@ static bool validateReferenceString(const std::string &str,
             valid = validateEntityRefString(str, startPosition);
         }
     }
-    
+
     return valid;
 }
 
@@ -679,7 +680,7 @@ bool XmlValidator::validateNameString(const std::string &name)
  *
  * Valid Comment string format:
  * \code{.unparsed}
- * Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
+ * Comment ::= ((Char - '-') | ('-' (Char - '-')))*
  * \endcode
  */
 bool XmlValidator::validateCommentString(const std::string &commentText)
@@ -703,7 +704,6 @@ bool XmlValidator::validateCommentString(const std::string &commentText)
         // characters are allowed
         if (valid)
         {
-            uint32_t lastUnicodeCharacter = 0U;
             uint32_t unicodeCharacter = 0U;
             size_t currentPosition = 0U;
             size_t nextPosition = 0U;
@@ -730,12 +730,23 @@ bool XmlValidator::validateCommentString(const std::string &commentText)
 
                 if (valid)
                 {
-                    // Check for "--" sequence
-                    if ((lastUnicodeCharacter == (uint32_t)'-') &&
-                            (unicodeCharacter == (uint32_t)'-'))
+                    if (unicodeCharacter == (uint32_t)'-')
                     {
-                        // Error, "--" sequence detected
-                        valid = false;
+                        // Check if comment ends with '-' character
+                        if (nextPosition >= commentText.size())
+                        {
+                            // Error, ends with '-' character
+                            valid = false;
+                        }
+                        else
+                        {
+                            // Check for "--" sequence
+                            if (commentText.at(nextPosition) == '-')
+                            {
+                                // Error, "--" sequence detected
+                                valid = false;
+                            }
+                        }
                     }
                 }
 
@@ -743,20 +754,9 @@ bool XmlValidator::validateCommentString(const std::string &commentText)
                 {
                     // Prepare for next loop cycle
                     currentPosition = nextPosition;
-                    lastUnicodeCharacter = unicodeCharacter;
                 }
             }
             while (valid && (nextPosition < commentText.size()));
-
-            // Comment must not end with a '-' character
-            if (valid)
-            {
-                if (lastUnicodeCharacter == (uint32_t)'-')
-                {
-                    // Error, comment ends with a '-' character
-                    valid = false;
-                }
-            }
         }
     }
 
@@ -786,8 +786,8 @@ bool XmlValidator::validatePiTargetString(const std::string &piTarget)
         if (piTarget.size() == 3U)
         {
             if ((piTarget.at(0U) != 'x') && (piTarget.at(0U) != 'X') &&
-                    (piTarget.at(1U) != 'm') && (piTarget.at(1U) != 'M') &&
-                    (piTarget.at(2U) != 'l') && (piTarget.at(2U) != 'L'))
+                (piTarget.at(1U) != 'm') && (piTarget.at(1U) != 'M') &&
+                (piTarget.at(2U) != 'l') && (piTarget.at(2U) != 'L'))
             {
                 valid = true;
             }
@@ -825,7 +825,7 @@ bool XmlValidator::validatePiValueString(const std::string &piValue)
     }
     else
     {
-        // PI's value must not contain "?>" sequence
+        // PI's value must not contain "?>" sequence otherwise any Char character is allowed
         uint32_t lastUnicodeCharacter = 0U;
         uint32_t unicodeCharacter = 0U;
         size_t currentPosition = 0U;
@@ -855,7 +855,7 @@ bool XmlValidator::validatePiValueString(const std::string &piValue)
             {
                 // Check for "?>" sequence
                 if ((lastUnicodeCharacter == (uint32_t)'?') &&
-                        (unicodeCharacter == (uint32_t)'>'))
+                    (unicodeCharacter == (uint32_t)'>'))
                 {
                     // Error, "?>" sequence detected
                     valid = false;
@@ -906,7 +906,8 @@ bool XmlValidator::validateAttValueString(const std::string &attValue,
     }
     else
     {
-        // AttValue must not contain characters: '<', '&' and ('"' or '\'')
+        // AttValue must not contain characters: '<', '&' and ('"' or '\''), with the exception of
+        // "&" character when it is the start of a valid Reference sequence
         uint32_t unicodeCharacter = 0U;
         size_t currentPosition = 0U;
         size_t nextPosition = 0U;
@@ -1006,8 +1007,9 @@ bool XmlValidator::validateTextNodeString(const std::string &textNode)
     }
     else
     {
-        // TextNode must not contain characters: '<' and '&'
-        // TextNode must not contain sequence: "]]>"
+        // TextNode must not contain '<' and '&' characters or "]]>" sequence, otherwise any valid
+        // unicode character is allowed. An exception is that '&' character is allowed if it is the
+        // start of a valid Reference sequence
         uint32_t unicodeCharacter = 0U;
         size_t currentPosition = 0U;
         size_t nextPosition = 0U;
@@ -1088,7 +1090,7 @@ bool XmlValidator::validateTextNodeString(const std::string &textNode)
  *
  * Valid Name string format:
  * \code{.unparsed}
- * CData ::= Char* - (Char* ']]>' Char*) 
+ * CData ::= Char* - (Char* ']]>' Char*)
  * \endcode
  */
 bool XmlValidator::validateCDataString(const std::string &cData)
@@ -1102,8 +1104,7 @@ bool XmlValidator::validateCDataString(const std::string &cData)
     }
     else
     {
-        // CData can contain only Char characters
-        // CData must not contain sequence: "]]>"
+        // CData can contain only Char characters as long as they are not part of a "]]>" sequence
         uint32_t unicodeCharacter = 0U;
         size_t currentPosition = 0U;
         size_t nextPosition = 0U;
@@ -1122,7 +1123,7 @@ bool XmlValidator::validateCDataString(const std::string &cData)
             {
                 // Check for Char
                 valid = isChar(unicodeCharacter);
-                
+
                 if (valid)
                 {
                     // Check for "]]>" sequence

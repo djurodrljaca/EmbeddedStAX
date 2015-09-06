@@ -1,11 +1,11 @@
 /*
  * This is free and unencumbered software released into the public domain.
- * 
+ *
  * Anyone is free to copy, modify, publish, use, compile, sell, or
  * distribute this software, either in source code form or as a compiled
  * binary, for any purpose, commercial or non-commercial, and by any
  * means.
- * 
+ *
  * In jurisdictions that recognize copyright laws, the author or authors
  * of this software dedicate any and all copyright interest in the
  * software to the public domain. We make this dedication for the benefit
@@ -13,7 +13,7 @@
  * successors. We intend this dedication to be an overt act of
  * relinquishment in perpetuity of all present and future rights to this
  * software under copyright law.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -21,14 +21,15 @@
  * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- * 
+ *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #ifndef MINISAXCPP_XMLREADER_H
 #define MINISAXCPP_XMLREADER_H
 
 // #include "Attribute.h"
-// 
+//
 // namespace MiniSaxCpp
 // {
 // /**
@@ -49,48 +50,48 @@
 //         ParsingResult_TextNode,
 //         ParsingResult_Comment
 //     };
-//    
+//
 // public:
 //     XmlReader();
-// 
+//
 //     void clear();
 //     void addData(const std::string &data);
-//     
+//
 //     ParsingResult Parse();
 //     ParsingResult getLastParsingResult();
-// 
+//
 //     std::string getName() const;
 //     AttributeList getAttributeList() const;
 //     std::string getTextNode() const;
 //     std::string getComment() const;
-//      
+//
 // private:
 //     enum State
 //     {
 //         State_Idle,
-//         
+//
 //         State_ReadingTagType,
-//         
+//
 //         State_ReadingProcessingInformationName,
 //         State_ReadingProcessingInformationAttributeName,
 //         State_ReadingProcessingInformationAttributeValue,
-//         
+//
 //         State_ReadingStartOfElement,
 //         State_ReadingElementAttributeName,
 //         State_ReadingElementAttributeValue,
 //         State_ReadingTextNode,
-//         
+//
 //         State_ReadingEndOfElement,
-//         
+//
 //         State_ReadingComment
 //     };
-//     
+//
 // private:
 //     State handleStateIdle();
-//     
+//
 //     State m_state;
 //     std::string m_dataBuffer;
-//     
+//
 //     ParsingResult m_lastParsingResult;
 //     std::string m_name;
 //     AttributeList m_attributeList;

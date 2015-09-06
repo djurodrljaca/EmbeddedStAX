@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #include "Common.h"
 #include "Utf.h"
 #include <inttypes.h>
@@ -44,16 +45,16 @@ static std::string escapeCharacterHexadecimal(const uint32_t unicodeCharacter);
  * \return Empty string on error
  *
  * Special characters are:
- * * amp:  &
- * * lt:   <
- * * gt:   >
- * * apos: '
- * * quot: "
+ *  - amp:  &
+ *  - lt:   <
+ *  - gt:   >
+ *  - apos: '
+ *  - quot: "
  */
 static std::string escapeSpecialCharacter(const char specialCharacter)
 {
     std::string name;
-    name.reserve(6);
+    name.reserve(6U);
 
     switch (specialCharacter)
     {
@@ -121,18 +122,48 @@ static std::string escapeCharacterDecimal(const uint32_t unicodeCharacter)
         // The maximal allowed value unicode value encoded in UTF-8 is "0x10FFFF". This is
         // equivalent to "1114111" in decimal format. From that we can see that max string size to
         // represent the max UTF-8 value in a string is 7. If we add also the other needed
-        // characters for the escaped string, we then get size of 10 characters (2 + 7 + 1) and an
-        // additional character for '\0' makes it 11 characters.
-        char str[11] = { '\0' };
-        const char formatString[] = "&#%" PRIu32 ";";
+        // characters for the escaped string, we then get size of 10 characters (2 + 7 + 1).
+        escapedString.reserve(10U);
+        escapedString.append("&#");
 
-        const int32_t returnValue = snprintf(str, sizeof(str), formatString, unicodeCharacter);
-
-        // Check if expected number of characters were written to str
-        if ((3 < returnValue) && (returnValue < sizeof(str)))
+        if (unicodeCharacter == 0U)
         {
-            escapedString = str;
+            // No need to do all of the calculation below if we already know that the value is zero
+            escapedString.append(1U, '0');
         }
+        else
+        {
+            // Nonzero value
+            uint32_t value = unicodeCharacter;
+            uint32_t limit = 1000000U;
+            bool leadingZero = true;
+
+            do
+            {
+                // Get digit value
+                uint32_t digitValue = 0U;
+
+                if (value >= limit)
+                {
+                    digitValue = value / limit;
+                    leadingZero = false;
+                }
+
+                // Add digit value to string, ignoring leading zeros
+                if (!leadingZero)
+                {
+                    const char digit = (char)digitValue + '0';
+                    escapedString.append(1U, digit);
+                }
+
+                // Recalculate the values for the next digit
+                value = value % limit;
+                limit = limit / 10U;
+            }
+            while (limit > 0U);
+        }
+
+        escapedString.append(1U, ';');
     }
 
     return escapedString;
@@ -155,17 +186,54 @@ static std::string escapeCharacterHexadecimal(const uint32_t unicodeCharacter)
         // The maximal allowed value unicode value encoded in UTF-8 is "0x10FFFF". From that we can
         // see that max string size to represent the max UTF-8 value in a string is 6. If we add
         // also the other needed characters for the escaped string, we then get size of 10
-        // characters (3 + 6 + 1) and an additional character for '\0' makes it 11 characters.
-        char str[11] = { '\0' };
-        const char formatString[] = "&#x%" PRIX32 ";";
+        // characters (3 + 6 + 1).
+        escapedString.reserve(10U);
+        escapedString.append("&#x");
 
-        const int32_t returnValue = snprintf(str, sizeof(str), formatString, unicodeCharacter);
-
-        // Check if expected number of characters were written to str
-        if ((3 < returnValue) && (returnValue < sizeof(str)))
+        if (unicodeCharacter == 0U)
         {
-            escapedString = str;
+            // No need to do all of the calculation below if we already know that the value is zero
+            escapedString.append(1U, '0');
         }
+        else
+        {
+            // Nonzero value
+            bool leadingZero = true;
+
+            for (uint32_t digitIndex = 6U; digitIndex > 0U; digitIndex--)
+            {
+                const uint32_t shiftFactor = (digitIndex - 1U) * 4U;
+                const uint32_t digitValue = (unicodeCharacter >> shiftFactor) & 0x0FU;
+                char digit;
+
+                if (digitValue == 0U)
+                {
+                    digit = '0';
+                }
+                else
+                {
+                    leadingZero = false;
+
+                    if (digitValue <= 9U)
+                    {
+                        // Characters: '1' to '9'
+                        digit = (char)digitValue + '0';
+                    }
+                    else
+                    {
+                        // Characters: 'A' to 'F'
+                        digit = (char)(digitValue - 0x0AU) + 'A';
+                    }
+                }
+
+                if (!leadingZero)
+                {
+                    escapedString.append(1U, digit);
+                }
+            }
+        }
+
+        escapedString.append(1U, ';');
     }
 
     return escapedString;
@@ -248,7 +316,7 @@ std::string Common::escapeAttributeValueString(const std::string &attributeValue
                 {
                     // Escape character
                     const std::string escapedSpecialCharacter =
-                        escapeSpecialCharacter(unicodeCharacter);
+                            escapeSpecialCharacter(unicodeCharacter);
 
                     if (!escapedSpecialCharacter.empty())
                     {
@@ -397,7 +465,7 @@ std::string Common::escapeTextNodeString(const std::string &textNode)
                 {
                     // Escape character
                     const std::string escapedSpecialCharacter =
-                        escapeSpecialCharacter(unicodeCharacter);
+                            escapeSpecialCharacter(unicodeCharacter);
 
                     if (!escapedSpecialCharacter.empty())
                     {

@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #include <iostream>
 #include "XmlWriter.h"
 
@@ -68,16 +69,16 @@ int main(int argc, char **argv)
     if (success)
     {
         const std::string escapedString =
-            Common::escapeAttributeValueString("value1 < value2 & value3 \" ' <&\"' value4",
-                                               Common::QuotationMark_Quote);
+                Common::escapeAttributeValueString("value1 < value2 & value3 \" ' <&\"' value4",
+                                                   Common::QuotationMark_Quote);
         success = xmlWriter.addAttribute("attribute3", escapedString, Common::QuotationMark_Quote);
     }
 
     if (success)
     {
         const std::string escapedString =
-            Common::escapeAttributeValueString("value1 < value2 & value3 \" ' <&\"' value4",
-                                               Common::QuotationMark_Apostrophe);
+                Common::escapeAttributeValueString("value1 < value2 & value3 \" ' <&\"' value4",
+                                                   Common::QuotationMark_Apostrophe);
         success = xmlWriter.addAttribute("attribute4",
                                          escapedString,
                                          Common::QuotationMark_Apostrophe);
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
     if (success)
     {
         const std::string escapedString =
-            Common::escapeTextNodeString("value1 < value2 & value3 \" ' <&\"' value4");
+                Common::escapeTextNodeString("value1 < value2 & value3 \" ' <&\"' value4");
         success = xmlWriter.addTextNode(escapedString);
     }
 

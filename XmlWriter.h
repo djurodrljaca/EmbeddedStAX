@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #ifndef MINISAXCPP_XMLWRITER_H
 #define MINISAXCPP_XMLWRITER_H
 
@@ -86,8 +87,6 @@ private:
     ElementInfo m_currentElementInfo;
     std::list<std::string> m_attributeNameList;
     std::string m_xmlString;
-
-    // TODO: pretty printing?
 };
 }
 

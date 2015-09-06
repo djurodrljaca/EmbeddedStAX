@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #include "Utf.h"
 
 using namespace MiniSaxCpp;
@@ -41,9 +42,9 @@ using namespace MiniSaxCpp;
  * \retval Result_Error         Error
  */
 Utf::Result Utf::unicodeCharacterFromUtf8(const std::string &utf8,
-        const size_t startPosition,
-        size_t *nextCharacterPosition,
-        uint32_t *unicodeCharacter)
+                                          const size_t startPosition,
+                                          size_t *nextCharacterPosition,
+                                          uint32_t *unicodeCharacter)
 {
     Result result = Result_Error;
 
@@ -150,14 +151,22 @@ Utf::Result Utf::unicodeCharacterFromUtf8(const std::string &utf8,
     return result;
 }
 
+/**
+ * Check if unicode character is valid
+ *
+ * \param unicodeCharacter  Unicode character
+ *
+ * \retval true     Valid unicode character
+ * \retval false    Invalid unicode character
+ */
 bool Utf::isUnicodeCharacterValid(const uint32_t unicodeCharacter)
 {
     bool valid = false;
-    
+
     if (unicodeCharacter <= 0x10FFFF)
     {
         valid = true;
     }
-    
+
     return valid;
 }

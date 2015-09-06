@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #ifndef MINISAXCPP_COMMON_H
 #define MINISAXCPP_COMMON_H
 

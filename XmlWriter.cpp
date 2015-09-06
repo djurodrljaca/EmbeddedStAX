@@ -24,6 +24,7 @@
  *
  * For more information, please refer to <http://unlicense.org>
  */
+
 #include "XmlWriter.h"
 #include "Utf.h"
 #include "XmlValidator.h"
@@ -118,7 +119,7 @@ bool XmlWriter::setDocumentType(const std::string &documentType)
     if (m_documentType.empty())
     {
         if ((m_state == State_Empty) ||
-                (m_state == State_DocumentStarted))
+            (m_state == State_DocumentStarted))
         {
             if (XmlValidator::validateNameString(documentType))
             {
@@ -384,13 +385,13 @@ bool XmlWriter::addAttribute(const std::string &name,
         {
             // Check if an attribute with the same name has already been added to the element
             bool attributeNameFound = false;
-            
+
             for (std::list<std::string>::const_iterator it = m_attributeNameList.begin();
                  it != m_attributeNameList.end();
                  it++)
             {
                 const std::string &attributeName = *it;
-                
+
                 if (name == attributeName)
                 {
                     // Error, an attribute with the same name is already in the list
@@ -570,7 +571,7 @@ bool XmlWriter::endElement()
     bool success = false;
 
     if ((m_state == State_ElementStarted) ||
-            (m_state == State_InElement))
+        (m_state == State_InElement))
     {
         if (m_currentElementInfo.contentEmpty)
         {
