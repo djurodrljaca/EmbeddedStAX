@@ -545,3 +545,218 @@ std::string Common::escapeTextNodeString(const std::string &textNode)
 
     return escapedString;
 }
+
+/**
+ * Constructor for DataBuffer
+ *
+ * \param size  Data buffer's size in (in bytes)
+ */
+Common::DataBuffer::DataBuffer(const size_t size)
+    : m_dataBuffer(new char[size + 1U]),
+      m_dataBufferSize(size + 1U),
+      m_writePosition(0U),
+      m_readPosition(0U)
+{
+}
+
+/**
+ * Destructor for DataBuffer
+ */
+Common::DataBuffer::~DataBuffer()
+{
+    if (m_dataBuffer != NULL)
+    {
+        delete[] m_dataBuffer;
+    }
+}
+
+/**
+ * Clear the buffer
+ */
+void Common::DataBuffer::clear()
+{
+    m_writePosition = 0U;
+    m_readPosition = 0U;
+}
+
+/**
+ * Checks if data buffer is empty
+ *
+ * \retval true     Empty
+ * \retval false    Not empty
+ */
+bool Common::DataBuffer::empty() const
+{
+    bool emptyFlag = false;
+
+    if (m_dataBufferSize < 2U)
+    {
+        // If there are no bytes or if there is a single byte in the data buffer then the buffer
+        // cannot accept any data - data buffer is always full
+    }
+    else
+    {
+        if (m_writePosition == m_readPosition)
+        {
+            emptyFlag = true;
+        }
+    }
+
+    return emptyFlag;
+}
+
+/**
+ * Checks if data buffer is full
+ *
+ * \retval true     Full
+ * \retval false    Not full
+ */
+bool Common::DataBuffer::full() const
+{
+    bool fullFlag = false;
+
+    if (m_dataBufferSize < 2U)
+    {
+        // If there are no bytes or if there is a single byte in the data buffer then the buffer
+        // cannot accept any data - data buffer is always full
+        fullFlag = true;
+    }
+    else
+    {
+        // If read buffer is bigger than the write buffer by one then the data buffer is full
+        if (m_readPosition == 0U)
+        {
+            if (m_writePosition == (m_dataBufferSize - 1U))
+            {
+                fullFlag = true;
+            }
+        }
+        else if (m_readPosition == (m_writePosition + 1U))
+        {
+            fullFlag = true;
+        }
+    }
+
+    return fullFlag;
+}
+
+/**
+ * Checks how many free bytes are in the data buffer
+ *
+ * \return Number of free bytes
+ */
+size_t Common::DataBuffer::free() const
+{
+    size_t freeBytes;
+
+    if (m_dataBufferSize < 2U)
+    {
+        // If there are no bytes or if there is a single byte in the data buffer then the buffer
+        // cannot accept any data - data buffer is always full
+        freeBytes = 0U;
+    }
+    else
+    {
+        if (m_readPosition > m_writePosition)
+        {
+            freeBytes = m_readPosition - m_writePosition - 1U;
+        }
+        else
+        {
+            freeBytes = (m_dataBufferSize - 1U - m_writePosition) + m_readPosition;
+        }
+    }
+
+    return freeBytes;
+}
+
+/**
+ * Checks how many bytes are used in the data buffer
+ *
+ * \return Number of used bytes
+ */
+size_t Common::DataBuffer::used() const
+{
+    size_t usedBytes;
+
+    if (m_dataBufferSize < 2U)
+    {
+        // If there are no bytes or if there is a single byte in the data buffer then the buffer
+        // cannot accept any data - data buffer is always full
+        usedBytes = 0U;
+    }
+    else
+    {
+        if (m_writePosition >= m_readPosition)
+        {
+            usedBytes = m_writePosition - m_readPosition;
+        }
+        else
+        {
+            usedBytes = (m_dataBufferSize - 1U - m_readPosition) + m_writePosition;
+        }
+    }
+
+    return usedBytes;
+}
+
+/**
+ * Write data to the data buffer
+ *
+ * \param data  Data to write
+ *
+ * \retval true     Success
+ * \retval false    Error, data buffer is full
+ */
+bool Common::DataBuffer::write(const char data)
+{
+    bool success = false;
+
+    if (!full())
+    {
+        m_dataBuffer[m_writePosition] = data;
+        m_writePosition++;
+        success = true;
+
+        // Check for overflow of the write position
+        if (m_writePosition >= m_dataBufferSize)
+        {
+            m_writePosition = 0U;
+        }
+    }
+
+    return success;
+}
+
+/**
+ * Read a character from the data buffer
+ *
+ * \param[out] success  Optional output parameter for signaling success or failure
+ *
+ * \return Oldest character from the data buffer
+ */
+char Common::DataBuffer::read(bool *success)
+{
+    bool dataRead = false;
+    char data = 0U;
+
+    if (!empty())
+    {
+        data = m_dataBuffer[m_readPosition];
+        m_readPosition++;
+        dataRead = true;
+
+        // Check for overflow of the read position
+        if (m_readPosition >= m_dataBufferSize)
+        {
+            m_readPosition = 0U;
+        }
+    }
+
+    if (success != NULL)
+    {
+        *success = dataRead;
+    }
+
+    return data;
+}

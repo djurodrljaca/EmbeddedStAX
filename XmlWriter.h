@@ -39,6 +39,7 @@ namespace MiniSaxCpp
 class XmlWriter
 {
 public:
+    // Public API
     XmlWriter();
 
     void clearDocument();
@@ -59,6 +60,7 @@ public:
     bool endElement();
 
 private:
+    // Private types
     enum State
     {
         State_Empty,
@@ -80,6 +82,8 @@ private:
         bool contentEmpty;
     };
 
+private:
+    // Private data
     State m_state;
     bool m_xmlDeclarationSet;
     std::string m_documentType;

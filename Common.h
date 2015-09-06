@@ -29,11 +29,26 @@
 #define MINISAXCPP_COMMON_H
 
 #include <string>
+#include <stdint.h>
 
 namespace MiniSaxCpp
 {
 namespace Common
 {
+enum XmlVersion
+{
+    XmlVersion_None,
+    XmlVersion_Unknown,
+    XmlVersion_v1_0
+};
+
+enum XmlEncoding
+{
+    XmlEncoding_None,
+    XmlEncoding_Unknown,
+    XmlEncoding_Utf8
+};
+
 enum QuotationMark
 {
     QuotationMark_Quote,
@@ -43,6 +58,30 @@ enum QuotationMark
 std::string escapeAttributeValueString(const std::string &attributeValue,
                                        const Common::QuotationMark quotationMark);
 std::string escapeTextNodeString(const std::string &textNode);
+
+class DataBuffer
+{
+public:
+    // Public API
+    DataBuffer(const size_t size);
+    ~DataBuffer();
+
+    void clear();
+    bool empty() const;
+    bool full() const;
+    size_t free() const;
+    size_t used() const;
+
+    bool write(const char data);
+    char read(bool *success = NULL);
+
+private:
+    // Private data
+    char *m_dataBuffer;
+    size_t m_dataBufferSize;
+    size_t m_writePosition;
+    size_t m_readPosition;
+};
 }
 }
 
