@@ -278,19 +278,20 @@ bool XmlWriter::addProcessingInstruction(const std::string &piTarget, const std:
 }
 
 /**
- * Starts a new element in the XML document
+ * Starts a new root element in the XML document
  *
- * \param elementName   Element name
+ * \param rootElementName   Root element name
  *
  * \retval true     Success
  * \retval false    Error
+ *
+ * \note If Document Type is set then the root element name must match it!
  */
-bool XmlWriter::startElement(const std::string &elementName)
+bool XmlWriter::startRootElement(const std::string &rootElementName)
 {
     bool success = false;
-    bool closeStartTag = false;
 
-    if (XmlValidator::validateNameString(elementName))
+    if (XmlValidator::validateNameString(rootElementName))
     {
         switch (m_state)
         {
@@ -302,7 +303,7 @@ bool XmlWriter::startElement(const std::string &elementName)
                     success = true;
                 }
                 // Check if element name matches the document type
-                else if (elementName == m_documentType)
+                else if (rootElementName == m_documentType)
                 {
                     success = true;
                 }
@@ -310,21 +311,65 @@ bool XmlWriter::startElement(const std::string &elementName)
                 {
                     // Error, invalid root element name
                 }
-
                 break;
             }
 
             case State_Empty:
-            case State_InElement:
             {
                 success = true;
                 break;
             }
 
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        // Open start tag
+        m_xmlString.append("<").append(rootElementName);
+
+        m_attributeNameList.clear();
+        m_currentElementInfo = ElementInfo(rootElementName);
+        m_state = State_ElementStarted;
+        success = true;
+    }
+
+    return success;
+}
+
+/**
+ * Starts a new child element in the XML document
+ *
+ * \param elementName   Element name
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note This method cannot start a root element, to do that use the startRootElement method!
+ */
+bool XmlWriter::startChildElement(const std::string &elementName)
+{
+    bool success = false;
+    bool closeStartTag = false;
+
+    if (XmlValidator::validateNameString(elementName))
+    {
+        switch (m_state)
+        {
             case State_ElementStarted:
             {
                 // Close start tag of current element
                 closeStartTag = true;
+                success = true;
+                break;
+            }
+
+            case State_InElement:
+            {
                 success = true;
                 break;
             }
@@ -344,13 +389,8 @@ bool XmlWriter::startElement(const std::string &elementName)
             m_currentElementInfo.contentEmpty = false;
         }
 
-        if (!m_currentElementInfo.name.empty())
-        {
-            // Add current element info to opened element list. If current element's name is empty
-            // this can only mean that we have just started the root element, so there is noting to
-            // add to the list yet.
-            m_openedElementList.push_back(m_currentElementInfo);
-        }
+        // Add current element info to opened element list
+        m_openedElementList.push_back(m_currentElementInfo);
 
         // Open start tag
         m_xmlString.append("<").append(elementName);
@@ -573,6 +613,7 @@ bool XmlWriter::endElement()
     if ((m_state == State_ElementStarted) ||
         (m_state == State_InElement))
     {
+        // Close the current element
         if (m_currentElementInfo.contentEmpty)
         {
             // Close an empty element
@@ -584,6 +625,7 @@ bool XmlWriter::endElement()
             m_xmlString.append("</").append(m_currentElementInfo.name).append(">");
         }
 
+        // Discard the current element
         if (m_openedElementList.empty())
         {
             // Currently open element is the root element - close it and end the XML document
@@ -592,8 +634,7 @@ bool XmlWriter::endElement()
         }
         else
         {
-            // Take the last opened element info from the list and replace the current element info
-            // with it
+            // Replace the current element with its parent
             m_currentElementInfo = m_openedElementList.back();
             m_openedElementList.pop_back();
             m_state = State_InElement;

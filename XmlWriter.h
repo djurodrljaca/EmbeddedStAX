@@ -49,8 +49,8 @@ public:
     bool addComment(const std::string &commentText);
     bool addProcessingInstruction(const std::string &piTarget, const std::string &piValue);
 
-
-    bool startElement(const std::string &elementName);
+    bool startRootElement(const std::string &rootElementName);
+    bool startChildElement(const std::string &elementName);
     bool addAttribute(const std::string &name,
                       const std::string &value,
                       const Common::QuotationMark quotationMark = Common::QuotationMark_Quote);

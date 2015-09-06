@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     if (success)
     {
-        success = xmlWriter.startElement("root");
+        success = xmlWriter.startRootElement("root");
     }
 
     if (success)
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
     if (success)
     {
-        success = xmlWriter.startElement("child1");
+        success = xmlWriter.startChildElement("child1");
     }
 
     if (success)
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 
     if (success)
     {
-        success = xmlWriter.startElement("child2");
+        success = xmlWriter.startChildElement("child2");
     }
 
     if (success)
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
     if (success)
     {
-        success = xmlWriter.startElement("child3");
+        success = xmlWriter.startChildElement("child3");
     }
 
     if (success)
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 
     if (success)
     {
-        success = xmlWriter.startElement("child4");
+        success = xmlWriter.startChildElement("child4");
     }
 
     if (success)
