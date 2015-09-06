@@ -27,6 +27,7 @@
 
 #include "XmlReader.h"
 #include "Utf.h"
+#include "XmlValidator.h"
 
 using namespace MiniSaxCpp;
 
@@ -44,7 +45,7 @@ XmlReader::XmlReader(const size_t dataBufferSize)
  */
 void XmlReader::clear()
 {
-    m_documentState = DocumentState_Prolog;
+    m_documentState = DocumentState_PrologXmlDeclaration;
 
     m_xmlDataBuffer.clear();
     clearParsingBuffer();
@@ -78,14 +79,16 @@ bool XmlReader::writeData(const char data)
  */
 XmlReader::ParsingResult XmlReader::parse()
 {
+    // TODO: silently recover from error?
+
     ParsingResult result = ParsingResult_Error;
 
     // Execute parsing state machine
-    bool cycleFinished;
+    bool finishParsing;
 
     do
     {
-        cycleFinished = true;
+        finishParsing = true;
         ParsingState nextState = m_parsingState;
 
         switch (m_parsingState)
@@ -93,12 +96,53 @@ XmlReader::ParsingResult XmlReader::parse()
             case ParsingState_WaitingForStartOfItem:
             {
                 nextState = executeParsingStateWaitingForStartOfItem();
+
+                // Check for allowed transitions
+                if (nextState == ParsingState_ReadingItemType)
+                {
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                // Check for invalid transitions
+                else
+                {
+                    if (nextState != ParsingState_WaitingForStartOfItem)
+                    {
+                        nextState = ParsingState_Error;
+                    }
+                }
                 break;
             }
 
             case ParsingState_ReadingItemType:
             {
                 nextState = executeParsingStateReadingItemType();
+
+                // Check for allowed transitions
+                if ((nextState == ParsingState_PiTarget) ||
+                    (nextState == ParsingState_ElementName) ||
+                    (nextState == ParsingState_Comment) ||
+                    (nextState == ParsingState_DocumentTypeName))
+                {
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                // Check for invalid transitions
+                else
+                {
+                    if (nextState != ParsingState_ReadingItemType)
+                    {
+                        nextState = ParsingState_Error;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_PiTarget:
+            {
+                nextState = executeParsingStatePiTarget();
+
+                // TODO: implement
                 break;
             }
 
@@ -106,36 +150,19 @@ XmlReader::ParsingResult XmlReader::parse()
             {
                 // Error, invalid state value
                 nextState = ParsingState_Error;
-                m_parsingState = ParsingState_Error;
-                m_documentState = DocumentState_Error;
                 break;
             }
         }
 
-        // Check if parsing state machine cycle should continue or finish
-        switch (nextState)
+        // Check for error and save parsing state
+        if (nextState == ParsingState_Error)
         {
-            case ParsingState_ReadingItemType:
-            {
-                if (m_parsingState == ParsingState_WaitingForStartOfItem)
-                {
-                    // Execute another cycle
-                    cycleFinished = false;
-                }
-                break;
-            }
-
-            default:
-            {
-                // Cycle should finish
-                break;
-            }
+            m_documentState = DocumentState_Error;
         }
 
-        // Save parsing state
         m_parsingState = nextState;
     }
-    while(!cycleFinished);
+    while(!finishParsing);
 
     // Save last parsing result
     m_lastParsingResult = result;
@@ -196,15 +223,177 @@ XmlReader::ParsingState XmlReader::executeParsingStateWaitingForStartOfItem()
     ParsingState nextState = ParsingState_WaitingForStartOfItem;
 
     // Read data from the XML data buffer and parse it
-    while (!m_xmlDataBuffer.empty())
-    {
-        const char data = m_xmlDataBuffer.read();
+    bool finishParsing = false;
 
-        if (data == '<')
+    while (!m_xmlDataBuffer.empty() &&
+           !finishParsing)
+    {
+        const char value = m_xmlDataBuffer.read();
+
+        if (value == '<')
         {
             // Start of item found, try to read the the item type
+            finishParsing = true;
             clearParsingBuffer();
             nextState = ParsingState_ReadingItemType;
+        }
+        else
+        {
+            // Only other allowed characters are whitespace character and they can be ignored
+            if (XmlValidator::isWhitespace((uint32_t)value))
+            {
+                // Check document state
+                if (m_documentState == DocumentState_PrologXmlDeclaration)
+                {
+                    // XML declaration is not at the start of the XML string. For a valid XML
+                    // document the XML declaration has to be located at the start of the XML string
+                    // otherwise it is not allowed to occur in the XML string. Change the document
+                    // state accordingly.
+                    m_documentState = DocumentState_PrologDocumentType;
+                }
+            }
+            else
+            {
+                // Error, invalid character
+                finishParsing = true;
+                nextState = ParsingState_Error;
+            }
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Waiting for start of item
+ *
+ * \retval ParsingState_ReadingItemType     Waiting for more data
+ * \retval ParsingState_PiTarget            Found a Processing Instruction item type
+ * \retval ParsingState_ElementName         Found an Element item type
+ * \retval ParsingState_Comment             Found a Comment item type
+ * \retval ParsingState_DocumentTypeName    Found a Document Type item type
+ * \retval ParsingState_Error               Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingItemType()
+{
+    ParsingState nextState = ParsingState_ReadingItemType;
+
+    // Read data from the XML data buffer and parse it
+    bool finishParsing = false;
+
+    while (!m_xmlDataBuffer.empty() &&
+           !finishParsing)
+    {
+        const char value = m_xmlDataBuffer.read();
+        bool error = true;
+
+        if (m_parsingBufferPosition == 0U)
+        {
+            // Possible types: Processing Instruction, Document Type, Comment and Element
+            if (value == '?')
+            {
+                // Item type: Processing Instruction
+                clearParsingBuffer();
+                nextState = ParsingState_PiTarget;
+                finishParsing = true;
+            }
+            else if (value == '!')
+            {
+                // Possible types: Document Type and Comment
+                m_parsingBuffer.append(1U, value);
+                m_parsingBufferPosition = 1U;
+                error = false;
+            }
+            else
+            {
+                // Get unicode character
+                uint32_t unicodeCharacter = 0U;
+                size_t nextPosition = 0U;
+                Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
+                                                                      m_parsingBufferPosition,
+                                                                      &nextPosition,
+                                                                      &unicodeCharacter);
+
+                if (utfResult == Utf::Result_Success)
+                {
+                    if (XmlValidator::isNameStartChar(unicodeCharacter))
+                    {
+                        // Item type: Element
+                        m_parsingBufferPosition = nextPosition;
+                        nextState = ParsingState_ElementName;
+                        finishParsing = true;
+                    }
+                }
+                else if (utfResult == Utf::Result_Incomplete)
+                {
+                    // Wait for more data to get the complete multibyte unicode character
+                    error = false;
+                }
+                else
+                {
+                    // Error
+                }
+            }
+        }
+        else
+        {
+            // Possible types: document type and comment
+            m_parsingBuffer.append(1U, value);
+
+            const size_t size = m_parsingBuffer.size();
+            m_parsingBufferPosition = size;
+            bool searchForItemType = true;
+
+            // Check for Comment
+            if (size <= 3U)
+            {
+                if (m_parsingBuffer.compare(0U, size, "!--", size) == 0)
+                {
+                    if (size == 3U)
+                    {
+                        // Item type: Comment
+                        clearParsingBuffer();
+                        nextState = ParsingState_Comment;
+                        finishParsing = true;
+                    }
+                    else
+                    {
+                        // More data is needed
+                        error = false;
+                    }
+
+                    searchForItemType = false;
+                }
+            }
+
+            // Check for Document Type
+            if ((size <= 8U) && searchForItemType)
+            {
+                if (m_parsingBuffer.compare(0U, size, "!DOCTYPE", size) == 0)
+                {
+                    if (size == 8U)
+                    {
+                        // Item type: Document Type
+                        clearParsingBuffer();
+                        nextState = ParsingState_DocumentTypeName;
+                        finishParsing = true;
+                    }
+                    else
+                    {
+                        // More data is needed
+                        error = false;
+                    }
+
+                    searchForItemType = false;
+                }
+            }
+        }
+
+        // Check for error
+        if (error)
+        {
+            // Error, unexpected character
+            nextState = ParsingState_Error;
             break;
         }
     }
@@ -215,53 +404,26 @@ XmlReader::ParsingState XmlReader::executeParsingStateWaitingForStartOfItem()
 /**
  * Execute parsing state machine state: Waiting for start of item
  *
- * \retval ParsingState_ReadingItemType Waiting for more data
+ * \retval ParsingState_PiTarget   Waiting for more data
+ *
+ * \retval ParsingState_Error               Error occured
  */
-XmlReader::ParsingState XmlReader::executeParsingStateReadingItemType()
+XmlReader::ParsingState XmlReader::executeParsingStatePiTarget()
 {
-    ParsingState nextState = ParsingState_WaitingForStartOfItem;
+    ParsingState nextState = ParsingState_PiTarget;
 
     // Read data from the XML data buffer and parse it
-    while (!m_xmlDataBuffer.empty())
+    bool finishParsing = false;
+
+    while (!m_xmlDataBuffer.empty() &&
+           !finishParsing)
     {
-        // Read data and try to convert the parsed data to unicode character
-        const char data = m_xmlDataBuffer.read();
-        m_parsingBuffer.append(1U, data);
+        const char value = m_xmlDataBuffer.read();
+        bool error = true;
 
-        uint32_t unicodeCharacter = 0U;
-        Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-                                                              m_parsingBufferPosition,
-                                                              &m_parsingBufferPosition,
-                                                              &unicodeCharacter);
-
-        if (utfResult == Utf::Result_Success)
+        if (m_parsingBufferPosition == 0U)
         {
-            // Try to determine the item type
-            if (unicodeCharacter == (uint32_t)'?')
-            {
-                // Item type: Processing Instruction
-                clearParsingBuffer();
-                nextState = ParsingState_PiReadingPiTarget;
-                break;
-            }
-            else
-            {
-                // TODO: whitespace
-                // TODO: document type: "!DOCTYPE"
-                // TODO: comment: "!--"
-                // TODO: element start tag: "Name"
-                // TODO: ?
-            }
-        }
-        else if (utfResult == Utf::Result_Incomplete)
-        {
-            // Wait for more data
-        }
-        else
-        {
-            // Error
-            nextState = ParsingState_Error;
-            break;
+            // TODO: implement
         }
     }
 

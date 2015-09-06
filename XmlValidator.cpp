@@ -30,9 +30,6 @@
 
 using namespace MiniSaxCpp;
 
-static bool isNameStartChar(const uint32_t nameStartChar);
-static bool isNameChar(const uint32_t nameChar);
-static bool isChar(const uint32_t character);
 static bool parseDigit(const char digitCharacter, const uint32_t base, uint32_t *digitValue);
 static bool validateNumberInCharRefString(const std::string &str,
                                           const size_t startPosition,
@@ -47,216 +44,6 @@ static bool validateEntityRefString(const std::string &str,
 static bool validateReferenceString(const std::string &str,
                                     const size_t startPosition,
                                     size_t *nextCharacterPosition = NULL);
-
-/**
- * This function can be used to validate a "NameStartChar"
- *
- * \param nameStartChar Unicode character
- *
- * \retval true     NameStartChar is valid
- * \retval false    NameStartChar is not valid
- *
- * Allowed values for NameStartChar:
- *  - ':'
- *  - [A - Z]
- *  - '_'
- *  - [a - z]
- *  - [0xC0 - 0xD6]
- *  - [0xD8 - 0xF6]
- *  - [0xF8 - 0x2FF]
- *  - [0x370 - 0x37D]
- *  - [0x37F - 0x1FFF]
- *  - [0x200C - 0x200D]
- *  - [0x2070 - 0x218F]
- *  - [0x2C00 - 0x2FEF]
- *  - [0x3001 - 0xD7FF]
- *  - [0xF900 - 0xFDCF]
- *  - [0xFDF0 - 0xFFFD]
- *  - [0x10000 - 0xEFFFF]
- */
-static bool isNameStartChar(const uint32_t nameStartChar)
-{
-    bool valid = false;
-
-    if (nameStartChar == (uint32_t)':')
-    {
-        valid = true;
-    }
-    else if (((uint32_t)'A' <= nameStartChar) && (nameStartChar <= (uint32_t)'Z'))
-    {
-        valid = true;
-    }
-    else if (nameStartChar == (uint32_t)'_')
-    {
-        valid = true;
-    }
-    else if (((uint32_t)'a' <= nameStartChar) && (nameStartChar <= (uint32_t)'z'))
-    {
-        valid = true;
-    }
-    else if ((0xC0U <= nameStartChar) && (nameStartChar <= 0xD6U))
-    {
-        valid = true;
-    }
-    else if ((0xD8U <= nameStartChar) && (nameStartChar <= 0xF6U))
-    {
-        valid = true;
-    }
-    else if ((0xF8U <= nameStartChar) && (nameStartChar <= 0x2FF0U))
-    {
-        valid = true;
-    }
-    else if ((0x370U <= nameStartChar) && (nameStartChar <= 0x37DU))
-    {
-        valid = true;
-    }
-    else if ((0x37FU <= nameStartChar) && (nameStartChar <= 0x1FFFU))
-    {
-        valid = true;
-    }
-    else if ((0x200CU <= nameStartChar) && (nameStartChar <= 0x200DU))
-    {
-        valid = true;
-    }
-    else if ((0x2070U <= nameStartChar) && (nameStartChar <= 0x218FU))
-    {
-        valid = true;
-    }
-    else if ((0x2C00U <= nameStartChar) && (nameStartChar <= 0x2FEFU))
-    {
-        valid = true;
-    }
-    else if ((0x3001U <= nameStartChar) && (nameStartChar <= 0xD7FFU))
-    {
-        valid = true;
-    }
-    else if ((0xF900U <= nameStartChar) && (nameStartChar <= 0xFDCFU))
-    {
-        valid = true;
-    }
-    else if ((0xFDF0U <= nameStartChar) && (nameStartChar <= 0xFFFDU))
-    {
-        valid = true;
-    }
-    else if ((0x10000U <= nameStartChar) && (nameStartChar <= 0xEFFFFU))
-    {
-        valid = true;
-    }
-    else
-    {
-        // Error, invalid value
-    }
-
-    return valid;
-}
-
-/**
- * This function can be used to validate a "NameChar"
- *
- * \param nameChar  Unicode character
- *
- * \retval true     NameChar is valid
- * \retval false    NameChar is not valid
- *
- * Allowed values for NameChar:
- *  - NameStartChar
- *  - '-'
- *  - '.'
- *  - [0 - 9]
- *  - 0xB7
- *  - [0x0300 - 0x036F]
- *  - [0x203F - 0x2040]
- */
-static bool isNameChar(const uint32_t nameChar)
-{
-    bool valid = isNameStartChar(nameChar);
-
-    if (!valid)
-    {
-        if (nameChar == (uint32_t)'.')
-        {
-            valid = true;
-        }
-        else if (nameChar == (uint32_t)'-')
-        {
-            valid = true;
-        }
-        else if (((uint32_t)'0' <= nameChar) && (nameChar <= (uint32_t)'9'))
-        {
-            valid = true;
-        }
-        else if (nameChar == 0xB7U)
-        {
-            valid = true;
-        }
-        else if ((0x0300U <= nameChar) && (nameChar <= 0x036FU))
-        {
-            valid = true;
-        }
-        else if ((0x203FU <= nameChar) && (nameChar <= 0x2040U))
-        {
-            valid = true;
-        }
-        else
-        {
-            // Error, invalid value
-        }
-    }
-
-    return valid;
-}
-
-/**
- * This function can be used to validate a "Char"
- *
- * \param character Unicode character
- *
- * \retval true     Char is valid
- * \retval false    Char is not valid
- *
- * Allowed values for Char:
- *  - 0x9
- *  - 0xA
- *  - 0xD
- *  - [0x20 - 0xD7FF]
- *  - [0xE000 - 0xFFFD]
- *  - [0x10000 - 0x10FFFF]
- */
-static bool isChar(const uint32_t character)
-{
-    bool valid = false;
-
-    if (character == 0x09U)
-    {
-        valid = true;
-    }
-    else if (character == 0x0AU)
-    {
-        valid = true;
-    }
-    else if (character == 0x0DU)
-    {
-        valid = true;
-    }
-    else if ((0x20U <= character) && (character <= 0xD7FFU))
-    {
-        valid = true;
-    }
-    else if ((0xE000U <= character) && (character <= 0xFFFDU))
-    {
-        valid = true;
-    }
-    else if ((0x10000U <= character) && (character <= 0x10FFFFU))
-    {
-        valid = true;
-    }
-    else
-    {
-        // Error, invalid value
-    }
-
-    return valid;
-}
 
 /**
  * Parse digit
@@ -521,7 +308,7 @@ static bool validateEntityRefString(const std::string &str,
 
             if (result == Utf::Result_Success)
             {
-                if (isNameStartChar(unicodeCharacter))
+                if (XmlValidator::isNameStartChar(unicodeCharacter))
                 {
                     // NameStartChar is valid
                     valid = true;
@@ -555,7 +342,7 @@ static bool validateEntityRefString(const std::string &str,
                         break;
                     }
                     // Check for NameChar
-                    else if (isNameChar(unicodeCharacter))
+                    else if (XmlValidator::isNameChar(unicodeCharacter))
                     {
                         // NameChar is valid
                         valid = true;
@@ -601,6 +388,258 @@ static bool validateReferenceString(const std::string &str,
         {
             valid = validateEntityRefString(str, startPosition);
         }
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a whitespace character
+ *
+ * \param whitespaceChar    Unicode character
+ *
+ * \retval true     Whitespace character is valid
+ * \retval false    Whitespace character is not valid
+ *
+ * Allowed values for NameStartChar:
+ *  - 0x09
+ *  - 0x0A
+ *  - 0x0D
+ *  - 0x20
+ */
+bool XmlValidator::isWhitespace(const uint32_t whitespaceChar)
+{
+    bool valid = false;
+
+    if (whitespaceChar == 0x09U)
+    {
+        valid = true;
+    }
+    else if (whitespaceChar == 0x0AU)
+    {
+        valid = true;
+    }
+    else if (whitespaceChar == 0x0DU)
+    {
+        valid = true;
+    }
+    else if (whitespaceChar == 0x20U)
+    {
+        valid = true;
+    }
+    else
+    {
+        // Error, invalid value
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a "NameStartChar"
+ *
+ * \param nameStartChar Unicode character
+ *
+ * \retval true     NameStartChar is valid
+ * \retval false    NameStartChar is not valid
+ *
+ * Allowed values for NameStartChar:
+ *  - ':'
+ *  - [A - Z]
+ *  - '_'
+ *  - [a - z]
+ *  - [0xC0 - 0xD6]
+ *  - [0xD8 - 0xF6]
+ *  - [0xF8 - 0x2FF]
+ *  - [0x370 - 0x37D]
+ *  - [0x37F - 0x1FFF]
+ *  - [0x200C - 0x200D]
+ *  - [0x2070 - 0x218F]
+ *  - [0x2C00 - 0x2FEF]
+ *  - [0x3001 - 0xD7FF]
+ *  - [0xF900 - 0xFDCF]
+ *  - [0xFDF0 - 0xFFFD]
+ *  - [0x10000 - 0xEFFFF]
+ */
+bool XmlValidator::isNameStartChar(const uint32_t nameStartChar)
+{
+    bool valid = false;
+
+    if (nameStartChar == (uint32_t)':')
+    {
+        valid = true;
+    }
+    else if (((uint32_t)'A' <= nameStartChar) && (nameStartChar <= (uint32_t)'Z'))
+    {
+        valid = true;
+    }
+    else if (nameStartChar == (uint32_t)'_')
+    {
+        valid = true;
+    }
+    else if (((uint32_t)'a' <= nameStartChar) && (nameStartChar <= (uint32_t)'z'))
+    {
+        valid = true;
+    }
+    else if ((0xC0U <= nameStartChar) && (nameStartChar <= 0xD6U))
+    {
+        valid = true;
+    }
+    else if ((0xD8U <= nameStartChar) && (nameStartChar <= 0xF6U))
+    {
+        valid = true;
+    }
+    else if ((0xF8U <= nameStartChar) && (nameStartChar <= 0x2FF0U))
+    {
+        valid = true;
+    }
+    else if ((0x370U <= nameStartChar) && (nameStartChar <= 0x37DU))
+    {
+        valid = true;
+    }
+    else if ((0x37FU <= nameStartChar) && (nameStartChar <= 0x1FFFU))
+    {
+        valid = true;
+    }
+    else if ((0x200CU <= nameStartChar) && (nameStartChar <= 0x200DU))
+    {
+        valid = true;
+    }
+    else if ((0x2070U <= nameStartChar) && (nameStartChar <= 0x218FU))
+    {
+        valid = true;
+    }
+    else if ((0x2C00U <= nameStartChar) && (nameStartChar <= 0x2FEFU))
+    {
+        valid = true;
+    }
+    else if ((0x3001U <= nameStartChar) && (nameStartChar <= 0xD7FFU))
+    {
+        valid = true;
+    }
+    else if ((0xF900U <= nameStartChar) && (nameStartChar <= 0xFDCFU))
+    {
+        valid = true;
+    }
+    else if ((0xFDF0U <= nameStartChar) && (nameStartChar <= 0xFFFDU))
+    {
+        valid = true;
+    }
+    else if ((0x10000U <= nameStartChar) && (nameStartChar <= 0xEFFFFU))
+    {
+        valid = true;
+    }
+    else
+    {
+        // Error, invalid value
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a "NameChar"
+ *
+ * \param nameChar  Unicode character
+ *
+ * \retval true     NameChar is valid
+ * \retval false    NameChar is not valid
+ *
+ * Allowed values for NameChar:
+ *  - NameStartChar
+ *  - '-'
+ *  - '.'
+ *  - [0 - 9]
+ *  - 0xB7
+ *  - [0x0300 - 0x036F]
+ *  - [0x203F - 0x2040]
+ */
+bool XmlValidator::isNameChar(const uint32_t nameChar)
+{
+    bool valid = isNameStartChar(nameChar);
+
+    if (!valid)
+    {
+        if (nameChar == (uint32_t)'.')
+        {
+            valid = true;
+        }
+        else if (nameChar == (uint32_t)'-')
+        {
+            valid = true;
+        }
+        else if (((uint32_t)'0' <= nameChar) && (nameChar <= (uint32_t)'9'))
+        {
+            valid = true;
+        }
+        else if (nameChar == 0xB7U)
+        {
+            valid = true;
+        }
+        else if ((0x0300U <= nameChar) && (nameChar <= 0x036FU))
+        {
+            valid = true;
+        }
+        else if ((0x203FU <= nameChar) && (nameChar <= 0x2040U))
+        {
+            valid = true;
+        }
+        else
+        {
+            // Error, invalid value
+        }
+    }
+
+    return valid;
+}
+
+/**
+ * This function can be used to validate a "Char"
+ *
+ * \param character Unicode character
+ *
+ * \retval true     Char is valid
+ * \retval false    Char is not valid
+ *
+ * Allowed values for Char:
+ *  - 0x9
+ *  - 0xA
+ *  - 0xD
+ *  - [0x20 - 0xD7FF]
+ *  - [0xE000 - 0xFFFD]
+ *  - [0x10000 - 0x10FFFF]
+ */
+bool XmlValidator::isChar(const uint32_t character)
+{
+    bool valid = false;
+
+    if (character == 0x09U)
+    {
+        valid = true;
+    }
+    else if (character == 0x0AU)
+    {
+        valid = true;
+    }
+    else if (character == 0x0DU)
+    {
+        valid = true;
+    }
+    else if ((0x20U <= character) && (character <= 0xD7FFU))
+    {
+        valid = true;
+    }
+    else if ((0xE000U <= character) && (character <= 0xFFFDU))
+    {
+        valid = true;
+    }
+    else if ((0x10000U <= character) && (character <= 0x10FFFFU))
+    {
+        valid = true;
+    }
+    else
+    {
+        // Error, invalid value
     }
 
     return valid;

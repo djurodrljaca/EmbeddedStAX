@@ -35,6 +35,10 @@ namespace MiniSaxCpp
 {
 namespace XmlValidator
 {
+bool isWhitespace(const uint32_t whitespaceChar);
+bool isNameStartChar(const uint32_t nameStartChar);
+bool isNameChar(const uint32_t nameChar);
+bool isChar(const uint32_t character);
 bool validateNameString(const std::string &name);
 bool validateCommentString(const std::string &commentText);
 bool validatePiTargetString(const std::string &piTarget);

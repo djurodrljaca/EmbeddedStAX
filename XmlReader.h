@@ -63,7 +63,9 @@ private:
     // Private types
     enum DocumentState
     {
-        DocumentState_Prolog,
+        DocumentState_PrologXmlDeclaration,
+        DocumentState_PrologDocumentType,
+        DocumentState_PrologOther,
         DocumentState_Document,
         DocumentState_EndOfDocument,
         DocumentState_Error
@@ -74,8 +76,16 @@ private:
         ParsingState_WaitingForStartOfItem,
         ParsingState_ReadingItemType,
 
-        ParsingState_PiReadingPiTarget,
-        ParsingState_PiReadingPiValue,
+        ParsingState_PiTarget,
+        ParsingState_PiValue,
+
+        ParsingState_DocumentTypeName,
+        ParsingState_DocumentTypeValue,
+
+        ParsingState_Comment,
+
+        ParsingState_ElementName,
+        ParsingState_ElementAttribute,
 
         ParsingState_Error
     };
@@ -85,6 +95,7 @@ private:
     void clearParsingBuffer();
     ParsingState executeParsingStateWaitingForStartOfItem();
     ParsingState executeParsingStateReadingItemType();
+    ParsingState executeParsingStatePiTarget();
 
 private:
     // Private data
