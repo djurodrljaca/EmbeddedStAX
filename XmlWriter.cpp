@@ -90,6 +90,8 @@ bool XmlWriter::setXmlDeclaration()
 
     if (m_state == State_Empty)
     {
+        // TODO: add the "standalone" attribute?
+
         // Set XML Declaration string
         m_xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 

@@ -78,6 +78,11 @@ bool XmlItemParser::writeData(const char data)
  * \retval Result_Success       Start of an XML item found
  * \retval Result_Success       Whitespace character found
  * \retval Result_Error         Error occurred (invalid character read)
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * Start of item ::= < | S
+ * \endcode
  */
 XmlItemParser::Result XmlItemParser::parseStartOfItem(const XmlItemParser::Option option)
 {
@@ -130,9 +135,69 @@ XmlItemParser::Result XmlItemParser::parseStartOfItem(const XmlItemParser::Optio
                     {
                         // Error, invalid character read
                         finishParsing = true;
-                        break;
                     }
                 }
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return result;
+}
+
+/**
+ * Execute parser: Search for a end of an XML item
+ *
+ * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+ * \retval Result_Success       End of an XML item found
+ * \retval Result_Error         Error occurred (invalid character read)
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * End of item ::= >
+ * \endcode
+ */
+XmlItemParser::Result XmlItemParser::parseEndOfItem()
+{
+    Result result = Result_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read additional character if needed
+        if (m_parsingBuffer.empty())
+        {
+            if (m_xmlDataBuffer.empty())
+            {
+                // Wait for more data
+                finishParsing = true;
+                result = Result_NeedMoreData;
+            }
+            else
+            {
+                // Read data
+                const char value = m_xmlDataBuffer.read();
+                m_parsingBuffer.append(1U, value);
+            }
+        }
+
+        // Parse
+        if (!m_parsingBuffer.empty())
+        {
+            const char value = m_parsingBuffer.at(0U);
+
+            if (value == '>')
+            {
+                // Parsing finished: End of an XML item found
+                clearParsingBuffer();
+                m_terminationCharacter = (uint32_t)value;
+                result = Result_Success;
+                finishParsing = true;
+            }
+            else
+            {
+                // Error, invalid character read
+                finishParsing = true;
             }
         }
     }
@@ -153,6 +218,14 @@ XmlItemParser::Result XmlItemParser::parseStartOfItem(const XmlItemParser::Optio
  *
  * \note If Element item type is found then the parsing buffer MUST NOT be cleared as it will
  *       contain the character of the element's name!
+ *
+ * Valid item types:
+ * \code{.unparsed}
+ * Processing Instruction ::= ?
+ * Document Type          ::= !DOCTYPE
+ * Comment                ::= !--
+ * Element                ::= NameStartChar
+ * \endcode
  */
 XmlItemParser::Result XmlItemParser::parseItemType()
 {
@@ -175,10 +248,10 @@ XmlItemParser::Result XmlItemParser::parseItemType()
             if (m_position == 0U)
             {
                 // Parse first (unicode) character. Possible item types:
-                // - Processing Instruction: "?"
-                // - Document Type: "!DOCTYPE"
-                // - Comment: "!--"
-                // - Element: NameStartChar
+                // - Processing Instruction
+                // - Document Type
+                // - Comment
+                // - Element
                 if (value == '?')
                 {
                     // Item type: Processing Instruction
@@ -230,8 +303,8 @@ XmlItemParser::Result XmlItemParser::parseItemType()
             else
             {
                 // Parse the rest of (unicode) characters. Possible item types:
-                // - Document Type: "!DOCTYPE"
-                // - Comment: "!--"
+                // - Document Type
+                // - Comment
                 m_parsingBuffer.append(1U, value);
 
                 const size_t size = m_parsingBuffer.size();
@@ -304,6 +377,11 @@ XmlItemParser::Result XmlItemParser::parseItemType()
  * \retval Result_NeedMoreData  More data is needed to complete the parsing session
  * \retval Result_Success       Valid XML Name found
  * \retval Result_Error         Error occurred (invalid character read)
+ *
+ * Valid Name string format:
+ * \code{.unparsed}
+ * Name ::= NameStartChar (NameChar)*
+ * \endcode
  */
 XmlItemParser::Result XmlItemParser::parseName()
 {
@@ -392,6 +470,66 @@ XmlItemParser::Result XmlItemParser::parseName()
                     finishParsing = true;
                     break;
                 }
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return result;
+}
+
+/**
+ * Execute parser: Parse XML Processing Instruction's value item
+ *
+ * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+ * \retval Result_Success       Valid XML Processing Instruction's value found
+ * \retval Result_Error         Error occurred (invalid character read)
+ */
+XmlItemParser::Result XmlItemParser::parsePiValue()
+{
+    Result result = Result_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        if (m_xmlDataBuffer.empty())
+        {
+            // Wait for more data
+            finishParsing = true;
+            result = Result_NeedMoreData;
+        }
+        else
+        {
+            // Read and parse data
+            const char value = m_xmlDataBuffer.read();
+            m_parsingBuffer.append(1U, value);
+
+            if (XmlValidator::isChar((uint32_t)value))
+            {
+                // Check for "?>" sequence (m_position points to the last character in the buffer)
+                if ((value == '>') &&
+                    (m_parsingBuffer.at(m_position) == '?'))
+                {
+                    m_value = m_parsingBuffer.substr(0U, m_position);
+                    m_parsingBuffer.clear();
+                    m_parsingBuffer.append(1U, ">");
+                    m_position = 0U;
+                    m_terminationCharacter = (uint32_t)'?';
+                    result = Result_Success;
+                    finishParsing = true;
+                }
+                else
+                {
+                    // Not a "?>" sequence, continue parsing
+                    m_position++;
+                }
+            }
+            else
+            {
+                // Error, invalid character read
+                m_terminationCharacter = (uint32_t)value;
+                clearParsingBuffer();
+                finishParsing = true;
             }
         }
     }

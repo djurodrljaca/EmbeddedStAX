@@ -37,8 +37,10 @@ namespace MiniSaxCpp
  *
  * Supported XML items:
  *  - Start of XML item
+ *  - End of XML item
  *  - XML item type
  *  - Name
+ *  - PI's value
  *  - TODO: add others
  */
 class XmlItemParser
@@ -76,9 +78,10 @@ public:
     bool writeData(const char data);
 
     Result parseStartOfItem(const Option option);
+    Result parseEndOfItem();
     Result parseItemType();
     Result parseName();
-    // TODO: add "whitespace" parser
+    Result parsePiValue();
 
     std::string getValue() const;
     ItemType getItemType() const;

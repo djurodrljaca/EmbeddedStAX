@@ -59,6 +59,11 @@ public:
     std::string getName() const;
     std::string getValue() const;
 
+    bool isXmlDeclarationSet() const;
+    bool isXmlDeclarationSupported() const;
+    Common::XmlVersion getXmlVersion() const;
+    Common::XmlEncoding getXmlEncoding() const;
+
 private:
     // Private types
     enum DocumentState
@@ -78,6 +83,7 @@ private:
 
         ParsingState_PiTarget,
         ParsingState_PiValue,
+        ParsingState_PiEnd,
 
         ParsingState_DocumentTypeName,
         ParsingState_DocumentTypeValue,
@@ -95,6 +101,10 @@ private:
     ParsingState executeParsingStateWaitingForStartOfItem();
     ParsingState executeParsingStateReadingItemType();
     ParsingState executeParsingStatePiTarget();
+    ParsingState executeParsingStatePiValue();
+    ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
+
+    bool parseXmlDeclaration();
 
 private:
     // Private data
