@@ -5,12 +5,14 @@ set(minisaxcpp_SOURCES
         Common.cpp
         main.cpp
         Utf.cpp
+        XmlItemParser.cpp
         XmlReader.cpp
         XmlValidator.cpp
         XmlWriter.cpp)
 set(minisaxcpp_HEADERS
         Common.h
         Utf.h
+        XmlItemParser.h
         XmlReader.h
         XmlValidator.h
         XmlWriter.h)

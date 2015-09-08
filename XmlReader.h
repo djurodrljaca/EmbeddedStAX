@@ -28,13 +28,13 @@
 #ifndef MINISAXCPP_XMLREADER_H
 #define MINISAXCPP_XMLREADER_H
 
-#include "Common.h"
+#include "XmlItemParser.h"
 
 namespace MiniSaxCpp
 {
 /**
-  * XML Reader class can be used to parse a XML document
-  */
+ * XML Reader class can be used to parse a XML document
+ */
 class XmlReader
 {
 public:
@@ -92,7 +92,6 @@ private:
 
 private:
     // Private API
-    void clearParsingBuffer();
     ParsingState executeParsingStateWaitingForStartOfItem();
     ParsingState executeParsingStateReadingItemType();
     ParsingState executeParsingStatePiTarget();
@@ -101,9 +100,7 @@ private:
     // Private data
     DocumentState m_documentState;
 
-    Common::DataBuffer m_xmlDataBuffer;
-    std::string m_parsingBuffer;
-    size_t m_parsingBufferPosition;
+    XmlItemParser m_itemParser;
     ParsingState m_parsingState;
     ParsingResult m_lastParsingResult;
 
