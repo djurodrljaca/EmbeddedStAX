@@ -63,6 +63,7 @@ public:
     bool isXmlDeclarationSupported() const;
     Common::XmlVersion getXmlVersion() const;
     Common::XmlEncoding getXmlEncoding() const;
+    Common::XmlStandalone getXmlStandalone() const;
 
 private:
     // Private types
@@ -116,6 +117,7 @@ private:
 
     Common::XmlVersion m_xmlVersion;
     Common::XmlEncoding m_xmlEncoding;
+    Common::XmlStandalone m_xmlStandalone;
 
     std::string m_name;
     std::string m_value;

@@ -492,37 +492,46 @@ XmlItemParser::Result XmlItemParser::parsePiValue()
 
     do
     {
-        if (m_xmlDataBuffer.empty())
+        if (m_position >= m_parsingBuffer.size())
         {
-            // Wait for more data
-            finishParsing = true;
-            result = Result_NeedMoreData;
+            if (m_xmlDataBuffer.empty())
+            {
+                // Wait for more data
+                finishParsing = true;
+                result = Result_NeedMoreData;
+            }
+            else
+            {
+                // Read data
+                const char value = m_xmlDataBuffer.read();
+                m_parsingBuffer.append(1U, value);
+            }
         }
-        else
+
+        if (m_position < m_parsingBuffer.size())
         {
-            // Read and parse data
-            const char value = m_xmlDataBuffer.read();
-            m_parsingBuffer.append(1U, value);
+            const char value = m_parsingBuffer.at(m_position);
 
             if (XmlValidator::isChar((uint32_t)value))
             {
-                // Check for "?>" sequence (m_position points to the last character in the buffer)
-                if ((value == '>') &&
-                    (m_parsingBuffer.at(m_position) == '?'))
+                if (m_position > 0U)
                 {
-                    m_value = m_parsingBuffer.substr(0U, m_position);
-                    m_parsingBuffer.clear();
-                    m_parsingBuffer.append(1U, ">");
-                    m_position = 0U;
-                    m_terminationCharacter = (uint32_t)'?';
-                    result = Result_Success;
-                    finishParsing = true;
+                    const char previousValue = m_parsingBuffer.at(m_position - 1U);
+
+                    // Check for "?>" sequence
+                    if ((previousValue == '?') && (value == '>'))
+                    {
+                        m_value = m_parsingBuffer.substr(0U, m_position - 1U);
+                        m_parsingBuffer.clear();
+                        m_parsingBuffer.append(1U, '>');
+                        m_position = 0U;
+                        m_terminationCharacter = (uint32_t)'?';
+                        result = Result_Success;
+                        finishParsing = true;
+                    }
                 }
-                else
-                {
-                    // Not a "?>" sequence, continue parsing
-                    m_position++;
-                }
+
+                m_position++;
             }
             else
             {

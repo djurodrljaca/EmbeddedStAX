@@ -49,6 +49,14 @@ enum XmlEncoding
     XmlEncoding_Utf8
 };
 
+enum XmlStandalone
+{
+    XmlStandalone_None,
+    XmlStandalone_Unknown,
+    XmlStandalone_No,
+    XmlStandalone_Yes
+};
+
 enum QuotationMark
 {
     QuotationMark_Quote,

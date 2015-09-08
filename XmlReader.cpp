@@ -53,6 +53,7 @@ void XmlReader::clear()
 
     m_xmlVersion = Common::XmlVersion_None;
     m_xmlEncoding = Common::XmlEncoding_None;
+    m_xmlStandalone = Common::XmlStandalone_None;
 
     m_name.clear();
     m_value.clear();
@@ -203,7 +204,7 @@ XmlReader::ParsingResult XmlReader::parse()
                         break;
                     }
 
-                    case ParsingState_PiValue:
+                    case ParsingState_PiEnd:
                     {
                         // Execute another cycle
                         finishParsing = false;
@@ -331,7 +332,8 @@ bool XmlReader::isXmlDeclarationSet() const
     bool valid = false;
 
     if ((m_xmlVersion != Common::XmlVersion_None) &&
-        (m_xmlEncoding != Common::XmlEncoding_None))
+        (m_xmlEncoding != Common::XmlEncoding_None) &&
+        (m_xmlStandalone != Common::XmlStandalone_None))
     {
         valid = true;
     }
@@ -350,7 +352,8 @@ bool XmlReader::isXmlDeclarationSupported() const
     bool supported = true;
 
     if ((m_xmlVersion == Common::XmlVersion_Unknown) &&
-        (m_xmlEncoding == Common::XmlEncoding_Unknown))
+        (m_xmlEncoding == Common::XmlEncoding_Unknown) &&
+        (m_xmlStandalone == Common::XmlStandalone_None))
     {
         supported = false;
     }
@@ -359,9 +362,9 @@ bool XmlReader::isXmlDeclarationSupported() const
 }
 
 /**
- * Get XML version from the documents XML Declaration
+ * Get "version" from the documents XML Declaration
  *
- * \return XML version
+ * \return Version value
  */
 Common::XmlVersion XmlReader::getXmlVersion() const
 {
@@ -369,13 +372,23 @@ Common::XmlVersion XmlReader::getXmlVersion() const
 }
 
 /**
- * Get XML encoding from the documents XML Declaration
+ * Get "encoding" from the documents XML Declaration
  *
- * \return XML encoding
+ * \return Encoding value
  */
 Common::XmlEncoding XmlReader::getXmlEncoding() const
 {
     return m_xmlEncoding;
+}
+
+/**
+ * Get "standalone" value from the documents XML Declaration
+ *
+ * \return Standalone value
+ */
+Common::XmlStandalone XmlReader::getXmlStandalone() const
+{
+    return m_xmlStandalone;
 }
 
 /**
@@ -705,20 +718,31 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiEnd(XmlReader::ParsingRe
                 case XmlItemParser::Result_Success:
                 {
                     // Check if processing instruction is the documents XML Declaration
-                    *newResult = ParsingResult_ProcessingInstruction;
+                    nextState = ParsingState_WaitingForStartOfItem;
+                    ParsingResult result = ParsingResult_ProcessingInstruction;
 
                     if (m_name.size() == 3U)
                     {
-                        if ((m_name.at(0U) != 'x') && (m_name.at(0U) != 'X') &&
-                            (m_name.at(1U) != 'm') && (m_name.at(1U) != 'M') &&
-                            (m_name.at(2U) != 'l') && (m_name.at(2U) != 'L'))
+                        if (((m_name.at(0U) == 'x') || (m_name.at(0U) == 'X')) &&
+                            ((m_name.at(1U) == 'm') || (m_name.at(1U) == 'M')) &&
+                            ((m_name.at(2U) == 'l') || (m_name.at(2U) == 'L')))
                         {
                             // Parse XML Declaration from the processing instruction's value
                             if (parseXmlDeclaration())
                             {
-                                *newResult = ParsingResult_XmlDeclaration;
+                                result = ParsingResult_XmlDeclaration;
+                            }
+                            else
+                            {
+                                // Error, null pointer
+                                nextState = ParsingState_Error;
                             }
                         }
+                    }
+
+                    if (nextState != ParsingState_Error)
+                    {
+                        *newResult = result;
                     }
 
                     finishParsing = true;
@@ -757,11 +781,275 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiEnd(XmlReader::ParsingRe
  */
 bool XmlReader::parseXmlDeclaration()
 {
-    bool success = false;
+    bool success = true;
+    Common::XmlVersion xmlVersion = Common::XmlVersion_None;
+    Common::XmlEncoding xmlEncoding = Common::XmlEncoding_None;
+    Common::XmlStandalone xmlStandalone = Common::XmlStandalone_None;
+    size_t position = 0U;
 
-    // TODO; implement
-    m_xmlVersion = Common::XmlVersion_Unknown;
-    m_xmlEncoding = Common::XmlEncoding_Unknown;
+    while (success && (position < m_value.size()))
+    {
+        // Find start of name
+        for (; position < m_value.size(); position++)
+        {
+            const char value = m_value.at(position);
+
+            if (XmlValidator::isWhitespace((uint32_t)value) == false)
+            {
+                break;
+            }
+        }
+
+        if (position < m_value.size())
+        {
+            // Read attribute name
+            enum Attribute
+            {
+                Attribute_None,
+                Attribute_Version,
+                Attribute_Encoding,
+                Attribute_Standalone,
+            };
+
+            Attribute attribute = Attribute_None;
+
+            if (success)
+            {
+                const std::string nameVersion = "version";
+                const std::string nameEncoding = "encoding";
+                const std::string nameStandalone = "standalone";
+
+                if (m_value.compare(position,
+                                    nameVersion.size(),
+                                    nameVersion,
+                                    0U,
+                                    nameVersion.size()) == 0)
+                {
+                    // Validate position of the parameter
+                    if ((xmlVersion == Common::XmlVersion_None) &&
+                        (xmlEncoding == Common::XmlEncoding_None) &&
+                        (xmlStandalone == Common::XmlStandalone_None))
+                    {
+                        // Version comes before the other two (optional) attributes
+                        position = position + nameVersion.size();
+                        attribute = Attribute_Version;
+                    }
+                    else
+                    {
+                        // Error, version must be the first attribute
+                        success = false;
+                    }
+                }
+                else if (m_value.compare(position,
+                                         nameEncoding.size(),
+                                         nameEncoding,
+                                         0U,
+                                         nameEncoding.size()) == 0)
+                {
+                    // Validate position of the parameter
+                    if ((xmlVersion != Common::XmlVersion_None) &&
+                        (xmlEncoding == Common::XmlEncoding_None) &&
+                        (xmlStandalone == Common::XmlStandalone_None))
+                    {
+                        // Encoding is an optional attribute and, if present, it must come after version
+                        // and before standalone
+                        position = position + nameEncoding.size();
+                        attribute = Attribute_Encoding;
+                    }
+                    else
+                    {
+                        // Error, version must be the first attribute
+                        success = false;
+                    }
+                }
+                else if (m_value.compare(position,
+                                         nameStandalone.size(),
+                                         nameStandalone,
+                                         0U,
+                                         nameStandalone.size()) == 0)
+                {
+                    // Validate position of the parameter
+                    if ((xmlVersion != Common::XmlVersion_None) &&
+                        (xmlStandalone == Common::XmlStandalone_None))
+                    {
+                        // Standalone is an optional attribute and, if present, it must come after
+                        // version and, if present, after encoding
+                        position = position + nameStandalone.size();
+                        attribute = Attribute_Standalone;
+                    }
+                    else
+                    {
+                        // Error, version must be the first attribute
+                        success = false;
+                    }
+                }
+                else
+                {
+                    // Error
+                    success = false;
+                }
+
+                // Find start of value
+                if (success)
+                {
+                    success = false;
+
+                    while (position < m_value.size())
+                    {
+                        const char value = m_value.at(position);
+
+                        if (value == '=')
+                        {
+                            // Found start of value, point to next character
+                            position++;
+                            success = true;
+                            break;
+                        }
+                        else if (XmlValidator::isWhitespace((uint32_t)value))
+                        {
+                            // Ignore whitespace
+                        }
+                        else
+                        {
+                            // Error, invalid character
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Get quote character
+            char quote = '\0';
+
+            if (success)
+            {
+                success = false;
+
+                while (position < m_value.size())
+                {
+                    const char value = m_value.at(position);
+
+                    if (value == '"')
+                    {
+                        // Found quote character, point to next character
+                        quote = '"';
+                        position++;
+                        success = true;
+                        break;
+                    }
+                    else if (value == '\'')
+                    {
+                        // Found quote character, point to next character
+                        quote = '\'';
+                        position++;
+                        success = true;
+                        break;
+                    }
+                    else
+                    {
+                        // Error, invalid character
+                        break;
+                    }
+                }
+            }
+
+            // Read attribute's value
+            std::string attributeValue;
+
+            if (success)
+            {
+                success = false;
+                size_t startPosition = position;
+
+                for (; position < m_value.size(); position++)
+                {
+                    const char value = m_value.at(position);
+
+                    if (value == quote)
+                    {
+                        // Found end of value, point to next character and save the value
+                        const size_t size = position - startPosition;
+                        attributeValue = m_value.substr(startPosition, size);
+
+                        position++;
+                        success = true;
+                        break;
+                    }
+                }
+            }
+
+            // Evaluate value
+            if (success)
+            {
+                switch (attribute)
+                {
+                    case Attribute_Version:
+                    {
+                        // Check for valid versions
+                        if (attributeValue == "1.0")
+                        {
+                            xmlVersion = Common::XmlVersion_v1_0;
+                        }
+                        else
+                        {
+                            xmlVersion = Common::XmlVersion_Unknown;
+                        }
+                        break;
+                    }
+
+                    case Attribute_Encoding:
+                    {
+                        // Check for valid encodings
+                        if (((attributeValue.at(0U) == 'U') || (attributeValue.at(0U) == 'u')) &&
+                            ((attributeValue.at(1U) == 'T') || (attributeValue.at(1U) == 't')) &&
+                            ((attributeValue.at(2U) == 'F') || (attributeValue.at(2U) == 'f')) &&
+                            (attributeValue.at(3U) == '-') &&
+                            (attributeValue.at(4U) == '8'))
+                        {
+                            xmlEncoding = Common::XmlEncoding_Utf8;
+                        }
+                        else
+                        {
+                            xmlEncoding = Common::XmlEncoding_Unknown;
+                        }
+                        break;
+                    }
+
+                    case Attribute_Standalone:
+                    {
+                        // Check for valid standalone
+                        if (attributeValue == "yes")
+                        {
+                            xmlStandalone = Common::XmlStandalone_Yes;
+                        }
+                        else if (attributeValue == "no")
+                        {
+                            xmlStandalone = Common::XmlStandalone_No;
+                        }
+                        else
+                        {
+                            xmlStandalone = Common::XmlStandalone_Unknown;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid name
+                        success = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (success)
+    {
+        m_xmlVersion = xmlVersion;
+        m_xmlEncoding = xmlEncoding;
+        m_xmlStandalone = xmlStandalone;
+    }
 
     return success;
 }

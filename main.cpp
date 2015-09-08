@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include "XmlWriter.h"
+#include "XmlReader.h"
 
 using namespace MiniSaxCpp;
 
@@ -35,6 +36,11 @@ int main(int argc, char **argv)
     XmlWriter xmlWriter;
 
     bool success = xmlWriter.setXmlDeclaration();
+
+    if (success)
+    {
+        success = xmlWriter.addProcessingInstruction("piTarget", "PI's value");
+    }
 
     if (success)
     {
@@ -176,9 +182,61 @@ int main(int argc, char **argv)
         success = xmlWriter.addComment("comment text");
     }
 
+    //----------------------------------------------------------------------------------------------
+
     if (success)
     {
-        std::cout << "XML document:" << std::endl << xmlWriter.getXmlString() << std::endl;
+        const std::string xmlString = xmlWriter.getXmlString();
+
+        std::cout << "XML document size:" << xmlString.size() << std::endl;
+        std::cout << "XML document:" << std::endl << xmlString << std::endl;
+
+        const size_t bufferSize = 5000U;
+
+        XmlReader xmlReader(bufferSize);
+        size_t position = 0U;
+
+        while (success && (position < xmlString.size()))
+        {
+            XmlReader::ParsingResult result = xmlReader.parse();
+
+            switch (result)
+            {
+                case XmlReader::ParsingResult_NeedMoreData:
+                {
+                    success = xmlReader.writeData(xmlString.at(position));
+
+                    if (success)
+                    {
+                        position++;
+                    }
+                    else
+                    {
+                        position++;
+                    }
+                    break;
+                }
+
+                case XmlReader::ParsingResult_XmlDeclaration:
+                {
+                    std::cout << "XML declaration" << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_ProcessingInstruction:
+                {
+                    std::cout << "XML PI" << std::endl;
+                    break;
+                }
+
+                default:
+                {
+                    std::cout << "default" << std::endl;
+                    success = false;
+                    break;
+                }
+            }
+        }
     }
 
     return 0;
