@@ -188,8 +188,8 @@ int main(int argc, char **argv)
     {
         const std::string xmlString = xmlWriter.getXmlString();
 
-        std::cout << "XML document size:" << xmlString.size() << std::endl;
-        std::cout << "XML document:" << std::endl << xmlString << std::endl;
+        std::cout << "XML document size: " << xmlString.size() << std::endl;
+        std::cout << "XML document: " << std::endl << xmlString << std::endl;
 
         const size_t bufferSize = 5000U;
 
@@ -210,28 +210,26 @@ int main(int argc, char **argv)
                     {
                         position++;
                     }
-                    else
-                    {
-                        position++;
-                    }
                     break;
                 }
 
                 case XmlReader::ParsingResult_XmlDeclaration:
                 {
-                    std::cout << "XML declaration" << std::endl;
+                    std::cout << "XML declaration: " << xmlReader.getName() << ":"
+                              << xmlReader.getValue() << std::endl;
                     break;
                 }
 
                 case XmlReader::ParsingResult_ProcessingInstruction:
                 {
-                    std::cout << "XML PI" << std::endl;
+                    std::cout << "XML PI: " << xmlReader.getName() << ":" << xmlReader.getValue()
+                              << std::endl;
                     break;
                 }
 
                 default:
                 {
-                    std::cout << "default" << std::endl;
+                    std::cout << "default: result: " << result << std::endl;
                     success = false;
                     break;
                 }

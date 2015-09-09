@@ -77,10 +77,10 @@ public:
     void clear();
     bool writeData(const char data);
 
-    Result parseStartOfItem(const Option option);
+    Result parseStartOfItem(const Option option = Option_None);
     Result parseEndOfItem();
     Result parseItemType();
-    Result parseName();
+    Result parseName(const Option option = Option_None);
     Result parsePiValue();
 
     std::string getValue() const;
@@ -90,6 +90,9 @@ public:
 private:
     // Private API
     void clearParsingBuffer();
+    void eraseFromParsingBuffer(const size_t size);
+    bool readData();
+    bool readDataIfNeeded();
 
 private:
     // Private data

@@ -88,6 +88,7 @@ private:
 
         ParsingState_DocumentTypeName,
         ParsingState_DocumentTypeValue,
+        ParsingState_DocumentTypeEnd,
 
         ParsingState_Comment,
 
@@ -101,9 +102,15 @@ private:
     // Private API
     ParsingState executeParsingStateWaitingForStartOfItem();
     ParsingState executeParsingStateReadingItemType();
+
     ParsingState executeParsingStatePiTarget();
     ParsingState executeParsingStatePiValue();
     ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
+
+    ParsingState executeParsingStateDocumentTypeName();
+    ParsingState executeParsingStateDocumentTypeValue();
+    ParsingState executeParsingStateDocumentTypeEnd();
+
 
     bool parseXmlDeclaration();
 

@@ -594,7 +594,7 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiTarget()
                 }
                 else
                 {
-                    // Error, invalid separator
+                    // Error, invalid termination character
                     nextState = ParsingState_Error;
                 }
 
@@ -654,7 +654,7 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiValue()
                 }
                 else
                 {
-                    // Error, invalid character
+                    // Error, invalid termination character
                     nextState = ParsingState_Error;
                 }
 
@@ -689,7 +689,7 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiValue()
  * \param[out] newResult    New parsing result
  *
  * \retval ParsingState_PiEnd                   Waiting for more data
- * \retval ParsingState_WaitingForStartOfItem   End of PI'Target's value found
+ * \retval ParsingState_WaitingForStartOfItem   End of PI's value found
  * \retval ParsingState_Error                   Error occured
  *
  * The new parsing result will only be set if end of processing instruction was found and if it is
@@ -767,6 +767,83 @@ XmlReader::ParsingState XmlReader::executeParsingStatePiEnd(XmlReader::ParsingRe
         }
         while (!finishParsing);
     }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Document Type Name
+ *
+ * \retval ParsingState_DocumentTypeName    Waiting for more data
+ * \retval ParsingState_DocumentTypeValue   End of Name found
+ * \retval ParsingState_DocumentTypeEnd     End of Name with empty value found
+ * \retval ParsingState_Error               Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateDocumentTypeName()
+{
+    ParsingState nextState = ParsingState_DocumentTypeName;
+
+    bool finishParsing = false;
+
+    do
+    {
+        XmlItemParser::Result itemParserResult = m_itemParser.parseName(XmlItemParser::Option_None);
+
+        switch (itemParserResult)
+        {
+            case XmlItemParser::Result_Success:
+            {
+                // Check termination character
+                const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
+
+                if (terminationCharacter == (uint32_t)'>')
+                {
+                    // End of Document Type found with empty value found
+                    m_name = m_itemParser.getValue();
+                    nextState = ParsingState_DocumentTypeEnd;
+                }
+                else if (XmlValidator::isWhitespace(terminationCharacter))
+                {
+                    // End of Document Type name found, start parsing Document Type value
+                    m_name = m_itemParser.getValue();
+                    nextState = ParsingState_DocumentTypeValue;
+                }
+                else
+                {
+                    // Error, invalid termination character
+                    nextState = ParsingState_Error;
+                }
+
+                finishParsing = true;
+                break;
+            }
+
+            case XmlItemParser::Result_NeedMoreData:
+            {
+                // Wait for more data
+                finishParsing = true;
+                break;
+            }
+
+            default:
+            {
+                // Error
+                nextState = ParsingState_Error;
+                finishParsing = true;
+                break;
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+XmlReader::ParsingState XmlReader::executeParsingStateDocumentTypeValue()
+{
+    ParsingState nextState = ParsingState_DocumentTypeValue;
+
+    // TODO: continue implementation from here!
 
     return nextState;
 }
