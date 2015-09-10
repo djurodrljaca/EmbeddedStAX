@@ -191,7 +191,7 @@ int main(int argc, char **argv)
         std::cout << "XML document size: " << xmlString.size() << std::endl;
         std::cout << "XML document: " << std::endl << xmlString << std::endl;
 
-        const size_t bufferSize = 5000U;
+        const size_t bufferSize = 100U;
 
         XmlReader xmlReader(bufferSize);
         size_t position = 0U;
@@ -224,6 +224,18 @@ int main(int argc, char **argv)
                 {
                     std::cout << "XML PI: " << xmlReader.getName() << ":" << xmlReader.getValue()
                               << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_DocumentType:
+                {
+                    std::cout << "XML DOCTYPE: " << xmlReader.getName() << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_Comment:
+                {
+                    std::cout << "XML Comment: " << xmlReader.getValue() << std::endl;
                     break;
                 }
 

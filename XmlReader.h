@@ -44,7 +44,9 @@ public:
         ParsingResult_Error,
         ParsingResult_NeedMoreData,
         ParsingResult_XmlDeclaration,
-        ParsingResult_ProcessingInstruction
+        ParsingResult_ProcessingInstruction,
+        ParsingResult_DocumentType,
+        ParsingResult_Comment
     };
 
 public:
@@ -87,7 +89,6 @@ private:
         ParsingState_PiEnd,
 
         ParsingState_DocumentTypeName,
-        ParsingState_DocumentTypeValue,
         ParsingState_DocumentTypeEnd,
 
         ParsingState_Comment,
@@ -108,9 +109,9 @@ private:
     ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
 
     ParsingState executeParsingStateDocumentTypeName();
-    ParsingState executeParsingStateDocumentTypeValue();
     ParsingState executeParsingStateDocumentTypeEnd();
 
+    ParsingState executeParsingStateComment();
 
     bool parseXmlDeclaration();
 

@@ -75,13 +75,16 @@ public:
     XmlItemParser(const size_t dataBufferSize);
 
     void clear();
+    void clearInternalState();
     bool writeData(const char data);
 
     Result parseStartOfItem(const Option option = Option_None);
-    Result parseEndOfItem();
     Result parseItemType();
     Result parseName(const Option option = Option_None);
     Result parsePiValue();
+    Result parseEndOfPi();
+    Result parseEndOfDocumentType();
+    Result parseComment();
 
     std::string getValue() const;
     ItemType getItemType() const;
@@ -103,6 +106,7 @@ private:
     std::string m_value;
     ItemType m_itemType;
     uint32_t m_terminationCharacter;
+    bool m_openTagCharacterFound;
 };
 }
 
