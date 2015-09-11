@@ -57,6 +57,10 @@ void XmlReader::clear()
 
     m_name.clear();
     m_value.clear();
+
+    m_documentTypeName.clear();
+
+    m_openedElementNameList.clear();
 }
 
 /**
@@ -343,6 +347,80 @@ XmlReader::ParsingResult XmlReader::parse()
                     {
                         // Parsing is finished
                         result = ParsingResult_Comment;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_ElementName:
+            {
+                nextState = executeParsingStateElementName();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ElementName:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_ElementAttribute:
+                    case ParsingState_ElementContent:
+                    case ParsingState_ElementEndEmpty:
+                    {
+                        // Parsing is finished, start of element found
+                        if ((m_documentState == DocumentState_PrologXmlDeclaration) ||
+                            (m_documentState == DocumentState_PrologDocumentType) ||
+                            (m_documentState == DocumentState_PrologOther))
+                        {
+                            // Start of root element found
+                            bool validRootElementName = false;
+
+                            if (m_documentTypeName.empty())
+                            {
+                                // If document type is not set then the root element name shall not
+                                // be validated
+                                validRootElementName = true;
+                            }
+                            else if (m_name == m_documentTypeName)
+                            {
+                                // Root element name is valid
+                                validRootElementName = true;
+                            }
+                            else
+                            {
+                                // Error, invalid document type
+                                nextState = ParsingState_Error;
+                            }
+
+                            if (validRootElementName)
+                            {
+                                m_openedElementNameList.push_back(m_name);
+                                result = ParsingResult_StartOfRootElement;
+                                m_documentState = DocumentState_Document;
+                            }
+                        }
+                        else if (m_documentState == DocumentState_Document)
+                        {
+                            // Start of child element found
+                            m_openedElementNameList.push_back(m_name);
+                            result = ParsingResult_StartOfElement;
+                        }
+                        else
+                        {
+                            // Error, invalid document state
+                            nextState = ParsingState_Error;
+                        }
                         break;
                     }
 
@@ -938,7 +1016,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateDocumentTypeName()
  *
  * \retval ParsingState_DocumentTypeEnd         Waiting for more data
  * \retval ParsingState_WaitingForStartOfItem   End of PI's value found
- * \retval ParsingState_Error           Error occured
+ * \retval ParsingState_Error                   Error occured
  *
  * \note This function will ignore all characters between Document Type name and the first '>'
  *       character. If there is a '>' character between the Document Type name and the end of
@@ -964,6 +1042,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateDocumentTypeEnd()
                 m_documentState = DocumentState_PrologOther;
 
                 // End of Document Type found
+                m_documentTypeName = m_name;
                 m_itemParser.clearInternalState();
                 nextState = ParsingState_WaitingForStartOfItem;
             }
@@ -1020,6 +1099,75 @@ XmlReader::ParsingState XmlReader::executeParsingStateComment()
                 // the XML declaration has to be located at the start of the XML string otherwise it
                 // is not allowed to occur in the XML string.
                 m_documentState = DocumentState_PrologDocumentType;
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            break;
+        }
+
+        default:
+        {
+            // Error
+            nextState = ParsingState_Error;
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Element name
+ *
+ * \retval ParsingState_ElementName         Waiting for more data
+ * \retval ParsingState_ElementAttribute    End of Element name found
+ * \retval ParsingState_ElementContent      End of Element name without attributes found
+ * \retval ParsingState_ElementEndEmpty     End of Element name in an empty element found
+ * \retval ParsingState_Error               Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateElementName()
+{
+    ParsingState nextState = ParsingState_ElementName;
+    XmlItemParser::Result itemParserResult = m_itemParser.parseName();
+
+    switch (itemParserResult)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Check termination character
+            const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
+
+            if (XmlValidator::isWhitespace(terminationCharacter))
+            {
+                // End of element name found, start parsing attributes
+                m_name = m_itemParser.getValue();
+                m_itemParser.clearInternalState();
+                nextState = ParsingState_ElementAttribute;
+            }
+            else if (terminationCharacter == (uint32_t)'>')
+            {
+                // End of element name found, start parsing content
+                m_name = m_itemParser.getValue();
+                m_itemParser.eraseFromParsingBuffer(1U);
+                m_itemParser.clearInternalState();
+                nextState = ParsingState_ElementContent;
+            }
+            else if (terminationCharacter == (uint32_t)'/')
+            {
+                // End of element name found, start parsing end of empty element
+                m_name = m_itemParser.getValue();
+                m_itemParser.eraseFromParsingBuffer(1U);
+                m_itemParser.clearInternalState();
+                nextState = ParsingState_ElementEndEmpty;
+            }
+            else
+            {
+                // Error, invalid termination character
+                nextState = ParsingState_Error;
             }
             break;
         }

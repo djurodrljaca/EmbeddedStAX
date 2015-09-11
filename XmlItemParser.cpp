@@ -67,6 +67,19 @@ void XmlItemParser::clearInternalState()
 }
 
 /**
+ * Erase characters from parsing buffer
+ *
+ * \param size  Number of characters to erase
+ *
+ * \note Parsing position will be set to 0
+ */
+void XmlItemParser::eraseFromParsingBuffer(const size_t size)
+{
+    m_parsingBuffer.erase(0U, size);
+    m_position = 0U;
+}
+
+/**
  * Write data to the data buffer
  *
  * \param data  Data to write
@@ -854,19 +867,6 @@ uint32_t XmlItemParser::getTerminationCharacter()
 void XmlItemParser::clearParsingBuffer()
 {
     m_parsingBuffer.clear();
-    m_position = 0U;
-}
-
-/**
- * Erase characters from parsing buffer
- *
- * \param size  Number of characters to erase
- *
- * \note Parsing position will be set to 0
- */
-void XmlItemParser::eraseFromParsingBuffer(const size_t size)
-{
-    m_parsingBuffer.erase(0U, size);
     m_position = 0U;
 }
 

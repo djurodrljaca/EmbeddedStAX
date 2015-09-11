@@ -239,6 +239,18 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                case XmlReader::ParsingResult_StartOfRootElement:
+                {
+                    std::cout << "XML Start Of Root Element: " << xmlReader.getName() << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_StartOfElement:
+                {
+                    std::cout << "XML Start Of Element: " << xmlReader.getName() << std::endl;
+                    break;
+                }
+
                 default:
                 {
                     std::cout << "default: result: " << result << std::endl;

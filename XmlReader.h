@@ -29,6 +29,7 @@
 #define MINISAXCPP_XMLREADER_H
 
 #include "XmlItemParser.h"
+#include <list>
 
 namespace MiniSaxCpp
 {
@@ -46,7 +47,9 @@ public:
         ParsingResult_XmlDeclaration,
         ParsingResult_ProcessingInstruction,
         ParsingResult_DocumentType,
-        ParsingResult_Comment
+        ParsingResult_Comment,
+        ParsingResult_StartOfRootElement,
+        ParsingResult_StartOfElement
     };
 
 public:
@@ -95,6 +98,8 @@ private:
 
         ParsingState_ElementName,
         ParsingState_ElementAttribute,
+        ParsingState_ElementContent,
+        ParsingState_ElementEndEmpty,
 
         ParsingState_Error
     };
@@ -113,6 +118,8 @@ private:
 
     ParsingState executeParsingStateComment();
 
+    ParsingState executeParsingStateElementName();
+
     bool parseXmlDeclaration();
 
 private:
@@ -129,6 +136,10 @@ private:
 
     std::string m_name;
     std::string m_value;
+
+    std::string m_documentTypeName;
+
+    std::list<std::string> m_openedElementNameList;
 };
 }
 

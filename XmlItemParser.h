@@ -76,6 +76,7 @@ public:
 
     void clear();
     void clearInternalState();
+    void eraseFromParsingBuffer(const size_t size);
     bool writeData(const char data);
 
     Result parseStartOfItem(const Option option = Option_None);
@@ -93,7 +94,6 @@ public:
 private:
     // Private API
     void clearParsingBuffer();
-    void eraseFromParsingBuffer(const size_t size);
     bool readData();
     bool readDataIfNeeded();
 
