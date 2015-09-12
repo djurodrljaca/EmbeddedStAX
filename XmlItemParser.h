@@ -28,7 +28,7 @@
 #ifndef MINISAXCPP_XMLITEMPARSER_H
 #define MINISAXCPP_XMLITEMPARSER_H
 
-#include "Common.h"
+#include "UnicodeCircularBuffer.h"
 
 namespace MiniSaxCpp
 {
@@ -71,42 +71,72 @@ public:
         ItemType_Element
     };
 
+    enum Action
+    {
+        Action_FindStartOfItem,
+        Action_ReadItemType,
+    };
+
 public:
     XmlItemParser(const size_t dataBufferSize);
 
     void clear();
-    void clearInternalState();
-    void eraseFromParsingBuffer(const size_t size);
     bool writeData(const char data);
 
-    Result parseStartOfItem(const Option option = Option_None);
-    Result parseItemType();
-    Result parseName(const Option option = Option_None);
-    Result parsePiValue();
-    Result parseEndOfPi();
-    Result parseEndOfDocumentType();
-    Result parseComment();
+    bool configure(const Action action, const Option option = Option_None);
+    Result execute();
 
-    std::string getValue() const;
-    ItemType getItemType() const;
     uint32_t getTerminationCharacter();
+
+private:
+    // Private types
+    enum State
+    {
+        State_Idle,
+
+        State_WaitForStartOfItem,
+        State_StartOfItem,
+
+        State_Error
+    };
 
 private:
     // Private API
     void clearParsingBuffer();
-    bool readData();
-    bool readDataIfNeeded();
+    void eraseFromParsingBuffer(const size_t size);
+
+    // State: WaitForStartOfItem
+    bool checkActionFindStartOfItem(Option option);
+    State executeStateWaitForStartOfItem();
 
 private:
     // Private data
-    Common::DataBuffer m_xmlDataBuffer;
-    std::string m_parsingBuffer;
+    UnicodeCircularBuffer m_xmlDataBuffer;
+    UnicodeString m_parsingBuffer;
     size_t m_position;
 
-    std::string m_value;
-    ItemType m_itemType;
+    Option m_option;
+    State m_state;
     uint32_t m_terminationCharacter;
-    bool m_openTagCharacterFound;
+
+//    void clearInternalState();
+//    Result parseStartOfItem(const Option option = Option_None);
+//    Result parseItemType();
+//    Result parseName(const Option option = Option_None);
+//    Result parsePiValue();
+//    Result parseEndOfPi();
+//    Result parseEndOfDocumentType();
+//    Result parseComment();
+
+//    std::string getValue() const;
+//    ItemType getItemType() const;
+
+//    bool readData();
+//    bool readDataIfNeeded();
+
+//    std::string m_value;
+//    ItemType m_itemType;
+//    bool m_openTagCharacterFound;
 };
 }
 

@@ -31,8 +31,8 @@
 
 using namespace MiniSaxCpp;
 
-static const std::string s_itemTypeComment("!--");
-static const std::string s_itemTypeDocumentType("!DOCTYPE");
+//static const std::string s_itemTypeComment("!--");
+//static const std::string s_itemTypeDocumentType("!DOCTYPE");
 
 /**
  * Constructor
@@ -50,33 +50,9 @@ void XmlItemParser::clear()
 {
     m_xmlDataBuffer.clear();
     clearParsingBuffer();
-    clearInternalState();
-}
-
-/**
- * Clear internal state
- *
- * \note Buffers are not cleared! For that the XmlItemParser::clear() method should be called.
- */
-void XmlItemParser::clearInternalState()
-{
-    m_value.clear();
-    m_itemType = ItemType_None;
+    m_option = Option_None;
+    m_state = State_Idle;
     m_terminationCharacter = 0U;
-    m_openTagCharacterFound = false;
-}
-
-/**
- * Erase characters from parsing buffer
- *
- * \param size  Number of characters to erase
- *
- * \note Parsing position will be set to 0
- */
-void XmlItemParser::eraseFromParsingBuffer(const size_t size)
-{
-    m_parsingBuffer.erase(0U, size);
-    m_position = 0U;
 }
 
 /**
@@ -93,759 +69,104 @@ bool XmlItemParser::writeData(const char data)
 }
 
 /**
- * Execute parser: Search for a start of an XML item (or a whitespace character)
+ * Configure parser for next action
  *
- * \param option    Parsing option. Supported options:
- *                  - Synchronization: discard all character until a start of an XML item is found
- *                  - IgnoreWhitespace: ignore leading whitespace before a start of an XML item is
- *                                      found
+ * \param action    Parsing action
+ * \param option    Parsing option
  *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       Start of an XML item found
- * \retval Result_Success       Whitespace character found
- * \retval Result_Error         Error occurred (invalid character read)
- *
- * Valid Name string format:
- * \code{.unparsed}
- * Start of item ::= < | S
- * \endcode
+ * \retval true     Success
+ * \retval false    Error
  */
-XmlItemParser::Result XmlItemParser::parseStartOfItem(const XmlItemParser::Option option)
+bool XmlItemParser::configure(const XmlItemParser::Action action,
+                               const XmlItemParser::Option option)
 {
-    Result result = Result_Error;
-    bool finishParsing = false;
+    bool success = false;
 
-    do
+    switch (action)
     {
-        if (m_xmlDataBuffer.empty())
+        case Action_FindStartOfItem:
         {
-            // Wait for more data
-            finishParsing = true;
-            result = Result_NeedMoreData;
+            if (checkActionFindStartOfItem(option))
+            {
+                m_option = option;
+                eraseFromParsingBuffer(m_position);
+                m_state = State_WaitForStartOfItem;
+                success = true;
+            }
+            break;
         }
-        else
-        {
-            // Read and parse data
-            const char value = m_xmlDataBuffer.read();
 
-            if (value == '<')
-            {
-                // Parsing finished: Start of an XML item found
-                m_terminationCharacter = (uint32_t)value;
-                result = Result_Success;
-                finishParsing = true;
-            }
-            else
-            {
-                if (option == Option_Synchronization)
-                {
-                    // On synchronization option ignore all other characters
-                }
-                else
-                {
-                    if (XmlValidator::isWhitespace((uint32_t)value))
-                    {
-                        if (option == Option_IgnoreWhitespace)
-                        {
-                            // We are allowed to ignore whitespace characters
-                        }
-                        else
-                        {
-                            // Parsing finished: Whitespace character found
-                            m_terminationCharacter = (uint32_t)value;
-                            result = Result_Success;
-                            finishParsing = true;
-                        }
-                    }
-                    else
-                    {
-                        // Error, invalid character read
-                        finishParsing = true;
-                    }
-                }
-            }
+        default:
+        {
+            break;
         }
     }
-    while (!finishParsing);
 
-    return result;
+    return success;
 }
 
 /**
- * Execute parser: Parse XML item's type
+ * Execute parsing state machine
  *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       Item type: Processing Instruction
- * \retval Result_Success       Item type: Document Type
- * \retval Result_Success       Item type: Comment
- * \retval Result_Success       Item type: Element
- * \retval Result_Error         Error occurred (invalid character read)
- *
- * \note If Element item type is found then the parsing buffer MUST NOT be cleared as it will
- *       contain the character of the element's name!
- *
- * Valid item types:
- * \code{.unparsed}
- * Processing Instruction ::= ?
- * Document Type          ::= !DOCTYPE
- * Comment                ::= !--
- * Element                ::= NameStartChar
- * \endcode
+ * \retval Result_Success       Successfully completed configured action
+ * \retval Result_NeedMoreData  More data is needed
+ * \retval Result_Error         Error
  */
-XmlItemParser::Result XmlItemParser::parseItemType()
+XmlItemParser::Result XmlItemParser::execute()
 {
     Result result = Result_Error;
-    bool finishParsing = false;
+
+    // Execute state machine
+    bool finishParsing;
 
     do
     {
-        // Read more data if needed and check if data is available
-        if (readDataIfNeeded() == false)
+        finishParsing = true;
+        State nextState = State_Error;
+
+        switch (m_state)
         {
-            // No data available, wait for more data
-            result = Result_NeedMoreData;
-            finishParsing = true;
-        }
-        else
-        {
-            // Data available
-            if (m_position == 0U)
+            case State_WaitForStartOfItem:
             {
-                // Parse first (unicode) character. Possible item types:
-                // - Processing Instruction
-                // - Document Type
-                // - Comment
-                // - Element
-                const char value = m_parsingBuffer.at(m_position);
+                // Wait for start of item
+                nextState = executeStateWaitForStartOfItem();
 
-                if (value == '?')
+                switch (nextState)
                 {
-                    // Item type: Processing Instruction
-                    eraseFromParsingBuffer(1U);
-                    m_terminationCharacter = 0U;
-                    m_itemType = ItemType_ProcessingInstruction;
-                    result = Result_Success;
-                    finishParsing = true;
-                }
-                else if (value == '!')
-                {
-                    // Possible types: Document Type and Comment
-                    m_position = 1U;
-                }
-                else
-                {
-                    // Get unicode character
-                    uint32_t unicodeCharacter = 0U;
-                    size_t nextPosition = 0U;
-                    Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-                                                                          m_position,
-                                                                          &nextPosition,
-                                                                          &unicodeCharacter);
-
-                    if (utfResult == Utf::Result_Success)
+                    case State_WaitForStartOfItem:
                     {
-                        if (XmlValidator::isNameStartChar(unicodeCharacter))
-                        {
-                            // Item type: Element
-                            m_terminationCharacter = 0U;
-                            m_itemType = ItemType_Element;
-                            result = Result_Success;
-                            finishParsing = true;
-                        }
-                        else
-                        {
-                            // Error, invalid character
-                            m_terminationCharacter = (uint32_t)value;
-                            finishParsing = true;
-                        }
-                    }
-                    else if (utfResult == Utf::Result_Incomplete)
-                    {
-                        // Read next character and repeat
-                        if (!readData())
-                        {
-                            // No data available, wait for more data
-                            result = Result_NeedMoreData;
-                            finishParsing = true;
-                        }
-                    }
-                    else
-                    {
-                        // Error, invalid character
-                        m_terminationCharacter = (uint32_t)value;
-                        finishParsing = true;
-                    }
-                }
-            }
-            else
-            {
-                bool checkNextItemType = true;
-                const char value = m_parsingBuffer.at(m_position);
-
-                // Check for Comment
-                if (m_position < s_itemTypeComment.size())
-                {
-                    if (value == s_itemTypeComment.at(m_position))
-                    {
-                        checkNextItemType = false;
-                        m_position++;
-
-                        if (m_position == s_itemTypeComment.size())
-                        {
-                            // Item type: Comment
-                            eraseFromParsingBuffer(s_itemTypeComment.size());
-                            m_itemType = ItemType_Comment;
-                            result = Result_Success;
-                            finishParsing = true;
-                        }
-                    }
-                }
-
-                // Check for Document Type
-                if (checkNextItemType)
-                {
-                    if (m_position < s_itemTypeDocumentType.size())
-                    {
-                        if (value == s_itemTypeDocumentType.at(m_position))
-                        {
-                            checkNextItemType = false;
-                            m_position++;
-
-                            if (m_position == s_itemTypeDocumentType.size())
-                            {
-                                // Item type: Document Type
-                                eraseFromParsingBuffer(s_itemTypeDocumentType.size());
-                                m_itemType = ItemType_DocumentType;
-                                result = Result_Success;
-                                finishParsing = true;
-                            }
-                        }
-                    }
-                }
-
-                // Check for error
-                if (checkNextItemType)
-                {
-                    // Error, invalid character
-                    eraseFromParsingBuffer(1U);
-                    m_terminationCharacter = (uint32_t)value;
-                    finishParsing = true;
-                }
-            }
-        }
-    }
-    while (!finishParsing);
-
-    return result;
-}
-
-/**
- * Execute parser: Parse XML Name item
- *
- * \param option    Parsing option. Supported options:
- *                  - IgnoreWhitespace: ignore leading whitespace before a Name
- *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       Valid XML Name found
- * \retval Result_Error         Error occurred (invalid character read)
- *
- * Valid Name string format:
- * \code{.unparsed}
- * Name ::= NameStartChar (NameChar)*
- * \endcode
- */
-XmlItemParser::Result XmlItemParser::parseName(const Option option)
-{
-    Result result = Result_Error;
-    bool finishParsing = false;
-
-    do
-    {
-        // Read more data if needed and check if data is available
-        if (readDataIfNeeded() == false)
-        {
-            // No data available, wait for more data
-            result = Result_NeedMoreData;
-            finishParsing = true;
-        }
-        else
-        {
-            // Data available
-            // Get unicode character
-            uint32_t unicodeCharacter = 0U;
-            size_t nextPosition = 0U;
-            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-                                                                  m_position,
-                                                                  &nextPosition,
-                                                                  &unicodeCharacter);
-
-            switch (utfResult)
-            {
-                case Utf::Result_Success:
-                {
-                    // Check for start of Name
-                    if (m_position == 0U)
-                    {
-                        if (XmlValidator::isNameStartChar(unicodeCharacter))
-                        {
-                            // Valid NameStartChar found
-                            m_position = nextPosition;
-                        }
-                        else
-                        {
-                            bool error = true;
-
-                            if (option == Option_IgnoreWhitespace)
-                            {
-                                if (XmlValidator::isWhitespace(unicodeCharacter))
-                                {
-                                    // Ignore whitespace
-                                    eraseFromParsingBuffer(1U);
-                                    error = false;
-                                }
-                            }
-
-                            if (error)
-                            {
-                                // Error, invalid character
-                                m_terminationCharacter = unicodeCharacter;
-                                finishParsing = true;
-                            }
-                        }
-                    }
-                    // Check for rest of the Name
-                    else
-                    {
-                        if (XmlValidator::isNameChar(unicodeCharacter))
-                        {
-                            // Valid NameChar found
-                            m_position = nextPosition;
-                        }
-                        else
-                        {
-                            // End of Name
-                            m_value = m_parsingBuffer.substr(0U, m_position);
-                            eraseFromParsingBuffer(m_position);
-                            m_terminationCharacter = unicodeCharacter;
-                            result = Result_Success;
-                            finishParsing = true;
-                        }
-                    }
-                    break;
-                }
-
-                case Utf::Result_Incomplete:
-                {
-                    // Read next character
-                    if (!readData())
-                    {
-                        // No data available, wait for more data
                         result = Result_NeedMoreData;
-                        finishParsing = true;
+                        break;
                     }
-                    break;
-                }
 
-                default:
-                {
-                    // Error, invalid unicode character
-                    finishParsing = true;
-                    break;
-                }
-            }
-        }
-    }
-    while (!finishParsing);
-
-    return result;
-}
-
-/**
- * Execute parser: Parse XML Processing Instruction's value item
- *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       Valid XML Processing Instruction's value found
- * \retval Result_Error         Error occurred (invalid character read)
- */
-XmlItemParser::Result XmlItemParser::parsePiValue()
-{
-    Result result = Result_Error;
-    bool finishParsing = false;
-
-    do
-    {
-        // Read more data if needed and check if data is available
-        if (readDataIfNeeded() == false)
-        {
-            // No data available, wait for more data
-            result = Result_NeedMoreData;
-            finishParsing = true;
-        }
-        else
-        {
-            // Data available
-            // Get unicode character
-            uint32_t unicodeCharacter = 0U;
-            size_t nextPosition = 0U;
-            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-                                                                  m_position,
-                                                                  &nextPosition,
-                                                                  &unicodeCharacter);
-
-            switch (utfResult)
-            {
-                case Utf::Result_Success:
-                {
-                    if (XmlValidator::isChar(unicodeCharacter))
+                    case State_StartOfItem:
                     {
-                        if (m_position > 0U)
-                        {
-                            const char previousValue = m_parsingBuffer.at(m_position - 1U);
-
-                            // Check for "?>" sequence
-                            if ((previousValue == '?') && (unicodeCharacter == (uint32_t)'>'))
-                            {
-                                m_value = m_parsingBuffer.substr(0U, m_position - 1U);
-                                eraseFromParsingBuffer(m_position - 1U);
-                                m_terminationCharacter = (uint32_t)'?';
-                                result = Result_Success;
-                                finishParsing = true;
-                            }
-                        }
-
-                        m_position++;
-                    }
-                    else
-                    {
-                        // Error, invalid character read
-                        eraseFromParsingBuffer(m_position);
-                        m_terminationCharacter = unicodeCharacter;
-                        finishParsing = true;
-                    }
-                    break;
-                }
-
-                case Utf::Result_Incomplete:
-                {
-                    // Read next character
-                    if (!readData())
-                    {
-                        // No data available, wait for more data
-                        result = Result_NeedMoreData;
-                        finishParsing = true;
-                    }
-                    break;
-                }
-
-                default:
-                {
-                    // Error, invalid unicode character
-                    finishParsing = true;
-                    break;
-                }
-            }
-        }
-    }
-    while (!finishParsing);
-
-    return result;
-}
-
-/**
- * Execute parser: Search for a end of a Processing Instruction
- *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       End of a Processing Instruction
- * \retval Result_Error         Error occurred (invalid character read)
- *
- * Valid Name string format:
- * \code{.unparsed}
- * End of item ::= >
- * \endcode
- */
-XmlItemParser::Result XmlItemParser::parseEndOfPi()
-{
-    Result result = Result_Error;
-    bool finishParsing = false;
-
-    do
-    {
-        // Read more data if needed and check if data is available
-        if (readDataIfNeeded() == false)
-        {
-            // No data available, wait for more data
-            result = Result_NeedMoreData;
-            finishParsing = true;
-        }
-        else
-        {
-            // Parse
-            const char value = m_parsingBuffer.at(m_position);
-
-            if (m_position == 0U)
-            {
-                if (value == '?')
-                {
-                    // First character of "?>" sequence found, check next one
-                    m_position++;
-                }
-                else
-                {
-                    // Error, invalid character
-                    m_terminationCharacter = (uint32_t)value;
-                    finishParsing = true;
-                }
-            }
-            else if (m_position == 1U)
-            {
-                if (value == '>')
-                {
-                    // Second character of "?>" sequence also found
-                    // Parsing finished: End of an XML item found
-                    eraseFromParsingBuffer(2U);
-                    result = Result_Success;
-                }
-                else
-                {
-                    // Error, invalid character
-                }
-
-                m_position = 0U;
-                m_terminationCharacter = (uint32_t)value;
-                finishParsing = true;
-            }
-            else
-            {
-                // Error, invalid position
-                m_position = 0U;
-                m_terminationCharacter = 0U;
-                finishParsing = true;
-            }
-        }
-    }
-    while (!finishParsing);
-
-    return result;
-}
-
-/**
- * Execute parser: Parse end of Document Type item
- *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       End of Document Type found
- * \retval Result_Error         Error occurred (invalid character read)
- *
- * \note This function will ignore all characters between Document Type name and the first '>'
- *       character that does not have a matching '<' preceding it. This is not fully compliant with
- *       the XML standard!
- *
- * \todo Make this fully compliant with the XML standard!
- */
-XmlItemParser::Result XmlItemParser::parseEndOfDocumentType()
-{
-    Result result = Result_Error;
-    bool finishParsing = false;
-
-    do
-    {
-        // Get character
-        char value = 0U;
-
-        if (m_position < m_parsingBuffer.size())
-        {
-            value = m_parsingBuffer.at(m_position);
-            m_position++;
-        }
-        else
-        {
-            if (m_xmlDataBuffer.empty())
-            {
-                // No data available, wait for more data
-                clearParsingBuffer();
-                result = Result_NeedMoreData;
-                finishParsing = true;
-            }
-            else
-            {
-                value = m_xmlDataBuffer.read();
-            }
-        }
-
-        if (!finishParsing)
-        {
-            // Parse
-            switch (value)
-            {
-                case '<':
-                {
-                    if (!m_openTagCharacterFound)
-                    {
-                        m_openTagCharacterFound = true;
-                    }
-                    else
-                    {
-                        // Error, another '<' character without a matching '>' character
-                        finishParsing = true;
-                    }
-                    break;
-                }
-
-                case '>':
-                {
-                    if (m_openTagCharacterFound)
-                    {
-                        // This is a matching character to the previously found '<' character
-                        m_openTagCharacterFound = false;
-                    }
-                    else
-                    {
-                        // Parsing finished: End of an XML item found
-                        eraseFromParsingBuffer(m_position);
-                        m_terminationCharacter = (uint32_t)value;
                         result = Result_Success;
-                        finishParsing = true;
+                        break;
                     }
-                    break;
-                }
 
-                default:
-                {
-                    // Just ignore the character
-                    break;
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
                 }
+                break;
             }
-        }
-    }
-    while (!finishParsing);
 
-    return result;
-}
-
-/**
- * Execute parser: Parse Comment item
- *
- * \retval Result_NeedMoreData  More data is needed to complete the parsing session
- * \retval Result_Success       End of Comment found
- * \retval Result_Error         Error occurred (invalid character read)
- */
-XmlItemParser::Result XmlItemParser::parseComment()
-{
-    Result result = Result_Error;
-    bool finishParsing = false;
-
-    do
-    {
-        // Read more data if needed and check if data is available
-        if (readDataIfNeeded() == false)
-        {
-            // No data available, wait for more data
-            result = Result_NeedMoreData;
-            finishParsing = true;
-        }
-        else
-        {
-            // Data available
-            // Get unicode character
-            uint32_t unicodeCharacter = 0U;
-            size_t nextPosition = 0U;
-            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-                                                                  m_position,
-                                                                  &nextPosition,
-                                                                  &unicodeCharacter);
-
-            switch (utfResult)
+            default:
             {
-                case Utf::Result_Success:
-                {
-                    // Check for Char
-                    if (XmlValidator::isChar(unicodeCharacter))
-                    {
-                        const size_t currentPosition = m_position;
-                        m_position = nextPosition;
-
-                        // Check if "-->" sequence
-                        if (currentPosition >= 2U)
-                        {
-                            if ((m_parsingBuffer.at(currentPosition - 2U) == '-') &&
-                                (m_parsingBuffer.at(currentPosition - 1U) == '-'))
-                            {
-                                // Sequence "--" found, check for '>' character
-                                if (m_parsingBuffer.at(currentPosition) == '>')
-                                {
-                                    // Parsing finished: End of Comment found
-                                    m_value = m_parsingBuffer.substr(0U, currentPosition - 2U);
-                                    eraseFromParsingBuffer(currentPosition + 1U);
-                                    result = Result_Success;
-                                }
-                                else
-                                {
-                                    // Error, invalid character
-                                    eraseFromParsingBuffer(currentPosition);
-                                }
-
-                                m_terminationCharacter = unicodeCharacter;
-                                finishParsing = true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Error, invalid character read
-                        eraseFromParsingBuffer(m_position);
-                        m_terminationCharacter = unicodeCharacter;
-                        finishParsing = true;
-                    }
-                    break;
-                }
-
-                case Utf::Result_Incomplete:
-                {
-                    // Read next character
-                    if (!readData())
-                    {
-                        // No data available, wait for more data
-                        result = Result_NeedMoreData;
-                        finishParsing = true;
-                    }
-                    break;
-                }
-
-                default:
-                {
-                    // Error, invalid unicode character
-                    finishParsing = true;
-                    break;
-                }
+                break;
             }
         }
+
+        // Update state
+        m_state = nextState;
     }
     while (!finishParsing);
 
     return result;
-}
-
-/**
- * Get parsed Value string
- *
- * \return Parsed Value string
- *
- * \note The context of this value depends on the item parser that was used
- */
-std::string XmlItemParser::getValue() const
-{
-    return m_value;
-}
-
-/**
- * Get parsed item type
- *
- * \return Parsed item type
- *
- * \note Item type is only set in the "item type" parser
- */
-XmlItemParser::ItemType XmlItemParser::getItemType() const
-{
-    return m_itemType;
 }
 
 /**
@@ -871,41 +192,953 @@ void XmlItemParser::clearParsingBuffer()
 }
 
 /**
- * Read data from the buffer
+ * Erase characters from parsing buffer
  *
- * \retval true     Data was read
- * \retval false    Data was not read
+ * \param size  Number of characters to erase
+ *
+ * \note Parsing position will be set to 0
  */
-bool XmlItemParser::readData()
+void XmlItemParser::eraseFromParsingBuffer(const size_t size)
 {
-    bool dataRead = false;
-
-    if (!m_xmlDataBuffer.empty())
-    {
-        // Read next character
-        const char value = m_xmlDataBuffer.read();
-        m_parsingBuffer.append(1U, value);
-        dataRead = true;
-    }
-
-    return dataRead;
+    m_parsingBuffer.erase(0U, size);
+    m_position = 0U;
 }
 
 /**
- * Read data from the buffer if needed
+ * Check if action "Find start of item" is allowed based on the internal state of the parser
  *
- * \retval true     Data is availabe
- * \retval false    Data is not availabe
+ * \param option    Parsing option
+ *
+ * \retval true     Action is allowed
+ * \retval false    Action is not allowed
  */
-bool XmlItemParser::readDataIfNeeded()
+bool XmlItemParser::checkActionFindStartOfItem(Option option)
 {
-    bool dataAvailable = true;
+    bool allowed = false;
 
-    // Check if another character should be read
-    if (m_position >= m_parsingBuffer.size())
+    if (m_state == State_Idle)
     {
-        dataAvailable = readData();
+        if ((option == Option_None) ||
+            (option == Option_Synchronization) ||
+            (option == Option_IgnoreWhitespace))
+        {
+            allowed = true;
+        }
     }
 
-    return dataAvailable;
+    return allowed;
 }
+
+/**
+ * Execute state: Wait for start of item
+ *
+ * \retval State_WaitForStartOfItem Wait for more data
+ * \retval State_StartOfItem        Start of item found
+ * \retval State_Error              Error
+ */
+XmlItemParser::State XmlItemParser::executeStateWaitForStartOfItem()
+{
+    State nextState = State_WaitForStartOfItem;
+    bool finishParsing = false;
+
+    do
+    {
+        // Get next character
+        uint32_t unicodeCharacter = 0U;
+
+        if (m_position < m_parsingBuffer.size())
+        {
+            // Take the next character from the parsing buffer
+            unicodeCharacter = m_parsingBuffer.at(m_position);
+            m_position++;
+        }
+        else
+        {
+            // Try to read the next character from the data buffer
+            if (m_xmlDataBuffer.empty())
+            {
+                // Wait for more data
+                finishParsing = true;
+            }
+            else
+            {
+                // Read character
+                unicodeCharacter = m_xmlDataBuffer.read();
+            }
+        }
+
+        // Parse value
+        if (!finishParsing)
+        {
+            if (unicodeCharacter == '<')
+            {
+                // Parsing finished: Start of an XML item found
+                eraseFromParsingBuffer(m_position);
+                m_terminationCharacter = unicodeCharacter;
+                nextState = State_StartOfItem;
+                finishParsing = true;
+            }
+            else
+            {
+                if (m_option == Option_Synchronization)
+                {
+                    // On synchronization option ignore all other characters
+                }
+                else
+                {
+                    if (XmlValidator::isWhitespace(unicodeCharacter))
+                    {
+                        if (m_option == Option_IgnoreWhitespace)
+                        {
+                            // We are allowed to ignore whitespace characters
+                        }
+                        else
+                        {
+                            // Parsing finished: Whitespace character found
+                            eraseFromParsingBuffer(m_position);
+                            m_terminationCharacter = unicodeCharacter;
+                            nextState = State_StartOfItem;
+                            finishParsing = true;
+                        }
+                    }
+                    else
+                    {
+                        // Error, invalid character read
+                        eraseFromParsingBuffer(m_position);
+                        m_terminationCharacter = unicodeCharacter;
+                        nextState = State_Error;
+                        finishParsing = true;
+                    }
+                }
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+
+
+
+
+
+
+
+
+
+
+///**
+// * Clear internal state
+// *
+// * \note Buffers are not cleared! For that the XmlItemParser::clear() method should be called.
+// */
+//void XmlItemParser::clearInternalState()
+//{
+//    // TODO: remove or move to private?
+//    m_value.clear();
+//    m_itemType = ItemType_None;
+//    m_terminationCharacter = 0U;
+//    m_option = Option_None;
+
+
+
+
+//    m_openTagCharacterFound = false;
+//}
+
+///**
+// * Execute parser: Search for a start of an XML item (or a whitespace character)
+// *
+// * \param option    Parsing option. Supported options:
+// *                  - Synchronization: discard all character until a start of an XML item is found
+// *                  - IgnoreWhitespace: ignore leading whitespace before a start of an XML item is
+// *                                      found
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       Start of an XML item found
+// * \retval Result_Success       Whitespace character found
+// * \retval Result_Error         Error occurred (invalid character read)
+// *
+// * Valid Name string format:
+// * \code{.unparsed}
+// * Start of item ::= < | S
+// * \endcode
+// */
+//XmlItemParser::Result XmlItemParser::parseStartOfItem(const XmlItemParser::Option option)
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        if (m_xmlDataBuffer.empty())
+//        {
+//            // Wait for more data
+//            finishParsing = true;
+//            result = Result_NeedMoreData;
+//        }
+//        else
+//        {
+//            // Read and parse data
+//            const char value = m_xmlDataBuffer.read();
+
+//            if (value == '<')
+//            {
+//                // Parsing finished: Start of an XML item found
+//                m_terminationCharacter = (uint32_t)value;
+//                result = Result_Success;
+//                finishParsing = true;
+//            }
+//            else
+//            {
+//                if (option == Option_Synchronization)
+//                {
+//                    // On synchronization option ignore all other characters
+//                }
+//                else
+//                {
+//                    if (XmlValidator::isWhitespace((uint32_t)value))
+//                    {
+//                        if (option == Option_IgnoreWhitespace)
+//                        {
+//                            // We are allowed to ignore whitespace characters
+//                        }
+//                        else
+//                        {
+//                            // Parsing finished: Whitespace character found
+//                            m_terminationCharacter = (uint32_t)value;
+//                            result = Result_Success;
+//                            finishParsing = true;
+//                        }
+//                    }
+//                    else
+//                    {
+//                        // Error, invalid character read
+//                        finishParsing = true;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Parse XML item's type
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       Item type: Processing Instruction
+// * \retval Result_Success       Item type: Document Type
+// * \retval Result_Success       Item type: Comment
+// * \retval Result_Success       Item type: Element
+// * \retval Result_Error         Error occurred (invalid character read)
+// *
+// * \note If Element item type is found then the parsing buffer MUST NOT be cleared as it will
+// *       contain the character of the element's name!
+// *
+// * Valid item types:
+// * \code{.unparsed}
+// * Processing Instruction ::= ?
+// * Document Type          ::= !DOCTYPE
+// * Comment                ::= !--
+// * Element                ::= NameStartChar
+// * \endcode
+// */
+//XmlItemParser::Result XmlItemParser::parseItemType()
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Read more data if needed and check if data is available
+//        if (readDataIfNeeded() == false)
+//        {
+//            // No data available, wait for more data
+//            result = Result_NeedMoreData;
+//            finishParsing = true;
+//        }
+//        else
+//        {
+//            // Data available
+//            if (m_position == 0U)
+//            {
+//                // Parse first (unicode) character. Possible item types:
+//                // - Processing Instruction
+//                // - Document Type
+//                // - Comment
+//                // - Element
+//                const char value = m_parsingBuffer.at(m_position);
+
+//                if (value == '?')
+//                {
+//                    // Item type: Processing Instruction
+//                    eraseFromParsingBuffer(1U);
+//                    m_terminationCharacter = 0U;
+//                    m_itemType = ItemType_ProcessingInstruction;
+//                    result = Result_Success;
+//                    finishParsing = true;
+//                }
+//                else if (value == '!')
+//                {
+//                    // Possible types: Document Type and Comment
+//                    m_position = 1U;
+//                }
+//                else
+//                {
+//                    // Get unicode character
+//                    uint32_t unicodeCharacter = 0U;
+//                    size_t nextPosition = 0U;
+//                    Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
+//                                                                          m_position,
+//                                                                          &nextPosition,
+//                                                                          &unicodeCharacter);
+
+//                    if (utfResult == Utf::Result_Success)
+//                    {
+//                        if (XmlValidator::isNameStartChar(unicodeCharacter))
+//                        {
+//                            // Item type: Element
+//                            m_terminationCharacter = 0U;
+//                            m_itemType = ItemType_Element;
+//                            result = Result_Success;
+//                            finishParsing = true;
+//                        }
+//                        else
+//                        {
+//                            // Error, invalid character
+//                            m_terminationCharacter = (uint32_t)value;
+//                            finishParsing = true;
+//                        }
+//                    }
+//                    else if (utfResult == Utf::Result_Incomplete)
+//                    {
+//                        // Read next character and repeat
+//                        if (!readData())
+//                        {
+//                            // No data available, wait for more data
+//                            result = Result_NeedMoreData;
+//                            finishParsing = true;
+//                        }
+//                    }
+//                    else
+//                    {
+//                        // Error, invalid character
+//                        m_terminationCharacter = (uint32_t)value;
+//                        finishParsing = true;
+//                    }
+//                }
+//            }
+//            else
+//            {
+//                bool checkNextItemType = true;
+//                const char value = m_parsingBuffer.at(m_position);
+
+//                // Check for Comment
+//                if (m_position < s_itemTypeComment.size())
+//                {
+//                    if (value == s_itemTypeComment.at(m_position))
+//                    {
+//                        checkNextItemType = false;
+//                        m_position++;
+
+//                        if (m_position == s_itemTypeComment.size())
+//                        {
+//                            // Item type: Comment
+//                            eraseFromParsingBuffer(s_itemTypeComment.size());
+//                            m_itemType = ItemType_Comment;
+//                            result = Result_Success;
+//                            finishParsing = true;
+//                        }
+//                    }
+//                }
+
+//                // Check for Document Type
+//                if (checkNextItemType)
+//                {
+//                    if (m_position < s_itemTypeDocumentType.size())
+//                    {
+//                        if (value == s_itemTypeDocumentType.at(m_position))
+//                        {
+//                            checkNextItemType = false;
+//                            m_position++;
+
+//                            if (m_position == s_itemTypeDocumentType.size())
+//                            {
+//                                // Item type: Document Type
+//                                eraseFromParsingBuffer(s_itemTypeDocumentType.size());
+//                                m_itemType = ItemType_DocumentType;
+//                                result = Result_Success;
+//                                finishParsing = true;
+//                            }
+//                        }
+//                    }
+//                }
+
+//                // Check for error
+//                if (checkNextItemType)
+//                {
+//                    // Error, invalid character
+//                    eraseFromParsingBuffer(1U);
+//                    m_terminationCharacter = (uint32_t)value;
+//                    finishParsing = true;
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Parse XML Name item
+// *
+// * \param option    Parsing option. Supported options:
+// *                  - IgnoreWhitespace: ignore leading whitespace before a Name
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       Valid XML Name found
+// * \retval Result_Error         Error occurred (invalid character read)
+// *
+// * Valid Name string format:
+// * \code{.unparsed}
+// * Name ::= NameStartChar (NameChar)*
+// * \endcode
+// */
+//XmlItemParser::Result XmlItemParser::parseName(const Option option)
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Read more data if needed and check if data is available
+//        if (readDataIfNeeded() == false)
+//        {
+//            // No data available, wait for more data
+//            result = Result_NeedMoreData;
+//            finishParsing = true;
+//        }
+//        else
+//        {
+//            // Data available
+//            // Get unicode character
+//            uint32_t unicodeCharacter = 0U;
+//            size_t nextPosition = 0U;
+//            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
+//                                                                  m_position,
+//                                                                  &nextPosition,
+//                                                                  &unicodeCharacter);
+
+//            switch (utfResult)
+//            {
+//                case Utf::Result_Success:
+//                {
+//                    // Check for start of Name
+//                    if (m_position == 0U)
+//                    {
+//                        if (XmlValidator::isNameStartChar(unicodeCharacter))
+//                        {
+//                            // Valid NameStartChar found
+//                            m_position = nextPosition;
+//                        }
+//                        else
+//                        {
+//                            bool error = true;
+
+//                            if (option == Option_IgnoreWhitespace)
+//                            {
+//                                if (XmlValidator::isWhitespace(unicodeCharacter))
+//                                {
+//                                    // Ignore whitespace
+//                                    eraseFromParsingBuffer(1U);
+//                                    error = false;
+//                                }
+//                            }
+
+//                            if (error)
+//                            {
+//                                // Error, invalid character
+//                                m_terminationCharacter = unicodeCharacter;
+//                                finishParsing = true;
+//                            }
+//                        }
+//                    }
+//                    // Check for rest of the Name
+//                    else
+//                    {
+//                        if (XmlValidator::isNameChar(unicodeCharacter))
+//                        {
+//                            // Valid NameChar found
+//                            m_position = nextPosition;
+//                        }
+//                        else
+//                        {
+//                            // End of Name
+//                            m_value = m_parsingBuffer.substr(0U, m_position);
+//                            eraseFromParsingBuffer(m_position);
+//                            m_terminationCharacter = unicodeCharacter;
+//                            result = Result_Success;
+//                            finishParsing = true;
+//                        }
+//                    }
+//                    break;
+//                }
+
+//                case Utf::Result_Incomplete:
+//                {
+//                    // Read next character
+//                    if (!readData())
+//                    {
+//                        // No data available, wait for more data
+//                        result = Result_NeedMoreData;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                default:
+//                {
+//                    // Error, invalid unicode character
+//                    finishParsing = true;
+//                    break;
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Parse XML Processing Instruction's value item
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       Valid XML Processing Instruction's value found
+// * \retval Result_Error         Error occurred (invalid character read)
+// */
+//XmlItemParser::Result XmlItemParser::parsePiValue()
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Read more data if needed and check if data is available
+//        if (readDataIfNeeded() == false)
+//        {
+//            // No data available, wait for more data
+//            result = Result_NeedMoreData;
+//            finishParsing = true;
+//        }
+//        else
+//        {
+//            // Data available
+//            // Get unicode character
+//            uint32_t unicodeCharacter = 0U;
+//            size_t nextPosition = 0U;
+//            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
+//                                                                  m_position,
+//                                                                  &nextPosition,
+//                                                                  &unicodeCharacter);
+
+//            switch (utfResult)
+//            {
+//                case Utf::Result_Success:
+//                {
+//                    if (XmlValidator::isChar(unicodeCharacter))
+//                    {
+//                        if (m_position > 0U)
+//                        {
+//                            const char previousValue = m_parsingBuffer.at(m_position - 1U);
+
+//                            // Check for "?>" sequence
+//                            if ((previousValue == '?') && (unicodeCharacter == (uint32_t)'>'))
+//                            {
+//                                m_value = m_parsingBuffer.substr(0U, m_position - 1U);
+//                                eraseFromParsingBuffer(m_position - 1U);
+//                                m_terminationCharacter = (uint32_t)'?';
+//                                result = Result_Success;
+//                                finishParsing = true;
+//                            }
+//                        }
+
+//                        m_position++;
+//                    }
+//                    else
+//                    {
+//                        // Error, invalid character read
+//                        eraseFromParsingBuffer(m_position);
+//                        m_terminationCharacter = unicodeCharacter;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                case Utf::Result_Incomplete:
+//                {
+//                    // Read next character
+//                    if (!readData())
+//                    {
+//                        // No data available, wait for more data
+//                        result = Result_NeedMoreData;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                default:
+//                {
+//                    // Error, invalid unicode character
+//                    finishParsing = true;
+//                    break;
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Search for a end of a Processing Instruction
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       End of a Processing Instruction
+// * \retval Result_Error         Error occurred (invalid character read)
+// *
+// * Valid Name string format:
+// * \code{.unparsed}
+// * End of item ::= >
+// * \endcode
+// */
+//XmlItemParser::Result XmlItemParser::parseEndOfPi()
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Read more data if needed and check if data is available
+//        if (readDataIfNeeded() == false)
+//        {
+//            // No data available, wait for more data
+//            result = Result_NeedMoreData;
+//            finishParsing = true;
+//        }
+//        else
+//        {
+//            // Parse
+//            const char value = m_parsingBuffer.at(m_position);
+
+//            if (m_position == 0U)
+//            {
+//                if (value == '?')
+//                {
+//                    // First character of "?>" sequence found, check next one
+//                    m_position++;
+//                }
+//                else
+//                {
+//                    // Error, invalid character
+//                    m_terminationCharacter = (uint32_t)value;
+//                    finishParsing = true;
+//                }
+//            }
+//            else if (m_position == 1U)
+//            {
+//                if (value == '>')
+//                {
+//                    // Second character of "?>" sequence also found
+//                    // Parsing finished: End of an XML item found
+//                    eraseFromParsingBuffer(2U);
+//                    result = Result_Success;
+//                }
+//                else
+//                {
+//                    // Error, invalid character
+//                }
+
+//                m_position = 0U;
+//                m_terminationCharacter = (uint32_t)value;
+//                finishParsing = true;
+//            }
+//            else
+//            {
+//                // Error, invalid position
+//                m_position = 0U;
+//                m_terminationCharacter = 0U;
+//                finishParsing = true;
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Parse end of Document Type item
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       End of Document Type found
+// * \retval Result_Error         Error occurred (invalid character read)
+// *
+// * \note This function will ignore all characters between Document Type name and the first '>'
+// *       character that does not have a matching '<' preceding it. This is not fully compliant with
+// *       the XML standard!
+// *
+// * \todo Make this fully compliant with the XML standard!
+// */
+//XmlItemParser::Result XmlItemParser::parseEndOfDocumentType()
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Get character
+//        char value = 0U;
+
+//        if (m_position < m_parsingBuffer.size())
+//        {
+//            value = m_parsingBuffer.at(m_position);
+//            m_position++;
+//        }
+//        else
+//        {
+//            if (m_xmlDataBuffer.empty())
+//            {
+//                // No data available, wait for more data
+//                clearParsingBuffer();
+//                result = Result_NeedMoreData;
+//                finishParsing = true;
+//            }
+//            else
+//            {
+//                value = m_xmlDataBuffer.read();
+//            }
+//        }
+
+//        if (!finishParsing)
+//        {
+//            // Parse
+//            switch (value)
+//            {
+//                case '<':
+//                {
+//                    if (!m_openTagCharacterFound)
+//                    {
+//                        m_openTagCharacterFound = true;
+//                    }
+//                    else
+//                    {
+//                        // Error, another '<' character without a matching '>' character
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                case '>':
+//                {
+//                    if (m_openTagCharacterFound)
+//                    {
+//                        // This is a matching character to the previously found '<' character
+//                        m_openTagCharacterFound = false;
+//                    }
+//                    else
+//                    {
+//                        // Parsing finished: End of an XML item found
+//                        eraseFromParsingBuffer(m_position);
+//                        m_terminationCharacter = (uint32_t)value;
+//                        result = Result_Success;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                default:
+//                {
+//                    // Just ignore the character
+//                    break;
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Execute parser: Parse Comment item
+// *
+// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
+// * \retval Result_Success       End of Comment found
+// * \retval Result_Error         Error occurred (invalid character read)
+// */
+//XmlItemParser::Result XmlItemParser::parseComment()
+//{
+//    Result result = Result_Error;
+//    bool finishParsing = false;
+
+//    do
+//    {
+//        // Read more data if needed and check if data is available
+//        if (readDataIfNeeded() == false)
+//        {
+//            // No data available, wait for more data
+//            result = Result_NeedMoreData;
+//            finishParsing = true;
+//        }
+//        else
+//        {
+//            // Data available
+//            // Get unicode character
+//            uint32_t unicodeCharacter = 0U;
+//            size_t nextPosition = 0U;
+//            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
+//                                                                  m_position,
+//                                                                  &nextPosition,
+//                                                                  &unicodeCharacter);
+
+//            switch (utfResult)
+//            {
+//                case Utf::Result_Success:
+//                {
+//                    // Check for Char
+//                    if (XmlValidator::isChar(unicodeCharacter))
+//                    {
+//                        const size_t currentPosition = m_position;
+//                        m_position = nextPosition;
+
+//                        // Check if "-->" sequence
+//                        if (currentPosition >= 2U)
+//                        {
+//                            if ((m_parsingBuffer.at(currentPosition - 2U) == '-') &&
+//                                (m_parsingBuffer.at(currentPosition - 1U) == '-'))
+//                            {
+//                                // Sequence "--" found, check for '>' character
+//                                if (m_parsingBuffer.at(currentPosition) == '>')
+//                                {
+//                                    // Parsing finished: End of Comment found
+//                                    m_value = m_parsingBuffer.substr(0U, currentPosition - 2U);
+//                                    eraseFromParsingBuffer(currentPosition + 1U);
+//                                    result = Result_Success;
+//                                }
+//                                else
+//                                {
+//                                    // Error, invalid character
+//                                    eraseFromParsingBuffer(currentPosition);
+//                                }
+
+//                                m_terminationCharacter = unicodeCharacter;
+//                                finishParsing = true;
+//                            }
+//                        }
+//                    }
+//                    else
+//                    {
+//                        // Error, invalid character read
+//                        eraseFromParsingBuffer(m_position);
+//                        m_terminationCharacter = unicodeCharacter;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                case Utf::Result_Incomplete:
+//                {
+//                    // Read next character
+//                    if (!readData())
+//                    {
+//                        // No data available, wait for more data
+//                        result = Result_NeedMoreData;
+//                        finishParsing = true;
+//                    }
+//                    break;
+//                }
+
+//                default:
+//                {
+//                    // Error, invalid unicode character
+//                    finishParsing = true;
+//                    break;
+//                }
+//            }
+//        }
+//    }
+//    while (!finishParsing);
+
+//    return result;
+//}
+
+///**
+// * Get parsed Value string
+// *
+// * \return Parsed Value string
+// *
+// * \note The context of this value depends on the item parser that was used
+// */
+//std::string XmlItemParser::getValue() const
+//{
+//    return m_value;
+//}
+
+///**
+// * Get parsed item type
+// *
+// * \return Parsed item type
+// *
+// * \note Item type is only set in the "item type" parser
+// */
+//XmlItemParser::ItemType XmlItemParser::getItemType() const
+//{
+//    return m_itemType;
+//}
+
+///**
+// * Read data from the buffer
+// *
+// * \retval true     Data was read
+// * \retval false    Data was not read
+// */
+//bool XmlItemParser::readData()
+//{
+//    bool dataRead = false;
+
+//    if (!m_xmlDataBuffer.empty())
+//    {
+//        // Read next character
+//        const char value = m_xmlDataBuffer.read();
+//        m_parsingBuffer.append(1U, value);
+//        dataRead = true;
+//    }
+
+//    return dataRead;
+//}
+
+///**
+// * Read data from the buffer if needed
+// *
+// * \retval true     Data is availabe
+// * \retval false    Data is not availabe
+// */
+//bool XmlItemParser::readDataIfNeeded()
+//{
+//    bool dataAvailable = true;
+
+//    // Check if another character should be read
+//    if (m_position >= m_parsingBuffer.size())
+//    {
+//        dataAvailable = readData();
+//    }
+
+//    return dataAvailable;
+//}

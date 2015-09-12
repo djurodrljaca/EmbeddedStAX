@@ -28,6 +28,7 @@
 #ifndef MINISAXCPP_XMLREADER_H
 #define MINISAXCPP_XMLREADER_H
 
+#include "Common.h"
 #include "XmlItemParser.h"
 #include <list>
 
@@ -84,6 +85,8 @@ private:
 
     enum ParsingState
     {
+        ParsingState_Idle,
+
         ParsingState_WaitingForStartOfItem,
         ParsingState_ReadingItemType,
 
@@ -106,6 +109,8 @@ private:
 
 private:
     // Private API
+    ParsingState executeParsingStateIdle();
+
     ParsingState executeParsingStateWaitingForStartOfItem();
     ParsingState executeParsingStateReadingItemType();
 
