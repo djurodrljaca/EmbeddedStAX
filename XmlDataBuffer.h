@@ -25,48 +25,45 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef MINISAXCPP_UTF_H
-#define MINISAXCPP_UTF_H
+#ifndef MINISAXCPP_COMMON_H
+#define MINISAXCPP_COMMON_H
 
+#include "Utf.h"
 #include <string>
 #include <stdint.h>
 
 namespace MiniSaxCpp
 {
-class Utf8
+/**
+ * A circular buffer of unicode characters
+ *
+ * \note This class only accepts ordinary character data and then it internally converts them to
+ *       Unicode characters.
+ */
+class UnicodeCharacterCircularBuffer
 {
 public:
-    // Public types
-    enum Result
-    {
-        Result_Success,
-        Result_Incomplete,
-        Result_Error
-    };
-
-public:
     // Public API
-    Utf8();
+    UnicodeCharacterCircularBuffer(const size_t size);
+    ~UnicodeCharacterCircularBuffer();
 
     void clear();
-    Result write(const char data);
+    bool empty() const;
+    bool full() const;
+    size_t free() const;
+    size_t used() const;
 
-    uint32_t getUnicodeCharacter() const;
-
-    static std::string toUtf8(const uint32_t unicodeCharacter);
-
-private:
-    // Private API
-    Result writeFirstCharacter(const char data);
-    Result writeNextCharacter(const char data);
+    bool write(const char data);
+    uint32_t read(bool *success = NULL);
 
 private:
     // Private data
-    std::string m_buffer;
-    size_t m_noOfBytes;
-    uint32_t m_value;
-    std::string m_utf8;
+    Utf8 m_utf8;
+    uint32_t *m_buffer;
+    size_t m_bufferSize;
+    size_t m_writePosition;
+    size_t m_readPosition;
 };
 }
 
-#endif // MINISAXCPP_UTF_H
+#endif // MINISAXCPP_COMMON_H

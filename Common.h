@@ -66,30 +66,6 @@ enum QuotationMark
 std::string escapeAttributeValueString(const std::string &attributeValue,
                                        const Common::QuotationMark quotationMark);
 std::string escapeTextNodeString(const std::string &textNode);
-
-class DataBuffer
-{
-public:
-    // Public API
-    DataBuffer(const size_t size);
-    ~DataBuffer();
-
-    void clear();
-    bool empty() const;
-    bool full() const;
-    size_t free() const;
-    size_t used() const;
-
-    bool write(const char data);
-    char read(bool *success = NULL);
-
-private:
-    // Private data
-    char *m_dataBuffer;
-    size_t m_dataBufferSize;
-    size_t m_writePosition;
-    size_t m_readPosition;
-};
 }
 }
 
