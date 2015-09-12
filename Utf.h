@@ -33,6 +33,8 @@
 
 namespace MiniSaxCpp
 {
+typedef std::basic_string<uint32_t> UnicodeString;
+
 class Utf8
 {
 public:
@@ -67,6 +69,24 @@ private:
     uint32_t m_value;
     std::string m_utf8;
 };
+
+// TODO: merge it with Utf8 ?
+namespace Utf
+{
+enum Result
+{
+    Result_Success,
+    Result_Incomplete,
+    Result_Error
+};
+
+Result unicodeCharacterFromUtf8(const std::string &utf8,
+                                const size_t startPosition,
+                                size_t *nextCharacterPosition,
+                                uint32_t *unicodeCharacter);
+
+bool isUnicodeCharacterValid(const uint32_t unicodeCharacter);
+}
 }
 
 #endif // MINISAXCPP_UTF_H
