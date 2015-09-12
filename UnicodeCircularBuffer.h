@@ -25,8 +25,8 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef MINISAXCPP_COMMON_H
-#define MINISAXCPP_COMMON_H
+#ifndef MINISAXCPP_UNICODECIRCULARBUFFER_H
+#define MINISAXCPP_UNICODECIRCULARBUFFER_H
 
 #include "Utf.h"
 #include <string>
@@ -40,12 +40,12 @@ namespace MiniSaxCpp
  * \note This class only accepts ordinary character data and then it internally converts them to
  *       Unicode characters.
  */
-class UnicodeCharacterCircularBuffer
+class UnicodeCircularBuffer
 {
 public:
     // Public API
-    UnicodeCharacterCircularBuffer(const size_t size);
-    ~UnicodeCharacterCircularBuffer();
+    UnicodeCircularBuffer(const size_t size);
+    ~UnicodeCircularBuffer();
 
     void clear();
     bool empty() const;
@@ -66,4 +66,4 @@ private:
 };
 }
 
-#endif // MINISAXCPP_COMMON_H
+#endif // MINISAXCPP_UNICODECIRCULARBUFFER_H

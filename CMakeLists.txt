@@ -5,7 +5,7 @@ set(minisaxcpp_SOURCES
         Common.cpp
         main.cpp
         Utf.cpp
-        XmlDataBuffer.cpp
+        UnicodeCircularBuffer.cpp
         XmlItemParser.cpp
         XmlReader.cpp
         XmlValidator.cpp
@@ -13,7 +13,7 @@ set(minisaxcpp_SOURCES
 set(minisaxcpp_HEADERS
         Common.h
         Utf.h
-        XmlDataBuffer.h
+        UnicodeCircularBuffer.h
         XmlItemParser.h
         XmlReader.h
         XmlValidator.h

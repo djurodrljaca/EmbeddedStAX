@@ -25,7 +25,7 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include "XmlDataBuffer.h"
+#include "UnicodeCircularBuffer.h"
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -36,7 +36,7 @@ using namespace MiniSaxCpp;
  *
  * \param size  Buffer's size (number of unicode characters)
  */
-UnicodeCharacterCircularBuffer::UnicodeCharacterCircularBuffer(const size_t size)
+UnicodeCircularBuffer::UnicodeCircularBuffer(const size_t size)
     : m_buffer(new uint32_t[size + 1U]),
       m_bufferSize(size + 1U)
 {
@@ -46,7 +46,7 @@ UnicodeCharacterCircularBuffer::UnicodeCharacterCircularBuffer(const size_t size
 /**
  * Destructor for UnicodeCharacterCircularBuffer
  */
-UnicodeCharacterCircularBuffer::~UnicodeCharacterCircularBuffer()
+UnicodeCircularBuffer::~UnicodeCircularBuffer()
 {
     if (m_buffer != NULL)
     {
@@ -57,7 +57,7 @@ UnicodeCharacterCircularBuffer::~UnicodeCharacterCircularBuffer()
 /**
  * Clear the buffer
  */
-void UnicodeCharacterCircularBuffer::clear()
+void UnicodeCircularBuffer::clear()
 {
     m_utf8.clear();
     m_writePosition = 0U;
@@ -70,7 +70,7 @@ void UnicodeCharacterCircularBuffer::clear()
  * \retval true     Empty
  * \retval false    Not empty
  */
-bool UnicodeCharacterCircularBuffer::empty() const
+bool UnicodeCircularBuffer::empty() const
 {
     bool emptyFlag = false;
 
@@ -97,7 +97,7 @@ bool UnicodeCharacterCircularBuffer::empty() const
  * \retval true     Full
  * \retval false    Not full
  */
-bool UnicodeCharacterCircularBuffer::full() const
+bool UnicodeCircularBuffer::full() const
 {
     bool fullFlag = false;
 
@@ -134,7 +134,7 @@ bool UnicodeCharacterCircularBuffer::full() const
  *
  * \return Number of free items
  */
-size_t UnicodeCharacterCircularBuffer::free() const
+size_t UnicodeCircularBuffer::free() const
 {
     size_t freeBytes;
 
@@ -164,7 +164,7 @@ size_t UnicodeCharacterCircularBuffer::free() const
  *
  * \return Number of used items
  */
-size_t UnicodeCharacterCircularBuffer::used() const
+size_t UnicodeCircularBuffer::used() const
 {
     size_t usedBytes;
 
@@ -197,7 +197,7 @@ size_t UnicodeCharacterCircularBuffer::used() const
  * \retval true     Success
  * \retval false    Error, invalid unicode character or buffer is full
  */
-bool UnicodeCharacterCircularBuffer::write(const char data)
+bool UnicodeCircularBuffer::write(const char data)
 {
     bool success = false;
 
@@ -247,7 +247,7 @@ bool UnicodeCharacterCircularBuffer::write(const char data)
  *
  * \return Oldest unicode character from the buffer
  */
-uint32_t UnicodeCharacterCircularBuffer::read(bool *success)
+uint32_t UnicodeCircularBuffer::read(bool *success)
 {
     bool dataRead = false;
     uint32_t data = 0U;
