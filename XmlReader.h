@@ -86,19 +86,12 @@ private:
     enum ParsingState
     {
         ParsingState_Idle,
-
-        ParsingState_WaitingForStartOfItem,
-        ParsingState_ReadingItemType,
-
-        ParsingState_PiTarget,
-        ParsingState_PiValue,
-        ParsingState_PiEnd,
+        ParsingState_ReadingItem,
+        ParsingState_ProcessingInstruction,
 
         ParsingState_DocumentTypeName,
         ParsingState_DocumentTypeEnd,
-
         ParsingState_Comment,
-
         ParsingState_ElementName,
         ParsingState_ElementAttribute,
         ParsingState_ElementContent,
@@ -110,20 +103,18 @@ private:
 private:
     // Private API
     ParsingState executeParsingStateIdle();
+    ParsingState executeParsingStateReadingItem();
 
-    ParsingState executeParsingStateWaitingForStartOfItem();
-    ParsingState executeParsingStateReadingItemType();
+//    ParsingState executeParsingStatePiTarget();
+//    ParsingState executeParsingStatePiValue();
+//    ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
 
-    ParsingState executeParsingStatePiTarget();
-    ParsingState executeParsingStatePiValue();
-    ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
+//    ParsingState executeParsingStateDocumentTypeName();
+//    ParsingState executeParsingStateDocumentTypeEnd();
 
-    ParsingState executeParsingStateDocumentTypeName();
-    ParsingState executeParsingStateDocumentTypeEnd();
+//    ParsingState executeParsingStateComment();
 
-    ParsingState executeParsingStateComment();
-
-    ParsingState executeParsingStateElementName();
+//    ParsingState executeParsingStateElementName();
 
     bool parseXmlDeclaration();
 

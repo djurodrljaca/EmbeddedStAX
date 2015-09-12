@@ -64,7 +64,7 @@ public:
     enum ItemType
     {
         ItemType_None,
-        ItemType_Invalid,
+        ItemType_Whitespace,
         ItemType_ProcessingInstruction,
         ItemType_DocumentType,
         ItemType_Comment,
@@ -73,8 +73,7 @@ public:
 
     enum Action
     {
-        Action_FindStartOfItem,
-        Action_ReadItemType,
+        Action_ReadItem,
     };
 
 public:
@@ -87,15 +86,20 @@ public:
     Result execute();
 
     uint32_t getTerminationCharacter();
+    ItemType getItemType() const;
 
 private:
     // Private types
     enum State
     {
         State_Idle,
-
         State_WaitForStartOfItem,
-        State_StartOfItem,
+        State_WhitespaceFound,
+        State_ReadItemType,
+        State_ItemTypePiFound,
+        State_ItemTypeDocumentTypeFound,
+        State_ItemTypeCommentFound,
+        State_ItemTypeElementFound,
 
         State_Error
     };
@@ -104,10 +108,12 @@ private:
     // Private API
     void clearParsingBuffer();
     void eraseFromParsingBuffer(const size_t size);
+    bool readData();
+    bool readDataIfNeeded();
 
-    // State: WaitForStartOfItem
-    bool checkActionFindStartOfItem(Option option);
+    bool checkActionReadItem(Option option);
     State executeStateWaitForStartOfItem();
+    State executeStateReadItemType();
 
 private:
     // Private data
@@ -118,6 +124,7 @@ private:
     Option m_option;
     State m_state;
     uint32_t m_terminationCharacter;
+    ItemType m_itemType;
 
 //    void clearInternalState();
 //    Result parseStartOfItem(const Option option = Option_None);
@@ -129,13 +136,8 @@ private:
 //    Result parseComment();
 
 //    std::string getValue() const;
-//    ItemType getItemType() const;
-
-//    bool readData();
-//    bool readDataIfNeeded();
 
 //    std::string m_value;
-//    ItemType m_itemType;
 //    bool m_openTagCharacterFound;
 };
 }
