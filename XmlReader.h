@@ -87,14 +87,19 @@ private:
     {
         ParsingState_Idle,
         ParsingState_ReadingItem,
+
         ParsingState_ReadingPiTarget,
         ParsingState_ReadingPiValue,
         ParsingState_XmlDeclarationRead,
         ParsingState_ProcessingInstructionRead,
 
-        ParsingState_DocumentTypeName,
-        ParsingState_DocumentTypeEnd,
-        ParsingState_Comment,
+        ParsingState_ReadingDocumentTypeName,
+        ParsingState_ReadingDocumentTypeValue,
+        ParsingState_DocumentTypeRead,
+
+        ParsingState_ReadingCommentText,
+        ParsingState_CommentTextRead,
+
         ParsingState_ElementName,
         ParsingState_ElementAttribute,
         ParsingState_ElementContent,
@@ -109,14 +114,10 @@ private:
     ParsingState executeParsingStateReadingItem();
     ParsingState executeParsingStateReadingPiTarget();
     ParsingState executeParsingStateReadingPiValue();
+    ParsingState executeParsingStateReadingDocumentTypeName();
+    ParsingState executeParsingStateReadingDocumentTypeValue();
+    ParsingState executeParsingStateReadingCommentText();
 
-//    ParsingState executeParsingStatePiValue();
-//    ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
-
-//    ParsingState executeParsingStateDocumentTypeName();
-//    ParsingState executeParsingStateDocumentTypeEnd();
-
-//    ParsingState executeParsingStateComment();
 
 //    ParsingState executeParsingStateElementName();
 

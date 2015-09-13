@@ -75,7 +75,9 @@ public:
     {
         Action_ReadItem,
         Action_ReadName,
-        Action_ReadPiValue
+        Action_ReadPiValue,
+        Action_ReadDocumentTypeValue,
+        Action_ReadCommentText
     };
 
 public:
@@ -96,16 +98,22 @@ private:
     enum State
     {
         State_Idle,
-        State_WaitForStartOfItem,
-        State_WhitespaceFound,
-        State_ReadItemType,
-        State_ItemTypeFound,
+        State_WaitingForStartOfItem,
+        State_WhitespaceRead,
+        State_ReadingItemType,
+        State_ItemTypeRead,
 
-        State_ReadName,
-        State_NameFound,
+        State_ReadingName,
+        State_NameRead,
 
-        State_ReadPiValue,
-        State_PiValueFound,
+        State_ReadingPiValue,
+        State_PiValueRead,
+
+        State_ReadingDocumentTypeValue,
+        State_DocumentTypeValueRead,
+
+        State_ReadingCommentText,
+        State_CommentTextRead,
 
         State_Error
     };
@@ -117,14 +125,20 @@ private:
     bool readDataIfNeeded();
 
     bool checkActionReadItem(Option option);
-    State executeStateWaitForStartOfItem();
-    State executeStateReadItemType();
+    State executeStateWaitingForStartOfItem();
+    State executeStateReadingItemType();
 
     bool checkActionReadName(Option option);
-    State executeStateReadName();
+    State executeStateReadingName();
 
     bool checkActionReadPiValue(Option option);
-    State executeStateReadPiValue();
+    State executeStateReadingPiValue();
+
+    bool checkActionReadDocumentTypeValue(Option option);
+    State executeStateReadingDocumentTypeValue();
+
+    bool checkActionReadCommentText(Option option);
+    State executeStateReadingCommentText();
 
 private:
     // Private data
@@ -138,12 +152,7 @@ private:
     ItemType m_itemType;
     UnicodeString m_value;
 
-//    Result parsePiValue();
-//    Result parseEndOfPi();
-//    Result parseEndOfDocumentType();
 //    Result parseComment();
-
-//    bool m_openTagCharacterFound;
 };
 }
 
