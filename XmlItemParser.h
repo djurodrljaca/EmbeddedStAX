@@ -58,7 +58,7 @@ public:
     {
         Option_None,
         Option_Synchronization,
-        Option_IgnoreWhitespace
+        Option_IgnoreLeadingWhitespace
     };
 
     enum ItemType
@@ -74,6 +74,8 @@ public:
     enum Action
     {
         Action_ReadItem,
+        Action_ReadName,
+        Action_ReadPiValue
     };
 
 public:
@@ -87,6 +89,7 @@ public:
 
     uint32_t getTerminationCharacter();
     ItemType getItemType() const;
+    UnicodeString getValue() const;
 
 private:
     // Private types
@@ -96,17 +99,19 @@ private:
         State_WaitForStartOfItem,
         State_WhitespaceFound,
         State_ReadItemType,
-        State_ItemTypePiFound,
-        State_ItemTypeDocumentTypeFound,
-        State_ItemTypeCommentFound,
-        State_ItemTypeElementFound,
+        State_ItemTypeFound,
+
+        State_ReadName,
+        State_NameFound,
+
+        State_ReadPiValue,
+        State_PiValueFound,
 
         State_Error
     };
 
 private:
     // Private API
-    void clearParsingBuffer();
     void eraseFromParsingBuffer(const size_t size);
     bool readData();
     bool readDataIfNeeded();
@@ -114,6 +119,12 @@ private:
     bool checkActionReadItem(Option option);
     State executeStateWaitForStartOfItem();
     State executeStateReadItemType();
+
+    bool checkActionReadName(Option option);
+    State executeStateReadName();
+
+    bool checkActionReadPiValue(Option option);
+    State executeStateReadPiValue();
 
 private:
     // Private data
@@ -125,19 +136,13 @@ private:
     State m_state;
     uint32_t m_terminationCharacter;
     ItemType m_itemType;
+    UnicodeString m_value;
 
-//    void clearInternalState();
-//    Result parseStartOfItem(const Option option = Option_None);
-//    Result parseItemType();
-//    Result parseName(const Option option = Option_None);
 //    Result parsePiValue();
 //    Result parseEndOfPi();
 //    Result parseEndOfDocumentType();
 //    Result parseComment();
 
-//    std::string getValue() const;
-
-//    std::string m_value;
 //    bool m_openTagCharacterFound;
 };
 }

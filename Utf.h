@@ -56,6 +56,7 @@ public:
     uint32_t getUnicodeCharacter() const;
 
     static std::string toUtf8(const uint32_t unicodeCharacter);
+    static std::string toUtf8(const UnicodeString &unicodeString);
 
 private:
     // Private API

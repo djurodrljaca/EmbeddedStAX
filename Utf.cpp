@@ -164,6 +164,35 @@ std::string Utf8::toUtf8(const uint32_t unicodeCharacter)
 }
 
 /**
+ * Convert unicode string to UTF-8 string
+ *
+ * \param unicodeString String of unicode characters
+ *
+ * \return UTF-8 encoded unicode string or an empty string in case of an error
+ */
+std::string Utf8::toUtf8(const UnicodeString &unicodeString)
+{
+    std::string utf8String;
+
+    for (size_t i = 0U; i < unicodeString.size(); i++)
+    {
+        const std::string utf8Character = Utf8::toUtf8(unicodeString.at(i));
+
+        if (utf8Character.empty())
+        {
+            utf8String.clear();
+            break;
+        }
+        else
+        {
+            utf8String.append(utf8Character);
+        }
+    }
+
+    return utf8String;
+}
+
+/**
  * Write first character
  *
  * \param data  Data to write

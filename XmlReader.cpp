@@ -136,7 +136,7 @@ XmlReader::ParsingResult XmlReader::parse()
                     }
 
                     // TODO: check also other states!
-                    case ParsingState_ProcessingInstruction:
+                    case ParsingState_ReadingPiTarget:
                     {
                         // Execute another cycle
                         finishParsing = false;
@@ -153,7 +153,94 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ReadingPiTarget:
+            {
+                nextState = executeParsingStateReadingPiTarget();
 
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingPiTarget:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_ReadingPiValue:
+                    {
+                        // Execute another cycle
+                        finishParsing = false;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_ReadingPiValue:
+            {
+                nextState = executeParsingStateReadingPiValue();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingPiValue:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_XmlDeclarationRead:
+                    {
+                        // XML Declaration read
+                        result = ParsingResult_XmlDeclaration;
+                        break;
+                    }
+
+                    case ParsingState_ProcessingInstructionRead:
+                    {
+                        // Processing instruction read
+                        result = ParsingResult_ProcessingInstruction;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_XmlDeclarationRead:
+            case ParsingState_ProcessingInstructionRead:
+            {
+                // Initiate reading of an item
+                if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
+                                           XmlItemParser::Option_IgnoreLeadingWhitespace))
+                {
+                    nextState = ParsingState_ReadingItem;
+
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
 
 
 
@@ -471,7 +558,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateIdle()
 
     if (m_documentState == DocumentState_PrologDocumentType)
     {
-        option = XmlItemParser::Option_IgnoreWhitespace;
+        option = XmlItemParser::Option_IgnoreLeadingWhitespace;
     }
 
     // Initiate reading of an item
@@ -520,20 +607,32 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
                             m_documentState = DocumentState_PrologDocumentType;
                         }
 
-                        // Continue parsing, but ignore whitespace
+                        // Continue parsing, but ignore leading whitespace
                         if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
-                                                   XmlItemParser::Option_IgnoreWhitespace))
+                                                   XmlItemParser::Option_IgnoreLeadingWhitespace))
                         {
                             nextState = ParsingState_ReadingItem;
+                        }
+                        else
+                        {
+                            // Error, failed to continue reading item
+                            finishParsing = true;
                         }
                         break;
                     }
 
                     case XmlItemParser::ItemType_ProcessingInstruction:
                     {
-                        // Parse processing instruction
-                        // TODO: implement
-                        // TODO: until then, error
+                        // Parse PITarget
+                        if (m_itemParser.configure(XmlItemParser::Action_ReadName))
+                        {
+                            nextState = ParsingState_ReadingPiTarget;
+                        }
+                        else
+                        {
+                            // Error, failed to continue reading processing instruction
+                        }
+
                         finishParsing = true;
                         break;
                     }
@@ -569,6 +668,119 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
     return nextState;
 }
 
+/**
+ * Execute parsing state machine state: Reading PITarget
+ *
+ * \retval ParsingState_ReadingPiTarget Waiting for more data
+ * \retval ParsingState_ReadingPiValue  End of PITarget found
+ * \retval ParsingState_Error           Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingPiTarget()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Check termination character
+            const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
+
+            if ((terminationCharacter == (uint32_t)'?') ||
+                (XmlValidator::isWhitespace(terminationCharacter)))
+            {
+                // End of PITarget found
+                m_name = getItemParserValue();
+
+                if (m_name.empty())
+                {
+                    // Error, failed to get a valid PITarget
+                }
+                else
+                {
+                    // Read processing instruction value
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadPiValue,
+                                               XmlItemParser::Option_IgnoreLeadingWhitespace))
+                    {
+                        m_value.clear();
+                        nextState = ParsingState_ReadingPiValue;
+                    }
+                }
+            }
+            else
+            {
+                // Error, invalid termination character
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingPiTarget;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading processing instruction value
+ *
+ * \retval ParsingState_ReadingPiValue              Waiting for more data
+ * \retval ParsingState_XmlDeclarationRead          XML Declaration found
+ * \retval ParsingState_ProcessingInstructionRead   Processing instruction found
+ * \retval ParsingState_Error                       Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingPiValue()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // End of processing instruction found
+            bool success = false;
+            m_value = getItemParserValue(&success);
+
+            if (success)
+            {
+                // End of processing instruction found, evaluate it (check if XML declaration)
+                nextState = evaluateProcessingInstruction();
+            }
+            else
+            {
+                // Error, failed to get a valid processing instruction value
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingPiValue;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
 
 
 
@@ -580,135 +792,6 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-///**
-// * Execute parsing state machine state: PITarget
-// *
-// * \retval ParsingState_PiTarget    Waiting for more data
-// * \retval ParsingState_PiValue     End of PITarget found
-// * \retval ParsingState_PiEnd       End of PITarget with empty value found
-// * \retval ParsingState_Error       Error occured
-// */
-//XmlReader::ParsingState XmlReader::executeParsingStatePiTarget()
-//{
-//    ParsingState nextState = ParsingState_PiTarget;
-//    XmlItemParser::Result itemParserResult = m_itemParser.parseName();
-
-//    switch (itemParserResult)
-//    {
-//        case XmlItemParser::Result_Success:
-//        {
-//            // Check termination character
-//            const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
-
-//            if (terminationCharacter == (uint32_t)'?')
-//            {
-//                // End of PITarget with empty value found
-//                m_name = m_itemParser.getValue();
-//                nextState = ParsingState_PiEnd;
-//            }
-//            else if (XmlValidator::isWhitespace(terminationCharacter))
-//            {
-//                // End of PITarget found
-//                m_name = m_itemParser.getValue();
-//                m_value.clear();
-//                nextState = ParsingState_PiValue;
-//            }
-//            else
-//            {
-//                // Error, invalid termination character
-//                nextState = ParsingState_Error;
-//            }
-
-//            if (nextState != ParsingState_Error)
-//            {
-//                m_itemParser.clearInternalState();
-//            }
-//            break;
-//        }
-
-//        case XmlItemParser::Result_NeedMoreData:
-//        {
-//            // Wait for more data
-//            break;
-//        }
-
-//        default:
-//        {
-//            // Error
-//            nextState = ParsingState_Error;
-//            break;
-//        }
-//    }
-
-//    return nextState;
-//}
-
-///**
-// * Execute parsing state machine state: PI's value
-// *
-// * \retval ParsingState_PiValue Waiting for more data
-// * \retval ParsingState_PiEnd   End of PI'Target's value found
-// * \retval ParsingState_Error   Error occured
-// */
-//XmlReader::ParsingState XmlReader::executeParsingStatePiValue()
-//{
-//    ParsingState nextState = ParsingState_PiValue;
-//    XmlItemParser::Result itemParserResult = m_itemParser.parsePiValue();
-
-//    switch (itemParserResult)
-//    {
-//        case XmlItemParser::Result_Success:
-//        {
-//            // Check termination character
-//            const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
-
-//            if (terminationCharacter == (uint32_t)'?')
-//            {
-//                // End of PI'Target 's value found
-//                m_value = m_itemParser.getValue();
-//                m_itemParser.clearInternalState();
-//                nextState = ParsingState_PiEnd;
-//            }
-//            else
-//            {
-//                // Error, invalid termination character
-//                nextState = ParsingState_Error;
-//            }
-//            break;
-//        }
-
-//        case XmlItemParser::Result_NeedMoreData:
-//        {
-//            // Wait for more data
-//            break;
-//        }
-
-//        default:
-//        {
-//            // Error
-//            nextState = ParsingState_Error;
-//            break;
-//        }
-//    }
-
-//    return nextState;
-//}
 
 ///**
 // * Execute parsing state machine state: End of processing instruction
@@ -1061,6 +1144,90 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
 
 //    return nextState;
 //}
+
+/**
+ * Get the value from item parser and convert it to UTF-8 encoded string
+ *
+ * \param[out] success  Optional output parameter for signaling success or failure
+ *
+ * \return UTF-8 encoded item parser value or an empty string in case of an error
+ */
+std::string XmlReader::getItemParserValue(bool *success) const
+{
+    const UnicodeString itemParserValue = m_itemParser.getValue();
+    const std::string value = Utf8::toUtf8(itemParserValue);
+
+    if (success != NULL)
+    {
+        *success = true;
+
+        if (!itemParserValue.empty() && value.empty())
+        {
+            *success = false;
+        }
+    }
+
+    return value;
+}
+
+/**
+ * Evaluate processing instruction
+ *
+ * \retval ParsingResult_XmlDeclaration         Processing instruction is a XML Declaration
+ * \retval ParsingResult_ProcessingInstruction  Processing instruction is not known
+ * \retval ParsingResult_Error                  Error
+ */
+XmlReader::ParsingState XmlReader::evaluateProcessingInstruction()
+{
+    // Check for XML declaration
+    ParsingState nextState = ParsingState_ProcessingInstructionRead;
+
+    if (m_name.size() == 3U)
+    {
+        if (((m_name.at(0U) == 'x') || (m_name.at(0U) == 'X')) &&
+            ((m_name.at(1U) == 'm') || (m_name.at(1U) == 'M')) &&
+            ((m_name.at(2U) == 'l') || (m_name.at(2U) == 'L')))
+        {
+            // Check document state
+            if (m_documentState == DocumentState_PrologXmlDeclaration)
+            {
+                // XML declaration is at the start of the XML string. For a valid XML
+                // document the XML declaration has to be located at the start of the
+                // XML string otherwise it is not allowed to occur in the XML string.
+
+                // Parse XML Declaration from the processing instruction's value
+                if (parseXmlDeclaration())
+                {
+                    nextState = ParsingState_XmlDeclarationRead;
+                }
+                else
+                {
+                    // Error, problem parsing XML Declaration
+                    nextState = ParsingState_Error;
+                }
+            }
+            else
+            {
+                // Error, either multiple XML Declarations were found or the XML
+                // Declaration is not located at the start of the XML document
+                nextState = ParsingState_Error;
+            }
+        }
+    }
+
+    if (nextState != ParsingState_Error)
+    {
+        // Check document state
+        if (m_documentState == DocumentState_PrologXmlDeclaration)
+        {
+            // In case of both a PI and a XML Declaration the document state changes
+            // from "Prolog: XML Declaration" to "Prolog: Document Type"
+            m_documentState = DocumentState_PrologDocumentType;
+        }
+    }
+
+    return nextState;
+}
 
 /**
  * Parse XML Declaration

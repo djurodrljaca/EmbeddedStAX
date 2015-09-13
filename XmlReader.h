@@ -87,7 +87,10 @@ private:
     {
         ParsingState_Idle,
         ParsingState_ReadingItem,
-        ParsingState_ProcessingInstruction,
+        ParsingState_ReadingPiTarget,
+        ParsingState_ReadingPiValue,
+        ParsingState_XmlDeclarationRead,
+        ParsingState_ProcessingInstructionRead,
 
         ParsingState_DocumentTypeName,
         ParsingState_DocumentTypeEnd,
@@ -104,8 +107,9 @@ private:
     // Private API
     ParsingState executeParsingStateIdle();
     ParsingState executeParsingStateReadingItem();
+    ParsingState executeParsingStateReadingPiTarget();
+    ParsingState executeParsingStateReadingPiValue();
 
-//    ParsingState executeParsingStatePiTarget();
 //    ParsingState executeParsingStatePiValue();
 //    ParsingState executeParsingStatePiEnd(ParsingResult *newResult);
 
@@ -116,6 +120,8 @@ private:
 
 //    ParsingState executeParsingStateElementName();
 
+    std::string getItemParserValue(bool *success = NULL) const;
+    ParsingState evaluateProcessingInstruction();
     bool parseXmlDeclaration();
 
 private:
