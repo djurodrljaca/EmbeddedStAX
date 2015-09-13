@@ -653,9 +653,9 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
                 {
                     if (XmlValidator::isNameStartChar(unicodeCharacter))
                     {
-                        // Item type: Element
+                        // Item type: Start of Element
                         m_terminationCharacter = 0U;
-                        m_itemType = ItemType_Element;
+                        m_itemType = ItemType_StartOfElement;
                         nextState = State_ItemTypeRead;
                         finishParsing = true;
                     }
@@ -1120,114 +1120,3 @@ XmlItemParser::State XmlItemParser::executeStateReadingCommentText()
 
     return nextState;
 }
-
-
-
-
-
-
-
-
-
-///**
-// * Execute parser: Parse Comment item
-// *
-// * \retval Result_NeedMoreData  More data is needed to complete the parsing session
-// * \retval Result_Success       End of Comment found
-// * \retval Result_Error         Error occurred (invalid character read)
-// */
-//XmlItemParser::Result XmlItemParser::parseComment()
-//{
-//    Result result = Result_Error;
-//    bool finishParsing = false;
-
-//    do
-//    {
-//        // Read more data if needed and check if data is available
-//        if (readDataIfNeeded() == false)
-//        {
-//            // No data available, wait for more data
-//            result = Result_NeedMoreData;
-//            finishParsing = true;
-//        }
-//        else
-//        {
-//            // Data available
-//            // Get unicode character
-//            uint32_t unicodeCharacter = 0U;
-//            size_t nextPosition = 0U;
-//            Utf::Result utfResult = Utf::unicodeCharacterFromUtf8(m_parsingBuffer,
-//                                                                  m_position,
-//                                                                  &nextPosition,
-//                                                                  &unicodeCharacter);
-
-//            switch (utfResult)
-//            {
-//                case Utf::Result_Success:
-//                {
-//                    // Check for Char
-//                    if (XmlValidator::isChar(unicodeCharacter))
-//                    {
-//                        const size_t currentPosition = m_position;
-//                        m_position = nextPosition;
-
-//                        // Check if "-->" sequence
-//                        if (currentPosition >= 2U)
-//                        {
-//                            if ((m_parsingBuffer.at(currentPosition - 2U) == '-') &&
-//                                (m_parsingBuffer.at(currentPosition - 1U) == '-'))
-//                            {
-//                                // Sequence "--" found, check for '>' character
-//                                if (m_parsingBuffer.at(currentPosition) == '>')
-//                                {
-//                                    // Parsing finished: End of Comment found
-//                                    m_value = m_parsingBuffer.substr(0U, currentPosition - 2U);
-//                                    eraseFromParsingBuffer(currentPosition + 1U);
-//                                    result = Result_Success;
-//                                }
-//                                else
-//                                {
-//                                    // Error, invalid character
-//                                    eraseFromParsingBuffer(currentPosition);
-//                                }
-
-//                                m_terminationCharacter = unicodeCharacter;
-//                                finishParsing = true;
-//                            }
-//                        }
-//                    }
-//                    else
-//                    {
-//                        // Error, invalid character read
-//                        eraseFromParsingBuffer(m_position);
-//                        m_terminationCharacter = unicodeCharacter;
-//                        finishParsing = true;
-//                    }
-//                    break;
-//                }
-
-//                case Utf::Result_Incomplete:
-//                {
-//                    // Read next character
-//                    if (!readData())
-//                    {
-//                        // No data available, wait for more data
-//                        result = Result_NeedMoreData;
-//                        finishParsing = true;
-//                    }
-//                    break;
-//                }
-
-//                default:
-//                {
-//                    // Error, invalid unicode character
-//                    finishParsing = true;
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//    while (!finishParsing);
-
-//    return result;
-//}

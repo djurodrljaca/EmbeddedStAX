@@ -100,10 +100,14 @@ private:
         ParsingState_ReadingCommentText,
         ParsingState_CommentTextRead,
 
-        ParsingState_ElementName,
-        ParsingState_ElementAttribute,
-        ParsingState_ElementContent,
-        ParsingState_ElementEndEmpty,
+        ParsingState_ReadingElementName,
+        ParsingState_ElementNameRead,
+
+//        ParsingState_ReadingElementAttribute,
+//        ParsingState_ElementAttributeRead,
+
+//        ParsingState_ElementContent,
+//        ParsingState_ElementEndEmpty,
 
         ParsingState_Error
     };
@@ -117,9 +121,7 @@ private:
     ParsingState executeParsingStateReadingDocumentTypeName();
     ParsingState executeParsingStateReadingDocumentTypeValue();
     ParsingState executeParsingStateReadingCommentText();
-
-
-//    ParsingState executeParsingStateElementName();
+    ParsingState executeParsingStateReadingElementName();
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();

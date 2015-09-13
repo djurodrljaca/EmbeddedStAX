@@ -68,7 +68,7 @@ public:
         ItemType_ProcessingInstruction,
         ItemType_DocumentType,
         ItemType_Comment,
-        ItemType_Element
+        ItemType_StartOfElement
     };
 
     enum Action
@@ -151,8 +151,6 @@ private:
     uint32_t m_terminationCharacter;
     ItemType m_itemType;
     UnicodeString m_value;
-
-//    Result parseComment();
 };
 }
 
