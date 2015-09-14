@@ -136,6 +136,8 @@ private:
     ParsingState executeParsingStateReadingElementName();
     ParsingState executeParsingStateReadingElementAttributeName();
     ParsingState executeParsingStateReadingElementAttributeValue();
+//    ParsingState executeParsingStateReadingElementElementStartOfContent();
+//    ParsingState executeParsingStateReadingElementElementEndEmpty();
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();

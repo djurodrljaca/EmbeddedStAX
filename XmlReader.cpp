@@ -1312,6 +1312,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
                     else
                     {
                         // Attribute name read
+                        m_elementAttributeNameList.push_back(m_name);
                         nextState = ParsingState_ElementAttributeNameRead;
                     }
                 }

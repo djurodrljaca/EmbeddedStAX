@@ -251,6 +251,26 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                case XmlReader::ParsingResult_ElementAttribute:
+                {
+                    std::cout << "XML Element Attribute: " << xmlReader.getName() << " = "
+                              << xmlReader.getValue() << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_EndOfRootElement:
+                {
+                    std::cout << "XML End Of Root Element: " << xmlReader.getName() << std::endl;
+                    break;
+                }
+
+                case XmlReader::ParsingResult_EndOfChildElement:
+                {
+                    std::cout << "XML End Of Root Element: " << xmlReader.getName() << std::endl;
+                    break;
+                }
+
+
                 default:
                 {
                     std::cout << "default: result: " << result << std::endl;

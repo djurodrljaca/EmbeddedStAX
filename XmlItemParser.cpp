@@ -162,7 +162,7 @@ bool XmlItemParser::configure(const XmlItemParser::Action action,
         {
             if (checkActionReadAttributeValue(option))
             {
-                m_state = State_ReadingAttributeValueContent;
+                m_state = State_ReadingAttributeValueEqual;
                 success = true;
             }
             break;
@@ -899,7 +899,9 @@ bool XmlItemParser::checkActionReadName(Option option)
 {
     bool allowed = false;
 
-    if (m_state == State_ItemTypeRead)
+    if ((m_state == State_ItemTypeRead) ||
+        (m_state == State_NameRead) ||
+        (m_state == State_AttributeValueRead))
     {
         if ((option == Option_None) ||
             (option == Option_IgnoreLeadingWhitespace))
@@ -1585,7 +1587,73 @@ XmlItemParser::State XmlItemParser::executeStateReadingAttributeValueQuote()
     return nextState;
 }
 
+/**
+ * Execute state: Reading processing instruction value
+ *
+ * \retval State_ReadingAttributeValueContent   Wait for more data
+ * \retval State_AttributeValueRead             Attribute value read
+ * \retval State_Error                          Error
+ *
+ * Format:
+ * \code{.unparsed}
+ * AttValue ::= '"' ([^<&"] | Reference)* '"'
+ *            | "'" ([^<&'] | Reference)* "'"
+ *
+ * Reference ::= EntityRef | CharRef
+ * EntityRef ::= '&' Name ';'
+ * CharRef   ::= '&#' [0-9]+ ';'
+ *             | '&#x' [0-9a-fA-F]+ ';'
+ * \endcode
+ *
+ * \todo Check for all possible values! An example can also be found in the XmlValidatior.
+ */
 XmlItemParser::State XmlItemParser::executeStateReadingAttributeValueContent()
 {
-    // TODO: implement
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read more data if needed and check if data is available
+        if (readDataIfNeeded() == false)
+        {
+            // No data available, wait for more data
+            nextState = State_ReadingAttributeValueContent;
+            finishParsing = true;
+        }
+        else
+        {
+            // Data available
+            const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
+
+            // Check if character is valid
+            if (unicodeCharacter == (uint32_t)'<')
+            {
+                // Error, invalid character read
+                m_position = 0U;
+                m_terminationCharacter = unicodeCharacter;
+                finishParsing = true;
+            }
+            else if (((m_quotationMark == Common::QuotationMark_Quote) &&
+                      (unicodeCharacter == (uint32_t)'"')) ||
+                     ((m_quotationMark == Common::QuotationMark_Apostrophe) &&
+                      (unicodeCharacter == (uint32_t)'\'')))
+            {
+                // End of attribute value found
+                m_value = m_parsingBuffer.substr(0U, m_position);
+                eraseFromParsingBuffer(m_position + 1U);
+                m_terminationCharacter = 0U;
+                nextState = State_AttributeValueRead;
+                finishParsing = true;
+            }
+            else
+            {
+                // Valid attribute value character
+                m_position++;
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
 }
