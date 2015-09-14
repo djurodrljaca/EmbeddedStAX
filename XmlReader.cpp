@@ -61,6 +61,7 @@ void XmlReader::clear()
     m_documentTypeName.clear();
 
     m_openedElementNameList.clear();
+    m_elementAttributeNameList.clear();
 }
 
 /**
@@ -135,7 +136,6 @@ XmlReader::ParsingResult XmlReader::parse()
                         break;
                     }
 
-                    // TODO: check also other states!
                     case ParsingState_ReadingPiTarget:
                     case ParsingState_ReadingDocumentTypeName:
                     case ParsingState_ReadingCommentText:
@@ -339,7 +339,7 @@ XmlReader::ParsingResult XmlReader::parse()
 
                         if (size == 0U)
                         {
-                            // Error, invalid transition
+                            // Error, invalid list size (this should not be possible!)
                             nextState = ParsingState_Error;
                         }
                         else if (size == 1U)
@@ -350,7 +350,7 @@ XmlReader::ParsingResult XmlReader::parse()
                         else
                         {
                             // Start of element found
-                            result = ParsingResult_StartOfElement;
+                            result = ParsingResult_StartOfChildElement;
                         }
                         break;
                     }
@@ -365,22 +365,144 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ElementNameRead:
+            {
+                // Initiate reading of an attribute name
+                if (m_itemParser.configure(XmlItemParser::Action_ReadName,
+                                           XmlItemParser::Option_IgnoreLeadingWhitespace))
+                {
+                    nextState = ParsingState_ReadingElementAttributeName;
 
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
 
+            case ParsingState_ReadingElementAttributeName:
+            {
+                nextState = executeParsingStateReadingElementAttributeName();
 
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingElementAttributeName:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
 
+                    case ParsingState_ElementAttributeNameRead:
+                    {
+                        // Execute another cycle
+                        finishParsing = false;
+                        break;
+                    }
 
+                    case ParsingState_ElementStartOfContentRead:
+                    {
+                        // Execute another cycle
+                        finishParsing = false;
+                        break;
+                    }
 
+                    case ParsingState_ElementEndEmptyRead:
+                    {
+                        // End of empty element found
+                        if (m_openedElementNameList.empty())
+                        {
+                            result = ParsingResult_EndOfRootElement;
+                        }
+                        else
+                        {
+                            result = ParsingResult_EndOfChildElement;
+                        }
+                        break;
+                    }
 
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
 
+            case ParsingState_ElementAttributeNameRead:
+            {
+                // Initiate reading of an attribute value
+                if (m_itemParser.configure(XmlItemParser::Action_ReadAttributeValue))
+                {
+                    nextState = ParsingState_ReadingElementAttributeValue;
 
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
 
+            case ParsingState_ReadingElementAttributeValue:
+            {
+                nextState = executeParsingStateReadingElementAttributeValue();
 
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingElementAttributeValue:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
 
+                    case ParsingState_ElementAttributeValueRead:
+                    {
+                        // Element attribute read
+                        result = ParsingResult_ElementAttribute;
+                        break;
+                    }
 
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
 
+            case ParsingState_ElementAttributeValueRead:
+            {
+                // Initiate reading of an attribute name
+                if (m_itemParser.configure(XmlItemParser::Action_ReadName,
+                                           XmlItemParser::Option_IgnoreLeadingWhitespace))
+                {
+                    nextState = ParsingState_ReadingElementAttributeName;
 
-
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
 
             case ParsingState_XmlDeclarationRead:
             case ParsingState_ProcessingInstructionRead:
@@ -403,86 +525,6 @@ XmlReader::ParsingResult XmlReader::parse()
                 }
                 break;
             }
-
-
-
-
-
-
-
-//            case ParsingState_ElementName:
-//            {
-//                nextState = executeParsingStateElementName();
-
-//                // Check transitions
-//                switch (nextState)
-//                {
-//                    case ParsingState_ElementName:
-//                    {
-//                        // Wait for more data
-//                        result = ParsingResult_NeedMoreData;
-//                        break;
-//                    }
-
-//                    case ParsingState_ElementAttribute:
-//                    case ParsingState_ElementContent:
-//                    case ParsingState_ElementEndEmpty:
-//                    {
-//                        // Parsing is finished, start of element found
-//                        if ((m_documentState == DocumentState_PrologXmlDeclaration) ||
-//                            (m_documentState == DocumentState_PrologDocumentType) ||
-//                            (m_documentState == DocumentState_PrologOther))
-//                        {
-//                            // Start of root element found
-//                            bool validRootElementName = false;
-
-//                            if (m_documentTypeName.empty())
-//                            {
-//                                // If document type is not set then the root element name shall not
-//                                // be validated
-//                                validRootElementName = true;
-//                            }
-//                            else if (m_name == m_documentTypeName)
-//                            {
-//                                // Root element name is valid
-//                                validRootElementName = true;
-//                            }
-//                            else
-//                            {
-//                                // Error, invalid document type
-//                                nextState = ParsingState_Error;
-//                            }
-
-//                            if (validRootElementName)
-//                            {
-//                                m_openedElementNameList.push_back(m_name);
-//                                result = ParsingResult_StartOfRootElement;
-//                                m_documentState = DocumentState_Document;
-//                            }
-//                        }
-//                        else if (m_documentState == DocumentState_Document)
-//                        {
-//                            // Start of child element found
-//                            m_openedElementNameList.push_back(m_name);
-//                            result = ParsingResult_StartOfElement;
-//                        }
-//                        else
-//                        {
-//                            // Error, invalid document state
-//                            nextState = ParsingState_Error;
-//                        }
-//                        break;
-//                    }
-
-//                    default:
-//                    {
-//                        // Error, invalid transition
-//                        nextState = ParsingState_Error;
-//                        break;
-//                    }
-//                }
-//                break;
-//            }
 
             default:
             {
@@ -1151,6 +1193,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementName()
                     if (!error)
                     {
                         m_openedElementNameList.push_back(m_name);
+                        m_elementAttributeNameList.clear();
                         nextState = ParsingState_ElementNameRead;
                     }
                 }
@@ -1166,6 +1209,173 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementName()
         {
             // Wait for more data
             nextState = ParsingState_ReadingElementName;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading element attribute name
+ *
+ * \retval ParsingState_ReadingElementAttributeName     Waiting for more data
+ * \retval ParsingState_ElementAttributeNameRead        Element attribute name read
+ * \retval ParsingState_ReadingElementStartOfContent    Start of element's content found
+ * \retval ParsingState_ReadingElementEndEmpty          End of empty element read
+ * \retval ParsingState_Error                           Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeName()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Check if an attribute name was read
+            bool success = false;
+            m_name = getItemParserValue(&success);
+
+            if (success)
+            {
+                if (m_name.empty())
+                {
+                    // Check termination character
+                    const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
+
+                    // Check for start of content
+                    if (terminationCharacter == (uint32_t)'>')
+                    {
+                        // Start of content found
+                        if (m_itemParser.configure(XmlItemParser::Action_ReadElementStartOfContent))
+                        {
+                            m_elementAttributeNameList.clear();
+                            nextState = ParsingState_ReadingElementStartOfContent;
+                        }
+                    }
+                    else if (terminationCharacter == (uint32_t)'/')
+                    {
+                        // End of empty element
+                        if (m_openedElementNameList.empty())
+                        {
+                            // Error, the list should not be empty here (start of element had to be
+                            // found before we came to this state!)
+                        }
+                        else
+                        {
+                            if (m_itemParser.configure(XmlItemParser::Action_ReadElementEndEmpty))
+                            {
+                                m_openedElementNameList.pop_back();
+                                m_elementAttributeNameList.clear();
+                                nextState = ParsingState_ReadingElementEndEmpty;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Error
+                    }
+                }
+                else
+                {
+                    // Attribute name was read, check if an attribute with the same name was already
+                    // read in the current element
+                    bool nameFound = false;
+                    std::list<std::string>::const_iterator iterator;
+
+                    for (iterator = m_elementAttributeNameList.begin();
+                         iterator != m_elementAttributeNameList.end();
+                         iterator++)
+                    {
+                        const std::string &attributeName = *iterator;
+
+                        if (m_name == attributeName)
+                        {
+                            nameFound = true;
+                            break;
+                        }
+                    }
+
+                    if (nameFound)
+                    {
+                        // Error, an attribute with the same name was already found in the current
+                        // element
+                    }
+                    else
+                    {
+                        // Attribute name read
+                        nextState = ParsingState_ElementAttributeNameRead;
+                    }
+                }
+            }
+            else
+            {
+                // Error, failed to read item parser value
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingElementAttributeName;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading element attribute value
+ *
+ * \retval ParsingState_ReadingElementAttributeValue    Waiting for more data
+ * \retval ParsingState_ElementAttributeValueRead       Element attribute value read
+ * \retval ParsingState_Error                           Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeValue()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Get attribute value
+            bool success = false;
+            m_value = getItemParserValue(&success);
+
+            if (success)
+            {
+                // Attribute value read
+                nextState = ParsingState_ElementAttributeValueRead;
+            }
+            else
+            {
+                // Error, failed to read item parser value
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingElementAttributeValue;
             break;
         }
 

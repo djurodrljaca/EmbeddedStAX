@@ -29,6 +29,7 @@
 #define MINISAXCPP_XMLITEMPARSER_H
 
 #include "UnicodeCircularBuffer.h"
+#include "Common.h"
 
 namespace MiniSaxCpp
 {
@@ -77,7 +78,10 @@ public:
         Action_ReadName,
         Action_ReadPiValue,
         Action_ReadDocumentTypeValue,
-        Action_ReadCommentText
+        Action_ReadCommentText,
+        Action_ReadElementStartOfContent,
+        Action_ReadElementEndEmpty,
+        Action_ReadAttributeValue
     };
 
 public:
@@ -115,6 +119,17 @@ private:
         State_ReadingCommentText,
         State_CommentTextRead,
 
+        State_ReadingElementStartOfContent,
+        State_ElementStartOfContentRead,
+
+        State_ReadingElementEndEmpty,
+        State_ElementEndEmptyRead,
+
+        State_ReadingAttributeValueEqual,
+        State_ReadingAttributeValueQuote,
+        State_ReadingAttributeValueContent,
+        State_AttributeValueRead,
+
         State_Error
     };
 
@@ -140,6 +155,17 @@ private:
     bool checkActionReadCommentText(Option option);
     State executeStateReadingCommentText();
 
+    bool checkActionReadElementStartOfContent(Option option);
+    State executeStateReadingElementStartOfContent();
+
+    bool checkActionReadElementEndEmpty(Option option);
+    State executeStateReadingElementEndEmpty();
+
+    bool checkActionReadAttributeValue(Option option);
+    State executeStateReadingAttributeValueEqual();
+    State executeStateReadingAttributeValueQuote();
+    State executeStateReadingAttributeValueContent();
+
 private:
     // Private data
     UnicodeCircularBuffer m_xmlDataBuffer;
@@ -151,6 +177,7 @@ private:
     uint32_t m_terminationCharacter;
     ItemType m_itemType;
     UnicodeString m_value;
+    Common::QuotationMark m_quotationMark;
 };
 }
 

@@ -50,7 +50,10 @@ public:
         ParsingResult_DocumentType,
         ParsingResult_Comment,
         ParsingResult_StartOfRootElement,
-        ParsingResult_StartOfElement
+        ParsingResult_StartOfChildElement,
+        ParsingResult_ElementAttribute,
+        ParsingResult_EndOfRootElement,
+        ParsingResult_EndOfChildElement
     };
 
 public:
@@ -103,11 +106,20 @@ private:
         ParsingState_ReadingElementName,
         ParsingState_ElementNameRead,
 
-//        ParsingState_ReadingElementAttribute,
-//        ParsingState_ElementAttributeRead,
+        ParsingState_ReadingElementAttributeName,
+        ParsingState_ElementAttributeNameRead,
 
-//        ParsingState_ElementContent,
-//        ParsingState_ElementEndEmpty,
+        ParsingState_ReadingElementAttributeValue,
+        ParsingState_ElementAttributeValueRead,
+
+        ParsingState_ReadingElementStartOfContent,
+        ParsingState_ElementStartOfContentRead,
+
+        ParsingState_ReadingElementEndEmpty,
+        ParsingState_ElementEndEmptyRead,
+
+//        ParsingState_ReadingElementEnd,
+//        ParsingState_ElementEndRead,
 
         ParsingState_Error
     };
@@ -122,6 +134,8 @@ private:
     ParsingState executeParsingStateReadingDocumentTypeValue();
     ParsingState executeParsingStateReadingCommentText();
     ParsingState executeParsingStateReadingElementName();
+    ParsingState executeParsingStateReadingElementAttributeName();
+    ParsingState executeParsingStateReadingElementAttributeValue();
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();
@@ -145,6 +159,7 @@ private:
     std::string m_documentTypeName;
 
     std::list<std::string> m_openedElementNameList;
+    std::list<std::string> m_elementAttributeNameList;
 };
 }
 

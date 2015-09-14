@@ -59,6 +59,7 @@ enum XmlStandalone
 
 enum QuotationMark
 {
+    QuotationMark_None,
     QuotationMark_Quote,
     QuotationMark_Apostrophe
 };
