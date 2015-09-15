@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 
                 case XmlReader::ParsingResult_StartOfChildElement:
                 {
-                    std::cout << "XML Start Of Element: " << xmlReader.getName() << std::endl;
+                    std::cout << "XML Start Of Child Element: " << xmlReader.getName() << std::endl;
                     break;
                 }
 

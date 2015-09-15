@@ -108,15 +108,14 @@ private:
 
         ParsingState_ReadingElementAttributeName,
         ParsingState_ElementAttributeNameRead,
+        ParsingState_ElementStartOfContentRead,
+        ParsingState_ElementEndEmptyRead,
 
         ParsingState_ReadingElementAttributeValue,
         ParsingState_ElementAttributeValueRead,
 
-        ParsingState_ReadingElementStartOfContent,
-        ParsingState_ElementStartOfContentRead,
-
-        ParsingState_ReadingElementEndEmpty,
-        ParsingState_ElementEndEmptyRead,
+        ParsingState_ReadingTextNode,    // TODO: implement
+        ParsingState_TextNodeRead,
 
 //        ParsingState_ReadingElementEnd,
 //        ParsingState_ElementEndRead,
@@ -136,8 +135,6 @@ private:
     ParsingState executeParsingStateReadingElementName();
     ParsingState executeParsingStateReadingElementAttributeName();
     ParsingState executeParsingStateReadingElementAttributeValue();
-//    ParsingState executeParsingStateReadingElementElementStartOfContent();
-//    ParsingState executeParsingStateReadingElementElementEndEmpty();
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();

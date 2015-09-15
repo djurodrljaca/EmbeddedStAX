@@ -368,7 +368,7 @@ XmlReader::ParsingResult XmlReader::parse()
             case ParsingState_ElementNameRead:
             {
                 // Initiate reading of an attribute name
-                if (m_itemParser.configure(XmlItemParser::Action_ReadName,
+                if (m_itemParser.configure(XmlItemParser::Action_ReadAttributeName,
                                            XmlItemParser::Option_IgnoreLeadingWhitespace))
                 {
                     nextState = ParsingState_ReadingElementAttributeName;
@@ -414,14 +414,21 @@ XmlReader::ParsingResult XmlReader::parse()
 
                     case ParsingState_ElementEndEmptyRead:
                     {
-                        // End of empty element found
                         if (m_openedElementNameList.empty())
                         {
-                            result = ParsingResult_EndOfRootElement;
+                            // Error, no element is open (this situation should never occur!)
                         }
                         else
                         {
-                            result = ParsingResult_EndOfChildElement;
+                            // End of empty element found
+                            if (m_openedElementNameList.empty())
+                            {
+                                result = ParsingResult_EndOfRootElement;
+                            }
+                            else
+                            {
+                                result = ParsingResult_EndOfChildElement;
+                            }
                         }
                         break;
                     }
@@ -488,7 +495,7 @@ XmlReader::ParsingResult XmlReader::parse()
             case ParsingState_ElementAttributeValueRead:
             {
                 // Initiate reading of an attribute name
-                if (m_itemParser.configure(XmlItemParser::Action_ReadName,
+                if (m_itemParser.configure(XmlItemParser::Action_ReadAttributeName,
                                            XmlItemParser::Option_IgnoreLeadingWhitespace))
                 {
                     nextState = ParsingState_ReadingElementAttributeName;
@@ -504,10 +511,17 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ElementStartOfContentRead:
+            {
+                // TODO: implement reading of element content
+                break;
+            }
+
             case ParsingState_XmlDeclarationRead:
             case ParsingState_ProcessingInstructionRead:
             case ParsingState_DocumentTypeRead:
             case ParsingState_CommentTextRead:
+            case ParsingState_ElementEndEmptyRead:
             {
                 // Initiate reading of an item
                 if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
@@ -1255,15 +1269,11 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
                     if (terminationCharacter == (uint32_t)'>')
                     {
                         // Start of content found
-                        if (m_itemParser.configure(XmlItemParser::Action_ReadElementStartOfContent))
-                        {
-                            m_elementAttributeNameList.clear();
-                            nextState = ParsingState_ReadingElementStartOfContent;
-                        }
+                        m_elementAttributeNameList.clear();
+                        nextState = ParsingState_ElementStartOfContentRead;
                     }
                     else if (terminationCharacter == (uint32_t)'/')
                     {
-                        // End of empty element
                         if (m_openedElementNameList.empty())
                         {
                             // Error, the list should not be empty here (start of element had to be
@@ -1271,12 +1281,12 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
                         }
                         else
                         {
-                            if (m_itemParser.configure(XmlItemParser::Action_ReadElementEndEmpty))
-                            {
-                                m_openedElementNameList.pop_back();
-                                m_elementAttributeNameList.clear();
-                                nextState = ParsingState_ReadingElementEndEmpty;
-                            }
+                            // End of empty element read
+                            m_name = m_openedElementNameList.back();
+                            m_openedElementNameList.pop_back();
+
+                            m_elementAttributeNameList.clear();
+                            nextState = ParsingState_ElementEndEmptyRead;
                         }
                     }
                     else

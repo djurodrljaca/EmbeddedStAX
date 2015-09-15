@@ -70,6 +70,7 @@ public:
         ItemType_DocumentType,
         ItemType_Comment,
         ItemType_StartOfElement
+        // TODO: add text node, start of element content, end of empty element?
     };
 
     enum Action
@@ -79,9 +80,9 @@ public:
         Action_ReadPiValue,
         Action_ReadDocumentTypeValue,
         Action_ReadCommentText,
-        Action_ReadElementStartOfContent,
-        Action_ReadElementEndEmpty,
-        Action_ReadAttributeValue
+        Action_ReadAttributeName,
+        Action_ReadAttributeValue,
+        Action_ReadTextNode // TODO: implement
     };
 
 public:
@@ -119,16 +120,22 @@ private:
         State_ReadingCommentText,
         State_CommentTextRead,
 
+        State_ReadingAttributeName,
+        State_AttributeNameRead,
+
+        State_ReadingAttributeValueEqual,
+        State_ReadingAttributeValueQuote,
+        State_ReadingAttributeValueContent,
+        State_AttributeValueRead,
+
         State_ReadingElementStartOfContent,
         State_ElementStartOfContentRead,
 
         State_ReadingElementEndEmpty,
         State_ElementEndEmptyRead,
 
-        State_ReadingAttributeValueEqual,
-        State_ReadingAttributeValueQuote,
-        State_ReadingAttributeValueContent,
-        State_AttributeValueRead,
+        State_ReadingTextNode,  // TODO: implement
+        State_TextNodeRead,
 
         State_Error
     };
@@ -155,16 +162,16 @@ private:
     bool checkActionReadCommentText(Option option);
     State executeStateReadingCommentText();
 
-    bool checkActionReadElementStartOfContent(Option option);
+    bool checkActionReadAttributeName(Option option);
+    State executeStateReadingAttributeName();
     State executeStateReadingElementStartOfContent();
-
-    bool checkActionReadElementEndEmpty(Option option);
     State executeStateReadingElementEndEmpty();
 
     bool checkActionReadAttributeValue(Option option);
     State executeStateReadingAttributeValueEqual();
     State executeStateReadingAttributeValueQuote();
     State executeStateReadingAttributeValueContent();
+
 
 private:
     // Private data
