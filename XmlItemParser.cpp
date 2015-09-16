@@ -33,6 +33,7 @@ using namespace MiniSaxCpp;
 
 static const std::string s_itemTypeComment("!--");
 static const std::string s_itemTypeDocumentType("!DOCTYPE");
+static const std::string s_itemTypeCData("![CDATA[");
 
 /**
  * Constructor
@@ -153,6 +154,16 @@ bool XmlItemParser::configure(const XmlItemParser::Action action,
             if (checkActionReadAttributeValue(option))
             {
                 m_state = State_ReadingAttributeValueEqual;
+                success = true;
+            }
+            break;
+        }
+
+        case Action_ReadTextNode:
+        {
+            if (checkActionReadTextNode(option))
+            {
+                m_state = State_ReadingTextNode;
                 success = true;
             }
             break;
@@ -555,6 +566,36 @@ XmlItemParser::Result XmlItemParser::execute()
                 break;
             }
 
+            case State_ReadingTextNode:
+            {
+                // Read text node
+                nextState = executeStateReadingTextNode();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case State_ReadingTextNode:
+                    {
+                        result = Result_NeedMoreData;
+                        break;
+                    }
+
+                    case State_TextNodeRead:
+                    {
+                        result = Result_Success;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             default:
             {
                 break;
@@ -678,7 +719,8 @@ bool XmlItemParser::checkActionReadItem(Option option)
         (m_state == State_DocumentTypeValueRead) ||
         (m_state == State_CommentTextRead) ||
         (m_state == State_ElementStartOfContentRead) ||
-        (m_state == State_ElementEndEmptyRead))
+        (m_state == State_ElementEndEmptyRead) ||
+        (m_state == State_TextNodeRead))
     {
         if ((option == Option_None) ||
             (option == Option_Synchronization) ||
@@ -784,6 +826,7 @@ XmlItemParser::State XmlItemParser::executeStateWaitingForStartOfItem()
  * Processing Instruction ::= '?'
  * Document Type          ::= '!DOCTYPE'
  * Comment                ::= '!--'
+ * CData                  ::= '![CDATA['
  * Element                ::= NameStartChar
  * \endcode
  */
@@ -810,6 +853,7 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
                 // - Processing Instruction
                 // - Document Type
                 // - Comment
+                // - CData
                 // - Element
                 const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
 
@@ -824,7 +868,7 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
                 }
                 else if (unicodeCharacter == (uint32_t)'!')
                 {
-                    // Possible types: Document Type and Comment
+                    // Possible types: Document Type, Comment and CData
                     m_position = 1U;
                 }
                 else
@@ -847,6 +891,8 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
             }
             else
             {
+                // TODO: save the exact type of most likely candidate for a item to a local variable
+
                 bool checkNextItemType = true;
                 const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
 
@@ -904,6 +950,29 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
                         }
 
                         finishParsing = true;
+                    }
+                }
+
+                // Check for CData
+                if (checkNextItemType)
+                {
+                    if (m_position < s_itemTypeCData.size())
+                    {
+                        if (unicodeCharacter == (uint32_t)s_itemTypeCData.at(m_position))
+                        {
+                            checkNextItemType = false;
+                            m_position++;
+
+                            if (m_position == s_itemTypeCData.size())
+                            {
+                                // Item type: CData
+                                eraseFromParsingBuffer(m_position);
+                                m_terminationCharacter = 0U;
+                                m_itemType = ItemType_CData;
+                                nextState = State_ItemTypeRead;
+                                finishParsing = true;
+                            }
+                        }
                     }
                 }
 
@@ -1416,6 +1485,7 @@ XmlItemParser::State XmlItemParser::executeStateReadingAttributeName()
                     m_value = m_parsingBuffer.substr(0U, m_position);
                     eraseFromParsingBuffer(m_position);
                     m_terminationCharacter = unicodeCharacter;
+                    m_itemType = ItemType_ElementAttribute;
                     nextState = State_AttributeNameRead;
                     finishParsing = true;
                 }
@@ -1459,7 +1529,8 @@ XmlItemParser::State XmlItemParser::executeStateReadingElementStartOfContent()
         {
             m_value.clear();
             eraseFromParsingBuffer(m_position + 1U);
-            m_terminationCharacter = unicodeCharacter; // TODO: replace this with item type?
+            m_terminationCharacter = 0U;
+            m_itemType = ItemType_StartOfElementContent;
             nextState = State_ElementStartOfContentRead;
         }
         else
@@ -1525,7 +1596,8 @@ XmlItemParser::State XmlItemParser::executeStateReadingElementEndEmpty()
                 if (unicodeCharacter == (uint32_t)'>')
                 {
                     eraseFromParsingBuffer(m_position + 1U);
-                    m_terminationCharacter = (uint32_t)'/'; // TODO: replace this with item type?
+                    m_terminationCharacter = 0U;
+                    m_itemType = ItemType_StartOfEmptyElement;
                     nextState = State_ElementEndEmptyRead;
                     finishParsing = true;
                 }
@@ -1763,6 +1835,98 @@ XmlItemParser::State XmlItemParser::executeStateReadingAttributeValueContent()
             {
                 // Valid attribute value character
                 m_position++;
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+/**
+ * Check if action "Read text node" is allowed based on the internal state of the parser
+ *
+ * \param option    Parsing option (allowed: None)
+ *
+ * \retval true     Action is allowed
+ * \retval false    Action is not allowed
+ */
+bool XmlItemParser::checkActionReadTextNode(XmlItemParser::Option option)
+{
+    bool allowed = false;
+
+    // TODO: add other states?
+    if ((m_state == State_ElementStartOfContentRead) ||
+        (m_state == State_ElementEndEmptyRead))
+    {
+        if (option == Option_None)
+        {
+            allowed = true;
+        }
+    }
+
+    return allowed;
+}
+
+/**
+ * Execute state: Reading text node
+ *
+ * \retval State_ReadingTextNode    Wait for more data
+ * \retval State_TextNodeRead       Comment text read
+ * \retval State_Error              Error
+ *
+ * Format:
+ * \code{.unparsed}
+ * CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+ * \endcode
+ *
+ * \todo Fully suport the format (references are currently not checked)
+ */
+XmlItemParser::State XmlItemParser::executeStateReadingTextNode()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read more data if needed and check if data is available
+        if (readDataIfNeeded() == false)
+        {
+            // No data available, wait for more data
+            nextState = State_ReadingTextNode;
+            finishParsing = true;
+        }
+        else
+        {
+            // Data available
+            const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
+
+            // Check if character is valid
+            if (unicodeCharacter == (uint32_t)'<')
+            {
+                m_value = m_parsingBuffer.substr(0U, m_position);
+                eraseFromParsingBuffer(m_position);
+                m_terminationCharacter = 0U;
+                nextState = State_TextNodeRead;
+                finishParsing = true;
+            }
+            else
+            {
+                m_position++;
+
+                // Check for "]]>" sequence
+                if (m_position >= 3U)
+                {
+                    if ((m_parsingBuffer.at(m_position - 3U) == (uint32_t)']') &&
+                        (m_parsingBuffer.at(m_position - 2U) == (uint32_t)']') &&
+                        (m_parsingBuffer.at(m_position - 1U) == (uint32_t)'>'))
+                    {
+                        // Error, invalid sequence
+                        m_position = 0U;
+                        m_terminationCharacter = unicodeCharacter;
+                        finishParsing = true;
+                    }
+                }
             }
         }
     }

@@ -513,7 +513,58 @@ XmlReader::ParsingResult XmlReader::parse()
 
             case ParsingState_ElementStartOfContentRead:
             {
-                // TODO: implement reading of element content
+                // Initiate reading of a text node
+                if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
+                {
+                    nextState = ParsingState_ReadingTextNode;
+
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
+
+            case ParsingState_ReadingTextNode:
+            {
+                nextState = executeParsingStateReadingTextNode();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingTextNode:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_TextNodeRead:
+                    {
+                        if (m_value.empty())
+                        {
+                            // Start of another item was found, execute another cycle
+                            finishParsing = false;
+                        }
+                        else
+                        {
+                            // Text node read
+                            result = ParsingResult_TextNode;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
                 break;
             }
 
@@ -522,6 +573,7 @@ XmlReader::ParsingResult XmlReader::parse()
             case ParsingState_DocumentTypeRead:
             case ParsingState_CommentTextRead:
             case ParsingState_ElementEndEmptyRead:
+            case ParsingState_TextNodeRead:
             {
                 // Initiate reading of an item
                 if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
@@ -1254,82 +1306,86 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
     {
         case XmlItemParser::Result_Success:
         {
-            // Check if an attribute name was read
-            bool success = false;
-            m_name = getItemParserValue(&success);
+            // Check item type
+            const XmlItemParser::ItemType itemType = m_itemParser.getItemType();
 
-            if (success)
+            switch (itemType)
             {
-                if (m_name.empty())
+                case XmlItemParser::ItemType_ElementAttribute:
                 {
-                    // Check termination character
-                    const uint32_t terminationCharacter = m_itemParser.getTerminationCharacter();
+                    m_name = getItemParserValue();
 
-                    // Check for start of content
-                    if (terminationCharacter == (uint32_t)'>')
+                    if (m_name.empty())
                     {
-                        // Start of content found
-                        m_elementAttributeNameList.clear();
-                        nextState = ParsingState_ElementStartOfContentRead;
+                        // Error, empty name
                     }
-                    else if (terminationCharacter == (uint32_t)'/')
+                    else
                     {
-                        if (m_openedElementNameList.empty())
+                        // Attribute name was read, check if an attribute with the same name was already
+                        // read in the current element
+                        bool nameFound = false;
+                        std::list<std::string>::const_iterator iterator;
+
+                        for (iterator = m_elementAttributeNameList.begin();
+                             iterator != m_elementAttributeNameList.end();
+                             iterator++)
                         {
-                            // Error, the list should not be empty here (start of element had to be
-                            // found before we came to this state!)
+                            const std::string &attributeName = *iterator;
+
+                            if (m_name == attributeName)
+                            {
+                                nameFound = true;
+                                break;
+                            }
+                        }
+
+                        if (nameFound)
+                        {
+                            // Error, an attribute with the same name was already found in the current
+                            // element
                         }
                         else
                         {
-                            // End of empty element read
-                            m_name = m_openedElementNameList.back();
-                            m_openedElementNameList.pop_back();
-
-                            m_elementAttributeNameList.clear();
-                            nextState = ParsingState_ElementEndEmptyRead;
+                            // Attribute name read
+                            m_elementAttributeNameList.push_back(m_name);
+                            nextState = ParsingState_ElementAttributeNameRead;
                         }
                     }
-                    else
-                    {
-                        // Error
-                    }
+                    break;
                 }
-                else
+
+                case XmlItemParser::ItemType_StartOfElementContent:
                 {
-                    // Attribute name was read, check if an attribute with the same name was already
-                    // read in the current element
-                    bool nameFound = false;
-                    std::list<std::string>::const_iterator iterator;
+                    // Start of element content found
+                    m_elementAttributeNameList.clear();
+                    nextState = ParsingState_ElementStartOfContentRead;
+                    break;
+                }
 
-                    for (iterator = m_elementAttributeNameList.begin();
-                         iterator != m_elementAttributeNameList.end();
-                         iterator++)
+                case XmlItemParser::ItemType_StartOfEmptyElement:
+                {
+                    if (m_openedElementNameList.empty())
                     {
-                        const std::string &attributeName = *iterator;
-
-                        if (m_name == attributeName)
-                        {
-                            nameFound = true;
-                            break;
-                        }
-                    }
-
-                    if (nameFound)
-                    {
-                        // Error, an attribute with the same name was already found in the current
-                        // element
+                        // Error, the list should not be empty here (start of element had to be
+                        // found before we came to this state!)
                     }
                     else
                     {
-                        // Attribute name read
-                        m_elementAttributeNameList.push_back(m_name);
-                        nextState = ParsingState_ElementAttributeNameRead;
+                        // End of empty element read
+                        m_name = m_openedElementNameList.back();
+                        m_openedElementNameList.pop_back();
+
+                        m_elementAttributeNameList.clear();
+                        nextState = ParsingState_ElementEndEmptyRead;
                     }
+                    break;
                 }
-            }
-            else
-            {
-                // Error, failed to read item parser value
+
+                default:
+                {
+                    // Error
+                    break;
+                }
             }
             break;
         }
@@ -1387,6 +1443,55 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeVal
         {
             // Wait for more data
             nextState = ParsingState_ReadingElementAttributeValue;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading text node
+ *
+ * \retval ParsingState_ReadingTextNode Waiting for more data
+ * \retval ParsingState_TextNodeRead    Element attribute value read
+ * \retval ParsingState_Error           Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Get attribute value
+            bool success = false;
+            m_value = getItemParserValue(&success);
+
+            if (success)
+            {
+                // Text node was read
+                nextState = ParsingState_TextNodeRead;
+            }
+            else
+            {
+                // Error, failed to read item parser value
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingTextNode;
             break;
         }
 

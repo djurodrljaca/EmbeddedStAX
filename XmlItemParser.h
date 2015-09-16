@@ -46,6 +46,9 @@ namespace MiniSaxCpp
  */
 class XmlItemParser
 {
+
+    // TODO: reimplement with an abstract item parser and specialized item parser for each item type
+
 public:
     // Public types
     enum Result
@@ -62,15 +65,19 @@ public:
         Option_IgnoreLeadingWhitespace
     };
 
-    enum ItemType
+    enum ItemType   // TODO: rename to "markup type" ?
     {
         ItemType_None,
         ItemType_Whitespace,
         ItemType_ProcessingInstruction,
         ItemType_DocumentType,
         ItemType_Comment,
-        ItemType_StartOfElement
-        // TODO: add text node, start of element content, end of empty element?
+        ItemType_StartOfElement,
+        ItemType_ElementAttribute,
+        ItemType_StartOfElementContent,
+        ItemType_StartOfEmptyElement,
+        ItemType_CData,
+        ItemType_TextNode
     };
 
     enum Action
@@ -82,7 +89,8 @@ public:
         Action_ReadCommentText,
         Action_ReadAttributeName,
         Action_ReadAttributeValue,
-        Action_ReadTextNode // TODO: implement
+        Action_ReadTextNode,
+        Action_ReadCData        // TODO: implement
     };
 
 public:
@@ -134,8 +142,11 @@ private:
         State_ReadingElementEndEmpty,
         State_ElementEndEmptyRead,
 
-        State_ReadingTextNode,  // TODO: implement
+        State_ReadingTextNode,
         State_TextNodeRead,
+
+        State_ReadingCData,  // TODO: implement
+        State_CDataRead,
 
         State_Error
     };
@@ -171,6 +182,9 @@ private:
     State executeStateReadingAttributeValueEqual();
     State executeStateReadingAttributeValueQuote();
     State executeStateReadingAttributeValueContent();
+
+    bool checkActionReadTextNode(Option option);
+    State executeStateReadingTextNode();
 
 
 private:

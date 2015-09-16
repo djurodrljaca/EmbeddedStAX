@@ -270,6 +270,11 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                case XmlReader::ParsingResult_TextNode:
+                {
+                    std::cout << "XML Text Node: " << xmlReader.getValue() << std::endl;
+                    break;
+                }
 
                 default:
                 {
