@@ -42,7 +42,12 @@ namespace MiniSaxCpp
  *  - XML item type
  *  - Name
  *  - PI's value
- *  - TODO: add others
+ *  - Document type
+ *  - Comment text
+ *  - Attribute name
+ *  - Attribute value
+ *  - Text node
+ *  - CDATA
  */
 class XmlItemParser
 {
@@ -78,6 +83,7 @@ public:
         ItemType_StartOfEmptyElement,
         ItemType_CData,
         ItemType_TextNode
+        // TODO: end of element
     };
 
     enum Action
@@ -90,7 +96,8 @@ public:
         Action_ReadAttributeName,
         Action_ReadAttributeValue,
         Action_ReadTextNode,
-        Action_ReadCData        // TODO: implement
+        Action_ReadCData
+        // TODO: end of element
     };
 
 public:
@@ -145,8 +152,10 @@ private:
         State_ReadingTextNode,
         State_TextNodeRead,
 
-        State_ReadingCData,  // TODO: implement
+        State_ReadingCData,
         State_CDataRead,
+
+        // TODO: end of element
 
         State_Error
     };
@@ -186,6 +195,10 @@ private:
     bool checkActionReadTextNode(Option option);
     State executeStateReadingTextNode();
 
+    bool checkActionReadCData(Option option);
+    State executeStateReadingCData();
+
+    // TODO: end of element
 
 private:
     // Private data

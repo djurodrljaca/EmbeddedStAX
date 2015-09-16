@@ -140,6 +140,7 @@ XmlReader::ParsingResult XmlReader::parse()
                     case ParsingState_ReadingDocumentTypeName:
                     case ParsingState_ReadingCommentText:
                     case ParsingState_ReadingElementName:
+                    case ParsingState_ReadingCData:
                     {
                         // Execute another cycle
                         finishParsing = false;
@@ -287,6 +288,26 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_XmlDeclarationRead:
+            case ParsingState_DocumentTypeRead:
+            {
+                // Initiate reading of an item
+                if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
+                                           XmlItemParser::Option_IgnoreLeadingWhitespace))
+                {
+                    nextState = ParsingState_ReadingItem;
+
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
+
             case ParsingState_ReadingCommentText:
             {
                 nextState = executeParsingStateReadingCommentText();
@@ -313,6 +334,45 @@ XmlReader::ParsingResult XmlReader::parse()
                         // Error, invalid transition
                         nextState = ParsingState_Error;
                         break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_ProcessingInstructionRead:
+            case ParsingState_CommentTextRead:
+            {
+                if (m_documentState == DocumentState_Document)
+                {
+                    // Initiate reading of a text node
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
+                    {
+                        nextState = ParsingState_ReadingTextNode;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                    }
+                }
+                else
+                {
+                    // Initiate reading of an item
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
+                                               XmlItemParser::Option_IgnoreLeadingWhitespace))
+                    {
+                        nextState = ParsingState_ReadingItem;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
                     }
                 }
                 break;
@@ -423,6 +483,7 @@ XmlReader::ParsingResult XmlReader::parse()
                             // End of empty element found
                             if (m_openedElementNameList.empty())
                             {
+                                m_documentState = DocumentState_EndOfDocument;
                                 result = ParsingResult_EndOfRootElement;
                             }
                             else
@@ -511,20 +572,44 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_ElementStartOfContentRead:
+            case ParsingState_ElementEndEmptyRead:
             {
-                // Initiate reading of a text node
-                if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
-                {
-                    nextState = ParsingState_ReadingTextNode;
+                nextState = ParsingState_Error;
 
-                    // Execute another cycle
-                    finishParsing = false;
+                if (m_documentState == DocumentState_Document)
+                {
+                    // Initiate reading of an item
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
+                    {
+                        nextState = ParsingState_ReadingTextNode;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                    }
+                }
+                else if (m_documentState == DocumentState_EndOfDocument)
+                {
+                    // Initiate reading of an item
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
+                                               XmlItemParser::Option_IgnoreLeadingWhitespace))
+                    {
+                        nextState = ParsingState_ReadingItem;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                    }
                 }
                 else
                 {
                     // Error
-                    nextState = ParsingState_Error;
                 }
                 break;
             }
@@ -568,18 +653,62 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_XmlDeclarationRead:
-            case ParsingState_ProcessingInstructionRead:
-            case ParsingState_DocumentTypeRead:
-            case ParsingState_CommentTextRead:
-            case ParsingState_ElementEndEmptyRead:
+            case ParsingState_ReadingCData:
+            {
+                nextState = executeParsingStateReadingCData();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingCData:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_CDataRead:
+                    {
+                        // CDATA read
+                        result = ParsingResult_CData;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             case ParsingState_TextNodeRead:
             {
                 // Initiate reading of an item
-                if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
-                                           XmlItemParser::Option_IgnoreLeadingWhitespace))
+                if (m_itemParser.configure(XmlItemParser::Action_ReadItem))
                 {
                     nextState = ParsingState_ReadingItem;
+
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
+
+            case ParsingState_ElementStartOfContentRead:
+            case ParsingState_CDataRead:
+            {
+                // Initiate reading of a text node
+                if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
+                {
+                    nextState = ParsingState_ReadingTextNode;
 
                     // Execute another cycle
                     finishParsing = false;
@@ -866,7 +995,21 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
                         break;
                     }
 
-                    // TODO: check for other item types?
+                    case XmlItemParser::ItemType_CData:
+                    {
+                        // Parse CDATA
+                        if (m_itemParser.configure(XmlItemParser::Action_ReadCData))
+                        {
+                            nextState = ParsingState_ReadingCData;
+                        }
+                        else
+                        {
+                            // Error, failed to continue reading CDATA
+                        }
+
+                        finishParsing = true;
+                        break;
+                    }
 
                     default:
                     {
@@ -1460,7 +1603,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeVal
  * Execute parsing state machine state: Reading text node
  *
  * \retval ParsingState_ReadingTextNode Waiting for more data
- * \retval ParsingState_TextNodeRead    Element attribute value read
+ * \retval ParsingState_TextNodeRead    Text node read
  * \retval ParsingState_Error           Error occured
  */
 XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
@@ -1472,7 +1615,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
     {
         case XmlItemParser::Result_Success:
         {
-            // Get attribute value
+            // Get text node
             bool success = false;
             m_value = getItemParserValue(&success);
 
@@ -1492,6 +1635,55 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
         {
             // Wait for more data
             nextState = ParsingState_ReadingTextNode;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading CDATA
+ *
+ * \retval ParsingState_ReadingCData    Waiting for more data
+ * \retval ParsingState_CDataRead       CDATA read
+ * \retval ParsingState_Error           Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingCData()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Get CDATA
+            bool success = false;
+            m_value = getItemParserValue(&success);
+
+            if (success)
+            {
+                // CDATA was read
+                nextState = ParsingState_CDataRead;
+            }
+            else
+            {
+                // Error, failed to read item parser value
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingCData;
             break;
         }
 

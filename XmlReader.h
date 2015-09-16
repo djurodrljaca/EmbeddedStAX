@@ -54,7 +54,8 @@ public:
         ParsingResult_ElementAttribute,
         ParsingResult_EndOfRootElement,
         ParsingResult_EndOfChildElement,
-        ParsingResult_TextNode
+        ParsingResult_TextNode,
+        ParsingResult_CData
     };
 
 public:
@@ -118,6 +119,10 @@ private:
         ParsingState_ReadingTextNode,
         ParsingState_TextNodeRead,
 
+        ParsingState_ReadingCData,
+        ParsingState_CDataRead,
+
+        // TODO: end of element
 //        ParsingState_ReadingElementEnd,
 //        ParsingState_ElementEndRead,
 
@@ -137,6 +142,9 @@ private:
     ParsingState executeParsingStateReadingElementAttributeName();
     ParsingState executeParsingStateReadingElementAttributeValue();
     ParsingState executeParsingStateReadingTextNode();
+    ParsingState executeParsingStateReadingCData();
+
+    // TODO: end of element
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();

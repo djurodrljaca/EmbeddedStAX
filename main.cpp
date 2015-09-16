@@ -276,6 +276,12 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                case XmlReader::ParsingResult_CData:
+                {
+                    std::cout << "XML CDATA: " << xmlReader.getValue() << std::endl;
+                    break;
+                }
+
                 default:
                 {
                     std::cout << "default: result: " << result << std::endl;

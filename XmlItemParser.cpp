@@ -169,6 +169,16 @@ bool XmlItemParser::configure(const XmlItemParser::Action action,
             break;
         }
 
+        case Action_ReadCData:
+        {
+            if (checkActionReadCData(option))
+            {
+                m_state = State_ReadingCData;
+                success = true;
+            }
+            break;
+        }
+
         default:
         {
             break;
@@ -581,6 +591,36 @@ XmlItemParser::Result XmlItemParser::execute()
                     }
 
                     case State_TextNodeRead:
+                    {
+                        result = Result_Success;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case State_ReadingCData:
+            {
+                // Read text node
+                nextState = executeStateReadingCData();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case State_ReadingCData:
+                    {
+                        result = Result_NeedMoreData;
+                        break;
+                    }
+
+                    case State_CDataRead:
                     {
                         result = Result_Success;
                         break;
@@ -1857,6 +1897,9 @@ bool XmlItemParser::checkActionReadTextNode(XmlItemParser::Option option)
 
     // TODO: add other states?
     if ((m_state == State_ElementStartOfContentRead) ||
+        (m_state == State_PiValueRead) ||
+        (m_state == State_CommentTextRead) ||
+        (m_state == State_CDataRead) ||
         (m_state == State_ElementEndEmptyRead))
     {
         if (option == Option_None)
@@ -1927,6 +1970,95 @@ XmlItemParser::State XmlItemParser::executeStateReadingTextNode()
                         finishParsing = true;
                     }
                 }
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+/**
+ * Check if action "Read DATA" is allowed based on the internal state of the parser
+ *
+ * \param option    Parsing option (allowed: None)
+ *
+ * \retval true     Action is allowed
+ * \retval false    Action is not allowed
+ */
+bool XmlItemParser::checkActionReadCData(XmlItemParser::Option option)
+{
+    bool allowed = false;
+
+    // TODO: add other states?
+    if (m_state == State_ItemTypeRead)
+    {
+        if (option == Option_None)
+        {
+            allowed = true;
+        }
+    }
+
+    return allowed;
+}
+
+/**
+ * Execute state: Reading CDATA
+ *
+ * \retval State_ReadingCData   Wait for more data
+ * \retval State_CDataRead      Comment text read
+ * \retval State_Error          Error
+ *
+ * Format:
+ * \code{.unparsed}
+ * CData ::= (Char* - (Char* ']]>' Char*))
+ * \endcode
+ */
+XmlItemParser::State XmlItemParser::executeStateReadingCData()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read more data if needed and check if data is available
+        if (readDataIfNeeded() == false)
+        {
+            // No data available, wait for more data
+            nextState = State_ReadingCData;
+            finishParsing = true;
+        }
+        else
+        {
+            // Data available
+            const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
+
+            // Check if character is valid
+            if (XmlValidator::isChar(unicodeCharacter))
+            {
+                m_position++;
+
+                // Check for "]]>" sequence
+                if (m_position >= 3U)
+                {
+                    if ((m_parsingBuffer.at(m_position - 3U) == (uint32_t)']') &&
+                        (m_parsingBuffer.at(m_position - 2U) == (uint32_t)']') &&
+                        (m_parsingBuffer.at(m_position - 1U) == (uint32_t)'>'))
+                    {
+                        m_value = m_parsingBuffer.substr(0U, m_position - 3U);
+                        eraseFromParsingBuffer(m_position);
+                        m_terminationCharacter = 0U;
+                        nextState = State_CDataRead;
+                        finishParsing = true;
+                    }
+                }
+            }
+            else
+            {
+                // Error, invalid character
+                m_position = 0U;
+                m_terminationCharacter = unicodeCharacter;
+                finishParsing = true;
             }
         }
     }
