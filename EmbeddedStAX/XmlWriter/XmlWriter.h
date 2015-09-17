@@ -28,7 +28,7 @@
 #ifndef MINISAXCPP_XMLWRITER_H
 #define MINISAXCPP_XMLWRITER_H
 
-#include "Common.h"
+#include <Common/Common.h>
 #include <list>
 
 namespace MiniSaxCpp

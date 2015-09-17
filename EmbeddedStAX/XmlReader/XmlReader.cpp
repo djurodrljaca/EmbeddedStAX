@@ -26,8 +26,7 @@
  */
 
 #include "XmlReader.h"
-#include "Utf.h"
-#include "XmlValidator.h"
+#include <Common/XmlValidator.h>
 
 using namespace MiniSaxCpp;
 

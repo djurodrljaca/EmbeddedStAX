@@ -26,9 +26,9 @@
  */
 
 #include "XmlWriter.h"
-#include "Utf.h"
-#include "XmlValidator.h"
-#include "Common.h"
+#include <Common/Utf.h>
+#include <Common/XmlValidator.h>
+#include <Common/Common.h>
 
 using namespace MiniSaxCpp;
 

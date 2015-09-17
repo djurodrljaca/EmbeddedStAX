@@ -26,8 +26,8 @@
  */
 
 #include <iostream>
-#include "XmlWriter.h"
-#include "XmlReader.h"
+#include <XmlWriter/XmlWriter.h>
+#include <XmlReader/XmlReader.h>
 
 using namespace MiniSaxCpp;
 

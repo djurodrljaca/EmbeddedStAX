@@ -28,8 +28,8 @@
 #ifndef MINISAXCPP_XMLREADER_H
 #define MINISAXCPP_XMLREADER_H
 
-#include "Common.h"
-#include "XmlItemParser.h"
+#include <Common/Common.h>
+#include <XmlReader/XmlItemParser.h>
 #include <list>
 
 namespace MiniSaxCpp

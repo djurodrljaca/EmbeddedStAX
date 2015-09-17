@@ -28,8 +28,8 @@
 #ifndef MINISAXCPP_XMLITEMPARSER_H
 #define MINISAXCPP_XMLITEMPARSER_H
 
-#include "UnicodeCircularBuffer.h"
-#include "Common.h"
+#include <Common/UnicodeCircularBuffer.h>
+#include <Common/Common.h>
 
 namespace MiniSaxCpp
 {
