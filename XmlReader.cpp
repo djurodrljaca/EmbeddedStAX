@@ -141,6 +141,7 @@ XmlReader::ParsingResult XmlReader::parse()
                     case ParsingState_ReadingCommentText:
                     case ParsingState_ReadingElementName:
                     case ParsingState_ReadingCData:
+                    case ParsingState_ReadingElementEnd:
                     {
                         // Execute another cycle
                         finishParsing = false;
@@ -472,24 +473,17 @@ XmlReader::ParsingResult XmlReader::parse()
                         break;
                     }
 
-                    case ParsingState_ElementEndEmptyRead:
+                    case ParsingState_ElementEndRead:
                     {
+                        // End of empty element found
                         if (m_openedElementNameList.empty())
                         {
-                            // Error, no element is open (this situation should never occur!)
+                            m_documentState = DocumentState_EndOfDocument;
+                            result = ParsingResult_EndOfRootElement;
                         }
                         else
                         {
-                            // End of empty element found
-                            if (m_openedElementNameList.empty())
-                            {
-                                m_documentState = DocumentState_EndOfDocument;
-                                result = ParsingResult_EndOfRootElement;
-                            }
-                            else
-                            {
-                                result = ParsingResult_EndOfChildElement;
-                            }
+                            result = ParsingResult_EndOfChildElement;
                         }
                         break;
                     }
@@ -572,48 +566,6 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_ElementEndEmptyRead:
-            {
-                nextState = ParsingState_Error;
-
-                if (m_documentState == DocumentState_Document)
-                {
-                    // Initiate reading of an item
-                    if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
-                    {
-                        nextState = ParsingState_ReadingTextNode;
-
-                        // Execute another cycle
-                        finishParsing = false;
-                    }
-                    else
-                    {
-                        // Error
-                    }
-                }
-                else if (m_documentState == DocumentState_EndOfDocument)
-                {
-                    // Initiate reading of an item
-                    if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
-                                               XmlItemParser::Option_IgnoreLeadingWhitespace))
-                    {
-                        nextState = ParsingState_ReadingItem;
-
-                        // Execute another cycle
-                        finishParsing = false;
-                    }
-                    else
-                    {
-                        // Error
-                    }
-                }
-                else
-                {
-                    // Error
-                }
-                break;
-            }
-
             case ParsingState_ReadingTextNode:
             {
                 nextState = executeParsingStateReadingTextNode();
@@ -653,6 +605,24 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_TextNodeRead:
+            {
+                // Initiate reading of an item
+                if (m_itemParser.configure(XmlItemParser::Action_ReadItem))
+                {
+                    nextState = ParsingState_ReadingItem;
+
+                    // Execute another cycle
+                    finishParsing = false;
+                }
+                else
+                {
+                    // Error
+                    nextState = ParsingState_Error;
+                }
+                break;
+            }
+
             case ParsingState_ReadingCData:
             {
                 nextState = executeParsingStateReadingCData();
@@ -684,24 +654,6 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_TextNodeRead:
-            {
-                // Initiate reading of an item
-                if (m_itemParser.configure(XmlItemParser::Action_ReadItem))
-                {
-                    nextState = ParsingState_ReadingItem;
-
-                    // Execute another cycle
-                    finishParsing = false;
-                }
-                else
-                {
-                    // Error
-                    nextState = ParsingState_Error;
-                }
-                break;
-            }
-
             case ParsingState_ElementStartOfContentRead:
             case ParsingState_CDataRead:
             {
@@ -717,6 +669,87 @@ XmlReader::ParsingResult XmlReader::parse()
                 {
                     // Error
                     nextState = ParsingState_Error;
+                }
+                break;
+            }
+
+            case ParsingState_ReadingElementEnd:
+            {
+                nextState = executeParsingStateReadingElementEnd();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingElementEnd:
+                    {
+                        // Wait for more data
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_ElementEndRead:
+                    {
+                        // End of element found
+                        if (m_openedElementNameList.empty())
+                        {
+                            m_documentState = DocumentState_EndOfDocument;
+                            result = ParsingResult_EndOfRootElement;
+                        }
+                        else
+                        {
+                            result = ParsingResult_EndOfChildElement;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error, invalid transition
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_ElementEndRead:
+            {
+                nextState = ParsingState_Error;
+
+                if (m_documentState == DocumentState_Document)
+                {
+                    // Initiate reading of an item
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadTextNode))
+                    {
+                        nextState = ParsingState_ReadingTextNode;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                    }
+                }
+                else if (m_documentState == DocumentState_EndOfDocument)
+                {
+                    // Initiate reading of an item
+                    if (m_itemParser.configure(XmlItemParser::Action_ReadItem,
+                                               XmlItemParser::Option_IgnoreLeadingWhitespace))
+                    {
+                        nextState = ParsingState_ReadingItem;
+
+                        // Execute another cycle
+                        finishParsing = false;
+                    }
+                    else
+                    {
+                        // Error
+                    }
+                }
+                else
+                {
+                    // Error
                 }
                 break;
             }
@@ -884,9 +917,9 @@ XmlReader::ParsingState XmlReader::executeParsingStateIdle()
  * \retval ParsingState_ReadingDocumentTypeName Document type item found
  * \retval ParsingState_ReadingCommentText      Comment item found
  * \retval ParsingState_ReadingElementName      Start of element found
+ * \retval ParsingState_ReadingCData            Start of CDATA found
+ * \retval ParsingState_ReadingElementEnd       End of element found
  * \retval ParsingState_Error                   Error occured
- *
- * \todo Add other return values!
  */
 XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
 {
@@ -1005,6 +1038,22 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingItem()
                         else
                         {
                             // Error, failed to continue reading CDATA
+                        }
+
+                        finishParsing = true;
+                        break;
+                    }
+
+                    case XmlItemParser::ItemType_EndOfElement:
+                    {
+                        // Parse end of element
+                        if (m_itemParser.configure(XmlItemParser::Action_ReadEndOfElement))
+                        {
+                            nextState = ParsingState_ReadingElementEnd;
+                        }
+                        else
+                        {
+                            // Error, failed to continue reading end of element
                         }
 
                         finishParsing = true;
@@ -1437,7 +1486,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementName()
  * \retval ParsingState_ReadingElementAttributeName     Waiting for more data
  * \retval ParsingState_ElementAttributeNameRead        Element attribute name read
  * \retval ParsingState_ReadingElementStartOfContent    Start of element's content found
- * \retval ParsingState_ReadingElementEndEmpty          End of empty element read
+ * \retval ParsingState_ElementEndRead                  End of empty element read
  * \retval ParsingState_Error                           Error occured
  */
 XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeName()
@@ -1505,7 +1554,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
                     break;
                 }
 
-                case XmlItemParser::ItemType_StartOfEmptyElement:
+                case XmlItemParser::ItemType_EndOfEmptyElement:
                 {
                     if (m_openedElementNameList.empty())
                     {
@@ -1519,7 +1568,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingElementAttributeNam
                         m_openedElementNameList.pop_back();
 
                         m_elementAttributeNameList.clear();
-                        nextState = ParsingState_ElementEndEmptyRead;
+                        nextState = ParsingState_ElementEndRead;
                     }
                     break;
                 }
@@ -1684,6 +1733,66 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingCData()
         {
             // Wait for more data
             nextState = ParsingState_ReadingCData;
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state machine state: Reading end of element
+ *
+ * \retval ParsingState_ReadingElementEnd   Waiting for more data
+ * \retval ParsingState_ElementEndRead      End of element read
+ * \retval ParsingState_Error               Error occured
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingElementEnd()
+{
+    ParsingState nextState = ParsingState_Error;
+    XmlItemParser::Result result = m_itemParser.execute();
+
+    switch (result)
+    {
+        case XmlItemParser::Result_Success:
+        {
+            // Get element name
+            m_name = getItemParserValue();
+
+            if (m_name.empty())
+            {
+                // Error, failed to read item parser value
+            }
+            else
+            {
+                const std::string name = m_openedElementNameList.back();
+
+                if (m_name == name)
+                {
+                    // End of element was read
+                    m_openedElementNameList.pop_back();
+
+                    m_elementAttributeNameList.clear();
+                    nextState = ParsingState_ElementEndRead;
+                }
+                else
+                {
+                    // Error, invalid end of element found
+                }
+            }
+            break;
+        }
+
+        case XmlItemParser::Result_NeedMoreData:
+        {
+            // Wait for more data
+            nextState = ParsingState_ReadingElementEnd;
             break;
         }
 

@@ -179,6 +179,16 @@ bool XmlItemParser::configure(const XmlItemParser::Action action,
             break;
         }
 
+        case Action_ReadEndOfElement:
+        {
+            if (checkActionReadEndOfElement(option))
+            {
+                m_state = State_ReadingEndOfElementName;
+                success = true;
+            }
+            break;
+        }
+
         default:
         {
             break;
@@ -437,7 +447,7 @@ XmlItemParser::Result XmlItemParser::execute()
                         break;
                     }
 
-                    case State_ReadingElementEndEmpty:
+                    case State_ReadingEndOfEmptyElement:
                     {
                         // Execute another cycle
                         finishParsing = false;
@@ -576,6 +586,36 @@ XmlItemParser::Result XmlItemParser::execute()
                 break;
             }
 
+            case State_ReadingEndOfEmptyElement:
+            {
+                // Read end of empty element
+                nextState = executeStateReadingEndOfEmptyElement();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case State_ReadingEndOfEmptyElement:
+                    {
+                        result = Result_NeedMoreData;
+                        break;
+                    }
+
+                    case State_EndOfEmptyElementRead:
+                    {
+                        result = Result_Success;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             case State_ReadingTextNode:
             {
                 // Read text node
@@ -608,7 +648,7 @@ XmlItemParser::Result XmlItemParser::execute()
 
             case State_ReadingCData:
             {
-                // Read text node
+                // Read CDATA
                 nextState = executeStateReadingCData();
 
                 // Check transitions
@@ -621,6 +661,67 @@ XmlItemParser::Result XmlItemParser::execute()
                     }
 
                     case State_CDataRead:
+                    {
+                        result = Result_Success;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case State_ReadingEndOfElementName:
+            {
+                // Read end of element - name
+                nextState = executeStateReadingEndOfElementName();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case State_ReadingEndOfElementName:
+                    {
+                        result = Result_NeedMoreData;
+                        break;
+                    }
+
+                    case State_ReadingEndOfElementEnd:
+                    {
+                        // Execute another cycle
+                        finishParsing = false;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = State_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case State_ReadingEndOfElementEnd:
+            {
+                // Read end of element - end
+                nextState = executeStateReadingEndOfElementEnd();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case State_ReadingEndOfElementEnd:
+                    {
+                        result = Result_NeedMoreData;
+                        break;
+                    }
+
+                    case State_EndOfElementRead:
                     {
                         result = Result_Success;
                         break;
@@ -752,15 +853,15 @@ bool XmlItemParser::checkActionReadItem(Option option)
 {
     bool allowed = false;
 
-    // TODO: add other states?
     if ((m_state == State_Idle) ||
         (m_state == State_WhitespaceRead) ||
         (m_state == State_PiValueRead) ||
         (m_state == State_DocumentTypeValueRead) ||
         (m_state == State_CommentTextRead) ||
         (m_state == State_ElementStartOfContentRead) ||
-        (m_state == State_ElementEndEmptyRead) ||
-        (m_state == State_TextNodeRead))
+        (m_state == State_EndOfEmptyElementRead) ||
+        (m_state == State_TextNodeRead) ||
+        (m_state == State_EndOfElementRead))
     {
         if ((option == Option_None) ||
             (option == Option_Synchronization) ||
@@ -858,7 +959,7 @@ XmlItemParser::State XmlItemParser::executeStateWaitingForStartOfItem()
  *
  * \retval State_ReadingItemType    Wait for more data
  * \retval State_ItemTypeRead       Item type "processing instruction", "document type", "comment",
- *                                  or "element" found
+ *                                  CDATA, "start of element" or "end of element" found
  * \retval State_Error              Error
  *
  * Format of valid item types:
@@ -867,7 +968,8 @@ XmlItemParser::State XmlItemParser::executeStateWaitingForStartOfItem()
  * Document Type          ::= '!DOCTYPE'
  * Comment                ::= '!--'
  * CData                  ::= '![CDATA['
- * Element                ::= NameStartChar
+ * Start of Element       ::= NameStartChar
+ * End of Element         ::= '/'
  * \endcode
  */
 XmlItemParser::State XmlItemParser::executeStateReadingItemType()
@@ -910,6 +1012,15 @@ XmlItemParser::State XmlItemParser::executeStateReadingItemType()
                 {
                     // Possible types: Document Type, Comment and CData
                     m_position = 1U;
+                }
+                else if (unicodeCharacter == (uint32_t)'/')
+                {
+                    // Item type: End of Element
+                    eraseFromParsingBuffer(1U);
+                    m_terminationCharacter = 0U;
+                    m_itemType = ItemType_EndOfElement;
+                    nextState = State_ItemTypeRead;
+                    finishParsing = true;
                 }
                 else
                 {
@@ -1439,7 +1550,7 @@ bool XmlItemParser::checkActionReadAttributeName(Option option)
  * \retval State_ReadingAttributeName           Wait for more data
  * \retval State_NameAttributeRead              Attribute Name read
  * \retval State_ReadingElementStartOfContent   Start of element content read
- * \retval State_ReadingElementEndEmpty         End of empty element read
+ * \retval State_ReadingEndOfEmptyElement       End of empty element read
  * \retval State_Error                          Error
  *
  * Format:
@@ -1483,9 +1594,9 @@ XmlItemParser::State XmlItemParser::executeStateReadingAttributeName()
                 }
                 else if (unicodeCharacter == (uint32_t)'/')
                 {
-                    // Start of element content found
+                    // End of element found
                     m_terminationCharacter = 0U;
-                    nextState = State_ReadingElementEndEmpty;
+                    nextState = State_ReadingEndOfEmptyElement;
                     finishParsing = true;
                 }
                 else
@@ -1587,16 +1698,16 @@ XmlItemParser::State XmlItemParser::executeStateReadingElementStartOfContent()
 /**
  * Execute state: Reading end of empty element
  *
- * \retval State_ReadingElementEndEmpty Wait for more data
- * \retval State_ElementEndEmptyRead    Document type value read
- * \retval State_Error                  Error
+ * \retval State_ReadingEndOfEmptyElement   Wait for more data
+ * \retval State_EndOfEmptyElementRead      Document type value read
+ * \retval State_Error                      Error
  *
  * Format:
  * \code{.unparsed}
  * End of empty element ::= '/>'
  * \endcode
  */
-XmlItemParser::State XmlItemParser::executeStateReadingElementEndEmpty()
+XmlItemParser::State XmlItemParser::executeStateReadingEndOfEmptyElement()
 {
     State nextState = State_Error;
     bool finishParsing = false;
@@ -1607,7 +1718,7 @@ XmlItemParser::State XmlItemParser::executeStateReadingElementEndEmpty()
         if (readDataIfNeeded() == false)
         {
             // No data available, wait for more data
-            nextState = State_ReadingElementEndEmpty;
+            nextState = State_ReadingEndOfEmptyElement;
             finishParsing = true;
         }
         else
@@ -1637,8 +1748,8 @@ XmlItemParser::State XmlItemParser::executeStateReadingElementEndEmpty()
                 {
                     eraseFromParsingBuffer(m_position + 1U);
                     m_terminationCharacter = 0U;
-                    m_itemType = ItemType_StartOfEmptyElement;
-                    nextState = State_ElementEndEmptyRead;
+                    m_itemType = ItemType_EndOfEmptyElement;
+                    nextState = State_EndOfEmptyElementRead;
                     finishParsing = true;
                 }
                 else
@@ -1895,12 +2006,12 @@ bool XmlItemParser::checkActionReadTextNode(XmlItemParser::Option option)
 {
     bool allowed = false;
 
-    // TODO: add other states?
     if ((m_state == State_ElementStartOfContentRead) ||
         (m_state == State_PiValueRead) ||
         (m_state == State_CommentTextRead) ||
         (m_state == State_CDataRead) ||
-        (m_state == State_ElementEndEmptyRead))
+        (m_state == State_EndOfEmptyElementRead) ||
+        (m_state == State_EndOfElementRead))
     {
         if (option == Option_None)
         {
@@ -1990,7 +2101,6 @@ bool XmlItemParser::checkActionReadCData(XmlItemParser::Option option)
 {
     bool allowed = false;
 
-    // TODO: add other states?
     if (m_state == State_ItemTypeRead)
     {
         if (option == Option_None)
@@ -2056,6 +2166,156 @@ XmlItemParser::State XmlItemParser::executeStateReadingCData()
             else
             {
                 // Error, invalid character
+                m_position = 0U;
+                m_terminationCharacter = unicodeCharacter;
+                finishParsing = true;
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+/**
+ * Check if action "Read end of element" is allowed based on the internal state of the parser
+ *
+ * \param option    Parsing option (allowed: None)
+ *
+ * \retval true     Action is allowed
+ * \retval false    Action is not allowed
+ */
+bool XmlItemParser::checkActionReadEndOfElement(XmlItemParser::Option option)
+{
+    bool allowed = false;
+
+    if (m_state == State_ItemTypeRead)
+    {
+        if (option == Option_None)
+        {
+            allowed = true;
+        }
+    }
+
+    return allowed;
+}
+
+/**
+ * Execute state: Reading end of element - name
+ *
+ * \retval State_ReadingEndOfElementName    Wait for more data
+ * \retval State_ReadingEndOfElementEnd     Name read
+ * \retval State_Error                      Error
+ *
+ * Format:
+ * \code{.unparsed}
+ * Name ::= NameStartChar (NameChar)*
+ * \endcode
+ */
+XmlItemParser::State XmlItemParser::executeStateReadingEndOfElementName()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read more data if needed and check if data is available
+        if (readDataIfNeeded() == false)
+        {
+            // No data available, wait for more data
+            nextState = State_ReadingEndOfElementName;
+            finishParsing = true;
+        }
+        else
+        {
+            // Data available
+            const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
+
+            // Check for start of Name
+            if (m_position == 0U)
+            {
+                if (XmlValidator::isNameStartChar(unicodeCharacter))
+                {
+                    // Valid NameStartChar found
+                    m_position++;
+                }
+                else
+                {
+                    // Error, invalid character
+                    m_position = 0U;
+                    m_terminationCharacter = unicodeCharacter;
+                    finishParsing = true;
+                }
+            }
+            // Check for rest of the Name
+            else
+            {
+                if (XmlValidator::isNameChar(unicodeCharacter))
+                {
+                    // Valid NameChar found
+                    m_position++;
+                }
+                else
+                {
+                    // End of Name
+                    m_value = m_parsingBuffer.substr(0U, m_position);
+                    eraseFromParsingBuffer(m_position);
+                    m_terminationCharacter = 0U;
+                    nextState = State_ReadingEndOfElementEnd;
+                    finishParsing = true;
+                }
+            }
+        }
+    }
+    while (!finishParsing);
+
+    return nextState;
+}
+
+/**
+ * Execute state: Reading end of element - end
+ *
+ * \retval State_ReadingEndOfElementEnd Wait for more data
+ * \retval State_EndOfElementRead       Name read
+ * \retval State_Error                  Error
+ *
+ * Format: S? '>'
+ */
+XmlItemParser::State XmlItemParser::executeStateReadingEndOfElementEnd()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    do
+    {
+        // Read more data if needed and check if data is available
+        if (readDataIfNeeded() == false)
+        {
+            // No data available, wait for more data
+            nextState = State_ReadingEndOfElementEnd;
+            finishParsing = true;
+        }
+        else
+        {
+            // Data available
+            const uint32_t unicodeCharacter = m_parsingBuffer.at(m_position);
+
+            // Check if character is valid
+            if (unicodeCharacter == (uint32_t)'>')
+            {
+                eraseFromParsingBuffer(m_position + 1U);
+                m_terminationCharacter = 0U;
+                nextState = State_EndOfElementRead;
+                finishParsing = true;
+            }
+            else if (XmlValidator::isWhitespace(unicodeCharacter))
+            {
+                // Ignore whitespace
+                eraseFromParsingBuffer(1U);
+            }
+            else
+            {
+                // Error, invalid character read
                 m_position = 0U;
                 m_terminationCharacter = unicodeCharacter;
                 finishParsing = true;

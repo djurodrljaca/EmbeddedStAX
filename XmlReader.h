@@ -111,7 +111,6 @@ private:
         ParsingState_ReadingElementAttributeName,
         ParsingState_ElementAttributeNameRead,
         ParsingState_ElementStartOfContentRead,
-        ParsingState_ElementEndEmptyRead,
 
         ParsingState_ReadingElementAttributeValue,
         ParsingState_ElementAttributeValueRead,
@@ -122,9 +121,8 @@ private:
         ParsingState_ReadingCData,
         ParsingState_CDataRead,
 
-        // TODO: end of element
-//        ParsingState_ReadingElementEnd,
-//        ParsingState_ElementEndRead,
+        ParsingState_ReadingElementEnd,
+        ParsingState_ElementEndRead,
 
         ParsingState_Error
     };
@@ -143,8 +141,7 @@ private:
     ParsingState executeParsingStateReadingElementAttributeValue();
     ParsingState executeParsingStateReadingTextNode();
     ParsingState executeParsingStateReadingCData();
-
-    // TODO: end of element
+    ParsingState executeParsingStateReadingElementEnd();
 
     std::string getItemParserValue(bool *success = NULL) const;
     ParsingState evaluateProcessingInstruction();

@@ -53,6 +53,8 @@ class XmlItemParser
 {
 
     // TODO: reimplement with an abstract item parser and specialized item parser for each item type
+    // TODO: rename "item" to "token"
+    // TODO: use the QXmlStreamReader from Qt as a reference
 
 public:
     // Public types
@@ -70,7 +72,7 @@ public:
         Option_IgnoreLeadingWhitespace
     };
 
-    enum ItemType   // TODO: rename to "markup type" ?
+    enum ItemType
     {
         ItemType_None,
         ItemType_Whitespace,
@@ -80,10 +82,10 @@ public:
         ItemType_StartOfElement,
         ItemType_ElementAttribute,
         ItemType_StartOfElementContent,
-        ItemType_StartOfEmptyElement,
+        ItemType_EndOfEmptyElement,
         ItemType_CData,
-        ItemType_TextNode
-        // TODO: end of element
+        ItemType_TextNode,
+        ItemType_EndOfElement
     };
 
     enum Action
@@ -96,8 +98,8 @@ public:
         Action_ReadAttributeName,
         Action_ReadAttributeValue,
         Action_ReadTextNode,
-        Action_ReadCData
-        // TODO: end of element
+        Action_ReadCData,
+        Action_ReadEndOfElement
     };
 
 public:
@@ -146,8 +148,8 @@ private:
         State_ReadingElementStartOfContent,
         State_ElementStartOfContentRead,
 
-        State_ReadingElementEndEmpty,
-        State_ElementEndEmptyRead,
+        State_ReadingEndOfEmptyElement,
+        State_EndOfEmptyElementRead,
 
         State_ReadingTextNode,
         State_TextNodeRead,
@@ -155,7 +157,9 @@ private:
         State_ReadingCData,
         State_CDataRead,
 
-        // TODO: end of element
+        State_ReadingEndOfElementName,
+        State_ReadingEndOfElementEnd,
+        State_EndOfElementRead,
 
         State_Error
     };
@@ -185,7 +189,7 @@ private:
     bool checkActionReadAttributeName(Option option);
     State executeStateReadingAttributeName();
     State executeStateReadingElementStartOfContent();
-    State executeStateReadingElementEndEmpty();
+    State executeStateReadingEndOfEmptyElement();
 
     bool checkActionReadAttributeValue(Option option);
     State executeStateReadingAttributeValueEqual();
@@ -198,7 +202,9 @@ private:
     bool checkActionReadCData(Option option);
     State executeStateReadingCData();
 
-    // TODO: end of element
+    bool checkActionReadEndOfElement(Option option);
+    State executeStateReadingEndOfElementName();
+    State executeStateReadingEndOfElementEnd();
 
 private:
     // Private data

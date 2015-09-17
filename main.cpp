@@ -195,8 +195,9 @@ int main(int argc, char **argv)
 
         XmlReader xmlReader(bufferSize);
         size_t position = 0U;
+        bool endOfDocument = false;
 
-        while (success && (position < xmlString.size()))
+        while (success && !endOfDocument)
         {
             XmlReader::ParsingResult result = xmlReader.parse();
 
@@ -204,11 +205,18 @@ int main(int argc, char **argv)
             {
                 case XmlReader::ParsingResult_NeedMoreData:
                 {
-                    success = xmlReader.writeData(xmlString.at(position));
-
-                    if (success)
+                    if (position < xmlString.size())
                     {
-                        position++;
+                        success = xmlReader.writeData(xmlString.at(position));
+
+                        if (success)
+                        {
+                            position++;
+                        }
+                    }
+                    else
+                    {
+                        endOfDocument = true;
                     }
                     break;
                 }
@@ -266,7 +274,7 @@ int main(int argc, char **argv)
 
                 case XmlReader::ParsingResult_EndOfChildElement:
                 {
-                    std::cout << "XML End Of Root Element: " << xmlReader.getName() << std::endl;
+                    std::cout << "XML End Of Child Element: " << xmlReader.getName() << std::endl;
                     break;
                 }
 
