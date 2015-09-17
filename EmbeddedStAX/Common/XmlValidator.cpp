@@ -28,7 +28,7 @@
 #include "XmlValidator.h"
 #include "Utf.h"
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 static bool parseDigit(const char digitCharacter, const uint32_t base, uint32_t *digitValue);
 static bool validateNumberInCharRefString(const std::string &str,

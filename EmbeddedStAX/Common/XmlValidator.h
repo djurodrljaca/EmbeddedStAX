@@ -31,7 +31,7 @@
 #include <string>
 #include "Common.h"
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 namespace XmlValidator
 {

@@ -27,7 +27,7 @@
 
 #include "Utf.h"
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 /**
  * Constructor for Utf8

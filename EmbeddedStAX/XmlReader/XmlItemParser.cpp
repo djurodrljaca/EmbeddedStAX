@@ -29,7 +29,7 @@
 #include <Common/Utf.h>
 #include <Common/XmlValidator.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 static const std::string s_itemTypeComment("!--");
 static const std::string s_itemTypeDocumentType("!DOCTYPE");

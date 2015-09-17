@@ -31,7 +31,7 @@
 #include <Common/UnicodeCircularBuffer.h>
 #include <Common/Common.h>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 /**
  * XML Item Parser class can be used to parse a individual XML items

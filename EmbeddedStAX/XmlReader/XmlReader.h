@@ -32,7 +32,7 @@
 #include <XmlReader/XmlItemParser.h>
 #include <list>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 /**
  * XML Reader class can be used to parse a XML document

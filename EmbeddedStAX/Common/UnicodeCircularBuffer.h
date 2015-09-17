@@ -32,7 +32,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 /**
  * A circular buffer of unicode characters

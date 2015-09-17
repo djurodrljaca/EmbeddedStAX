@@ -31,7 +31,7 @@
 #include <Common/Common.h>
 #include <list>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 /**
  * XML Writer class can be used to create a XML document

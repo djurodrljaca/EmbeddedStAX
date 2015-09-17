@@ -28,7 +28,7 @@
 #include "XmlReader.h"
 #include <Common/XmlValidator.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 /**
  * Constructor

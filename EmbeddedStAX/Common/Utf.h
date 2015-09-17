@@ -31,7 +31,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 typedef std::basic_string<uint32_t> UnicodeString;
 

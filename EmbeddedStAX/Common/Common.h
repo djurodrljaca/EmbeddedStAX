@@ -31,7 +31,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace MiniSaxCpp
+namespace EmbeddedStAX
 {
 namespace Common
 {

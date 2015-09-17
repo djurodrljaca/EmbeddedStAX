@@ -30,7 +30,7 @@
 #include <Common/XmlValidator.h>
 #include <Common/Common.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 /**
  * Constructor

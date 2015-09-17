@@ -30,7 +30,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 static std::string escapeSpecialCharacter(const char specialCharacter);
 static std::string escapeCharacterDecimal(const uint32_t unicodeCharacter);

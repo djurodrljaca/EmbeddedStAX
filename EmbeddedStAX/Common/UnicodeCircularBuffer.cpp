@@ -29,7 +29,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 /**
  * Constructor for UnicodeCharacterCircularBuffer

@@ -29,7 +29,7 @@
 #include <XmlWriter/XmlWriter.h>
 #include <XmlReader/XmlReader.h>
 
-using namespace MiniSaxCpp;
+using namespace EmbeddedStAX;
 
 int main(int argc, char **argv)
 {
