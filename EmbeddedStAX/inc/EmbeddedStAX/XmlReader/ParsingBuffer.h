@@ -42,6 +42,7 @@ namespace XmlReader
 class ParsingBuffer
 {
 public:
+    // Public API
     ParsingBuffer();
 
     size_t size() const;
