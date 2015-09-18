@@ -1,4 +1,4 @@
-#include "ParsingBuffer.h"
+#include <EmbeddedStAX/XmlReader/ParsingBuffer.h>
 
 using namespace EmbeddedStAX::XmlReader;
 

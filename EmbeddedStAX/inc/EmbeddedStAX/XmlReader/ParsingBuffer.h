@@ -28,7 +28,7 @@
 #ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
 #define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
 
-#include <Common/Utf.h>
+#include <EmbeddedStAX/Common/Utf.h>
 
 namespace EmbeddedStAX
 {
