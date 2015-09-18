@@ -1,61 +1,44 @@
-///*
-// * This is free and unencumbered software released into the public domain.
-// *
-// * Anyone is free to copy, modify, publish, use, compile, sell, or
-// * distribute this software, either in source code form or as a compiled
-// * binary, for any purpose, commercial or non-commercial, and by any
-// * means.
-// *
-// * In jurisdictions that recognize copyright laws, the author or authors
-// * of this software dedicate any and all copyright interest in the
-// * software to the public domain. We make this dedication for the benefit
-// * of the public at large and to the detriment of our heirs and
-// * successors. We intend this dedication to be an overt act of
-// * relinquishment in perpetuity of all present and future rights to this
-// * software under copyright law.
-// *
-// * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-// * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-// * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// * OTHER DEALINGS IN THE SOFTWARE.
-// *
-// * For more information, please refer to <http://unlicense.org>
-// */
+/*
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
-//#ifndef EMBEDDEDSTAX_XMLITEMPARSER_H
-//#define EMBEDDEDSTAX_XMLITEMPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H
 
-//#include <Common/UnicodeCircularBuffer.h>
-//#include <Common/Common.h>
+#include "../ParsingBuffer.h"
 
 //namespace EmbeddedStAX
 //{
-///**
-// * XML Item Parser class can be used to parse a individual XML items
-// *
-// * Supported XML items:
-// *  - Start of XML item
-// *  - End of XML item
-// *  - XML item type
-// *  - Name
-// *  - PI's value
-// *  - Document type
-// *  - Comment text
-// *  - Attribute name
-// *  - Attribute value
-// *  - Text node
-// *  - CDATA
-// */
-//class XmlItemParser
+//namespace XmlReader
 //{
-
-//    // TODO: reimplement with an abstract item parser and specialized item parser for each item type
-//    // TODO: rename "item" to "token"
-//    // TODO: use the QXmlStreamReader from Qt as a reference
-
+///**
+// * Abstract token
+// */
+//class AbstractToken
+//{
 //public:
 //    // Public types
 //    enum Result
@@ -103,7 +86,7 @@
 //    };
 
 //public:
-//    XmlItemParser(const size_t dataBufferSize);
+//    AbstractToken(const size_t dataBufferSize);
 
 //    void clear();
 //    bool writeData(const char data);
@@ -221,4 +204,4 @@
 //};
 //}
 
-//#endif // EMBEDDEDSTAX_XMLITEMPARSER_H
+//#endif // EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H

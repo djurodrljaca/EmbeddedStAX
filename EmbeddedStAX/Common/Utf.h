@@ -25,13 +25,15 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef MINISAXCPP_UTF_H
-#define MINISAXCPP_UTF_H
+#ifndef EMBEDDEDSTAX_COMMON_UTF_H
+#define EMBEDDEDSTAX_COMMON_UTF_H
 
 #include <string>
 #include <stdint.h>
 
 namespace EmbeddedStAX
+{
+namespace Common
 {
 typedef std::basic_string<uint32_t> UnicodeString;
 
@@ -52,11 +54,9 @@ public:
 
     void clear();
     Result write(const char data);
+    uint32_t getChar() const;
 
-    uint32_t getUnicodeCharacter() const;
-
-    static std::string toUtf8(const uint32_t unicodeCharacter);
-    static std::string toUtf8(const UnicodeString &unicodeString);
+    static std::string toUtf8(const uint32_t unicodeChar);
 
 private:
     // Private API
@@ -65,29 +65,11 @@ private:
 
 private:
     // Private data
-    std::string m_buffer;
-    size_t m_noOfBytes;
-    uint32_t m_value;
-    std::string m_utf8;
+    size_t m_index;
+    uint32_t m_char;
+    size_t m_charSize;
 };
-
-// TODO: merge it with Utf8 ?
-namespace Utf
-{
-enum Result
-{
-    Result_Success,
-    Result_Incomplete,
-    Result_Error
-};
-
-Result unicodeCharacterFromUtf8(const std::string &utf8,
-                                const size_t startPosition,
-                                size_t *nextCharacterPosition,
-                                uint32_t *unicodeCharacter);
-
-bool isUnicodeCharacterValid(const uint32_t unicodeCharacter);
 }
 }
 
-#endif // MINISAXCPP_UTF_H
+#endif // EMBEDDEDSTAX_COMMON_UTF_H

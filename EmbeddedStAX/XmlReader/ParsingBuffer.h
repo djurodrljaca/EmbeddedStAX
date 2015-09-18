@@ -25,45 +25,50 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef MINISAXCPP_UNICODECIRCULARBUFFER_H
-#define MINISAXCPP_UNICODECIRCULARBUFFER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
 
-#include "Utf.h"
-#include <string>
-#include <stdint.h>
+#include <Common/Utf.h>
 
 namespace EmbeddedStAX
 {
+namespace XmlReader
+{
 /**
- * A circular buffer of unicode characters
+ * Parsing buffer
  *
- * \note This class only accepts ordinary character data and then it internally converts them to
- *       Unicode characters.
+ * Holds the parsing buffer
  */
-class UnicodeCircularBuffer
+class ParsingBuffer
 {
 public:
-    // Public API
-    UnicodeCircularBuffer(const size_t size);
-    ~UnicodeCircularBuffer();
+    ParsingBuffer();
 
+    size_t size() const;
     void clear();
-    bool empty() const;
-    bool full() const;
-    size_t free() const;
-    size_t used() const;
+    void erase(const size_t size);
 
-    bool write(const char data);
-    uint32_t read(bool *success = NULL);
+    uint32_t at(const size_t position) const;
+    uint32_t first() const;
+    uint32_t current() const;
+    bool isMoreDataNeeded() const;
+
+    size_t currentPosition() const;
+    bool setCurrentPosition(const size_t position);
+    bool incrementPosition();
+
+    Common::UnicodeString substring(const size_t position,
+                                    const size_t size = std::string::npos) const;
+
+    size_t writeData(const std::string &data);
 
 private:
     // Private data
-    Utf8 m_utf8;
-    uint32_t *m_buffer;
-    size_t m_bufferSize;
-    size_t m_writePosition;
-    size_t m_readPosition;
+    Common::Utf8 m_utf8;
+    Common::UnicodeString m_buffer;
+    size_t m_position;
 };
 }
+}
 
-#endif // MINISAXCPP_UNICODECIRCULARBUFFER_H
+#endif // EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H

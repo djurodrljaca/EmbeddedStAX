@@ -3,7 +3,7 @@ project(embeddedstaxdemo)
 
 # EmbeddedStAX (sources and headers)
 add_subdirectory(../EmbeddedStAX ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedStAX)
-include_directories(../EmbeddedStAX)
+include_directories( ${embeddedstax_INCLUDE} )
 
 # Demo project
 set(embeddedstaxdemo_SOURCES
