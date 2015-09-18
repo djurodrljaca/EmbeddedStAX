@@ -25,52 +25,46 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
-#define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#include <EmbeddedStAX/XmlValidator/Whitespace.h>
 
-#include <EmbeddedStAX/Common/Utf.h>
+using namespace EmbeddedStAX;
 
-namespace EmbeddedStAX
-{
-namespace XmlReader
-{
 /**
- * Parsing buffer
+ * Check if character is a "whitespace" character
  *
- * Holds the parsing buffer
+ * \param character Unicode character
+ *
+ * \retval true     Character is a whitespace character
+ * \retval false    Character is not a whitespace character
+ *
+ * Allowed values for NameStartChar:
+ *  - 0x09 (horizontal tav)
+ *  - 0x0A (line feed/new line)
+ *  - 0x0D (carrage return)
+ *  - 0x20 (space)
  */
-class ParsingBuffer
+bool XmlValidator::isWhitespace(const uint32_t character)
 {
-public:
-    // Public API
-    ParsingBuffer();
+    bool valid = false;
 
-    size_t size() const;
-    void clear();
-    void erase(const size_t size);
-    void eraseToCurrentPosition();
+    switch (character)
+    {
+        case 0x09U:
+        case 0x0AU:
+        case 0x0DU:
+        case 0x20U:
+        {
+            // Whitespace character
+            valid = true;
+            break;
+        }
 
-    uint32_t at(const size_t position) const;
-    uint32_t firstChar() const;
-    uint32_t currentChar() const;
-    bool isMoreDataNeeded() const;
+        default:
+        {
+            // Error, invalid value
+            break;
+        }
+    }
 
-    size_t currentPosition() const;
-    bool setCurrentPosition(const size_t position);
-    bool incrementPosition();
-
-    Common::UnicodeString substring(const size_t position,
-                                    const size_t size = std::string::npos) const;
-
-    size_t writeData(const std::string &data);
-
-private:
-    // Private data
-    Common::Utf8 m_utf8;
-    Common::UnicodeString m_buffer;
-    size_t m_position;
-};
+    return valid;
 }
-}
-
-#endif // EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H

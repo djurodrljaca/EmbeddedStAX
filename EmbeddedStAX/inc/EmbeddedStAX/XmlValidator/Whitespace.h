@@ -25,50 +25,16 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H
+#ifndef EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H
+#define EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H
 
-#include <EmbeddedStAX/XmlReader/ParsingBuffer.h>
+#include <stdint.h>
 
 namespace EmbeddedStAX
 {
-namespace XmlReader
+namespace XmlValidator
 {
-/**
- * Abstract token
- */
-class AbstractToken
-{
-public:
-    // Public types
-    enum Result
-    {
-        Result_NeedMoreData,
-        Result_Success,
-        Result_Error
-    };
-
-    enum Option
-    {
-        Option_None,
-        Option_Synchronization,
-        Option_IgnoreLeadingWhitespace
-    };
-
-public:
-    // Public API
-    AbstractToken(ParsingBuffer *parsingBuffer, Option option = Option_None);
-    virtual ~AbstractToken() = 0;
-
-    virtual bool isValid() const;
-    virtual Result parse() = 0;
-
-protected:
-    // Protected data
-    ParsingBuffer *m_parsingBuffer;
-    Option m_option;
-};
+bool isWhitespace(const uint32_t character);
 }
 }
-
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENS_ABSTRACTTOKEN_H
+#endif // EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H

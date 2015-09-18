@@ -25,52 +25,56 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
-#define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H
 
-#include <EmbeddedStAX/Common/Utf.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Parsing buffer
- *
- * Holds the parsing buffer
+ * Token type parser
  */
-class ParsingBuffer
+class TokenTypeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    ParsingBuffer();
+    TokenTypeParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    ~TokenTypeParser();
 
-    size_t size() const;
-    void clear();
-    void erase(const size_t size);
-    void eraseToCurrentPosition();
+    bool isValid() const;
+    Result parse();
 
-    uint32_t at(const size_t position) const;
-    uint32_t firstChar() const;
-    uint32_t currentChar() const;
-    bool isMoreDataNeeded() const;
+private:
+    // Private types
+    enum State
+    {
+        State_WaitingForStartOfToken,
+        State_ReadingTokenType,
+        State_ReadingTokenTypeExclamationMark,
+        State_ReadingTokenTypeDocumentType,
+        State_ReadingTokenTypeComment,
+        State_ReadingTokenTypeCData,
+        State_Finished,
+        State_Error
+    };
 
-    size_t currentPosition() const;
-    bool setCurrentPosition(const size_t position);
-    bool incrementPosition();
-
-    Common::UnicodeString substring(const size_t position,
-                                    const size_t size = std::string::npos) const;
-
-    size_t writeData(const std::string &data);
+private:
+    // Private API
+    State executeStateWaitingForStartOfToken();
+    State executeStateReadingTokenType();
+    State executeStateReadingTokenTypeExclamationMark();
+    State executeStateReadingTokenTypeDocumentType();
+    State executeStateReadingTokenTypeComment();
+    State executeStateReadingTokenTypeCData();
 
 private:
     // Private data
-    Common::Utf8 m_utf8;
-    Common::UnicodeString m_buffer;
-    size_t m_position;
+    State m_state;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H

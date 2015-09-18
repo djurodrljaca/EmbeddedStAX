@@ -25,23 +25,28 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/XmlReader/Tokens/AbstractToken.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
  */
-AbstractToken::AbstractToken(ParsingBuffer *parsingBuffer, Option option)
+AbstractTokenParser::AbstractTokenParser(ParsingBuffer *parsingBuffer,
+                                         const Option option,
+                                         const ParserType parserType)
     : m_parsingBuffer(parsingBuffer),
-      m_option(option)
+      m_option(option),
+      m_tokenFound(TokenType_None),
+      m_terminationChar(0U),
+      m_parserType(parserType)
 {
 }
 
 /**
  * Destructor
  */
-AbstractToken::~AbstractToken()
+AbstractTokenParser::~AbstractTokenParser()
 {
     m_parsingBuffer = NULL;
 }
@@ -52,14 +57,45 @@ AbstractToken::~AbstractToken()
  * \retval true     Valid
  * \retval false    Invalid
  */
-bool AbstractToken::isValid() const
+bool AbstractTokenParser::isValid() const
 {
     bool valid = false;
 
-    if (m_parsingBuffer != NULL)
+    if ((m_parsingBuffer != NULL) &&
+        (m_parserType != ParserType_Invalid))
     {
         valid = true;
     }
 
     return valid;
+}
+
+/**
+ * Get token parser type
+ *
+ * \return Token parser type
+ */
+AbstractTokenParser::ParserType AbstractTokenParser::parserType() const
+{
+    return m_parserType;
+}
+
+/**
+ * Get type of the token that was found during parsing
+ *
+ * \return Token type
+ */
+AbstractTokenParser::TokenType AbstractTokenParser::tokenFound() const
+{
+    return m_tokenFound;
+}
+
+/**
+ * Get termination character
+ *
+ * \return Termination character
+ */
+uint32_t AbstractTokenParser::terminationChar() const
+{
+    return m_terminationChar;
 }

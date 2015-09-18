@@ -35,25 +35,27 @@ void ParsingBuffer::clear()
 }
 
 /**
- * Erase leasing characters
+ * Erase leading characters
  *
  * \param size  Number of leading characters to erase
  *
- * \note This will also reduce the current position by the same amount. If size is larger than the
- *       current position then the current position will be moved to the start of the buffer.
+ * \note This will also set the current position to the start of the buffer.
  */
 void ParsingBuffer::erase(const size_t size)
 {
     m_buffer.erase(0U, size);
+    m_position = 0U;
+}
 
-    if (size < m_position)
-    {
-        m_position = m_position - size;
-    }
-    else
-    {
-        m_position = 0U;
-    }
+/**
+ * Erase all characters before current position
+ *
+ * \note This will also set the current position to the start of the buffer.
+ */
+void ParsingBuffer::eraseToCurrentPosition()
+{
+    m_buffer.erase(0U, m_position);
+    m_position = 0U;
 }
 
 /**
@@ -82,7 +84,7 @@ uint32_t ParsingBuffer::at(const size_t position) const
  * \return First character in the buffer
  * \retval 0 Buffer is empty
  */
-uint32_t ParsingBuffer::first() const
+uint32_t ParsingBuffer::firstChar() const
 {
     uint32_t value = 0U;
 
@@ -101,7 +103,7 @@ uint32_t ParsingBuffer::first() const
  * \retval 0 Buffer is empty
  * \retval 0 More data is needed (position is past the end of the buffer)
  */
-uint32_t ParsingBuffer::current() const
+uint32_t ParsingBuffer::currentChar() const
 {
     uint32_t value = 0U;
 

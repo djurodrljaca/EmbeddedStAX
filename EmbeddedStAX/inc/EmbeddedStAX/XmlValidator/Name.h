@@ -25,52 +25,17 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
-#define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#ifndef EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
+#define EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
 
-#include <EmbeddedStAX/Common/Utf.h>
+#include <stdint.h>
 
 namespace EmbeddedStAX
 {
-namespace XmlReader
+namespace XmlValidator
 {
-/**
- * Parsing buffer
- *
- * Holds the parsing buffer
- */
-class ParsingBuffer
-{
-public:
-    // Public API
-    ParsingBuffer();
-
-    size_t size() const;
-    void clear();
-    void erase(const size_t size);
-    void eraseToCurrentPosition();
-
-    uint32_t at(const size_t position) const;
-    uint32_t firstChar() const;
-    uint32_t currentChar() const;
-    bool isMoreDataNeeded() const;
-
-    size_t currentPosition() const;
-    bool setCurrentPosition(const size_t position);
-    bool incrementPosition();
-
-    Common::UnicodeString substring(const size_t position,
-                                    const size_t size = std::string::npos) const;
-
-    size_t writeData(const std::string &data);
-
-private:
-    // Private data
-    Common::Utf8 m_utf8;
-    Common::UnicodeString m_buffer;
-    size_t m_position;
-};
+bool isNameStartChar(const uint32_t character);
+bool isNameChar(const uint32_t character);
 }
 }
-
-#endif // EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#endif // EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
