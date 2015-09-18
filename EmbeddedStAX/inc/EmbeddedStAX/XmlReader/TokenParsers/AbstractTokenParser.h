@@ -69,20 +69,22 @@ public:
         TokenType_XmlDeclaration,
         TokenType_DocumentType,
         TokenType_Comment,
-        TokenType_StartOfElement,
         TokenType_CData,
-        TokenType_EndOfEmptyElement,
-        TokenType_EndOfElement
+        TokenType_StartOfElement,
+        TokenType_EndOfElement,
+        TokenType_TextNode,
     };
 
 public:
     // Public API
     AbstractTokenParser(ParsingBuffer *parsingBuffer,
-                        const Option option,
+                        const Option parsingOption,
                         const ParserType parserType);
     virtual ~AbstractTokenParser() = 0;
 
     virtual bool isValid() const;
+    Option option() const;
+    virtual bool setOption(const Option parsingOption);
     ParserType parserType() const;
     TokenType tokenFound() const;
     uint32_t terminationChar() const;

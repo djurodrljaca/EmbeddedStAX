@@ -41,10 +41,11 @@ class TokenTypeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    TokenTypeParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    TokenTypeParser(ParsingBuffer *parsingBuffer, Option parsingOption = Option_None);
     ~TokenTypeParser();
 
     bool isValid() const;
+    bool setOption(const Option parsingOption);
     Result parse();
 
 private:

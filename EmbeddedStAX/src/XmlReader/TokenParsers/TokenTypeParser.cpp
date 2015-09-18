@@ -34,8 +34,8 @@ using namespace EmbeddedStAX::XmlReader;
 /**
  * Constructor
  */
-TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option option)
-    : AbstractTokenParser(parsingBuffer, option, ParserType_TokenType),
+TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option parsingOption)
+    : AbstractTokenParser(parsingBuffer, parsingOption, ParserType_TokenType),
       m_state(State_WaitingForStartOfToken)
 {
 }
@@ -86,6 +86,29 @@ bool TokenTypeParser::isValid() const
     }
 
     return valid;
+}
+
+/**
+ * Set parsing option
+ *
+ * \param parsingOption New parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
+ */
+bool TokenTypeParser::setOption(const AbstractTokenParser::Option parsingOption)
+{
+    bool success = false;
+
+    if ((parsingOption == Option_None) ||
+        (parsingOption == Option_IgnoreLeadingWhitespace) ||
+        (parsingOption == Option_Synchronization))
+    {
+        m_option = parsingOption;
+        success = true;
+    }
+
+    return success;
 }
 
 /**

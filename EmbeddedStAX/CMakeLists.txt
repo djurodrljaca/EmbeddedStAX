@@ -14,13 +14,11 @@ set(embeddedstax_HEADERS_Common
 # Directory: XmlReader
 set(embeddedstax_SOURCES_XmlReader
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/ParsingBuffer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/XmlItemParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/XmlReader.cpp
     )
 
 set(embeddedstax_HEADERS_XmlReader
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/ParsingBuffer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/XmlItemParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/XmlReader.h
     )
 
