@@ -3,11 +3,15 @@ cmake_minimum_required(VERSION 2.6)
 # Directory: Common
 set(embeddedstax_SOURCES_Common
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Common.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/ProcessingInstruction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/XmlDeclaration.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Utf.cpp
     )
 
 set(embeddedstax_HEADERS_Common
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Common.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/ProcessingInstruction.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/XmlDeclaration.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Utf.h
     )
 
@@ -25,25 +29,29 @@ set(embeddedstax_HEADERS_XmlReader
 # Directory: XmlReader/TokenParsers
 set(embeddedstax_SOURCES_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AbstractTokenParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/NameParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ProcessingInstructionParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/TokenTypeParser.cpp
     )
 
 set(embeddedstax_HEADERS_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/NameParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h
     )
 
 # Directory: XmlValidator
 set(embeddedstax_SOURCES_XmlValidator
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/XmlValidator.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Whitespace.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Common.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Name.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/ProcessingInstruction.cpp
     )
 
 set(embeddedstax_HEADERS_XmlValidator
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/XmlValidator.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Whitespace.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Common.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Name.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/ProcessingInstruction.h
     )
 
 # Directory: XmlWriter

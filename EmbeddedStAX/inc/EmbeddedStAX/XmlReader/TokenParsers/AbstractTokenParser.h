@@ -58,7 +58,9 @@ public:
     enum ParserType
     {
         ParserType_Invalid,
-        ParserType_TokenType
+        ParserType_TokenType,
+        ParserType_ProcessingInstruction,
+        ParserType_Name
     };
 
     enum TokenType
@@ -78,13 +80,13 @@ public:
 public:
     // Public API
     AbstractTokenParser(ParsingBuffer *parsingBuffer,
-                        const Option parsingOption,
+                        const Option option,
                         const ParserType parserType);
     virtual ~AbstractTokenParser() = 0;
 
     virtual bool isValid() const;
     Option option() const;
-    virtual bool setOption(const Option parsingOption);
+    virtual bool setOption(const Option option);
     ParserType parserType() const;
     TokenType tokenFound() const;
     uint32_t terminationChar() const;

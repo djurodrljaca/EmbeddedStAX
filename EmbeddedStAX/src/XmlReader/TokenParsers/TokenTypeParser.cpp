@@ -26,16 +26,19 @@
  */
 
 #include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
-#include <EmbeddedStAX/XmlValidator/Whitespace.h>
+#include <EmbeddedStAX/XmlValidator/Common.h>
 #include <EmbeddedStAX/XmlValidator/Name.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
+ *
+ * \param parsingBuffer Pointer to a parsing buffer
+ * \param option        Parsing option
  */
-TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option parsingOption)
-    : AbstractTokenParser(parsingBuffer, parsingOption, ParserType_TokenType),
+TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option option)
+    : AbstractTokenParser(parsingBuffer, option, ParserType_TokenType),
       m_state(State_WaitingForStartOfToken)
 {
 }
@@ -59,13 +62,6 @@ bool TokenTypeParser::isValid() const
 
     if (valid)
     {
-        if ((m_option != Option_None) &&
-            (m_option != Option_IgnoreLeadingWhitespace) &&
-            (m_option != Option_Synchronization))
-        {
-            valid = false;
-        }
-
         switch (m_option)
         {
             case Option_None:
@@ -100,12 +96,23 @@ bool TokenTypeParser::setOption(const AbstractTokenParser::Option parsingOption)
 {
     bool success = false;
 
-    if ((parsingOption == Option_None) ||
-        (parsingOption == Option_IgnoreLeadingWhitespace) ||
-        (parsingOption == Option_Synchronization))
+    switch (parsingOption)
     {
-        m_option = parsingOption;
-        success = true;
+        case Option_None:
+        case Option_IgnoreLeadingWhitespace:
+        case Option_Synchronization:
+        {
+            // Valid option
+            m_option = parsingOption;
+            success = true;
+            break;
+        }
+
+        default:
+        {
+            // Invalid option
+            break;
+        }
     }
 
     return success;
@@ -124,10 +131,11 @@ AbstractTokenParser::Result TokenTypeParser::parse()
 
     if (isValid())
     {
-        bool finishParsing = true;
+        bool finishParsing = false;
 
-        do
+        while (!finishParsing)
         {
+            finishParsing = true;
             State nextState = State_Error;
 
             switch (m_state)
@@ -168,7 +176,6 @@ AbstractTokenParser::Result TokenTypeParser::parse()
                     }
                     break;
                 }
-
 
                 case State_ReadingTokenType:
                 {
@@ -340,7 +347,13 @@ AbstractTokenParser::Result TokenTypeParser::parse()
 
             // Update state
             m_state = nextState;
-        } while (!finishParsing);
+        }
+    }
+
+    if ((result == Result_Success) ||
+        (result == Result_Error))
+    {
+        m_parsingBuffer->eraseToCurrentPosition();
     }
 
     return result;
@@ -364,7 +377,7 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -452,7 +465,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -500,7 +513,6 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
             else
             {
                 // Error, invalid character
-                m_parsingBuffer->eraseToCurrentPosition();
             }
         }
     }
@@ -531,7 +543,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeExclamationM
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -567,7 +579,6 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeExclamationM
             else
             {
                 // Error, invalid character
-                m_parsingBuffer->eraseToCurrentPosition();
             }
         }
     }
@@ -593,7 +604,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -634,13 +645,11 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
                 else
                 {
                     // Error, invalid character
-                    m_parsingBuffer->eraseToCurrentPosition();
                 }
             }
             else
             {
                 // Error, invalid character
-                m_parsingBuffer->eraseToCurrentPosition();
             }
         }
     }
@@ -667,7 +676,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeComment()
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -693,7 +702,6 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeComment()
             else
             {
                 // Error, invalid character
-                m_parsingBuffer->eraseToCurrentPosition();
             }
         }
     }
@@ -719,7 +727,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
     State nextState = State_Error;
     bool finishParsing = false;
 
-    while (!finishParsing);
+    while (!finishParsing)
     {
         finishParsing = true;
 
@@ -760,13 +768,11 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
                 else
                 {
                     // Error, invalid character
-                    m_parsingBuffer->eraseToCurrentPosition();
                 }
             }
             else
             {
                 // Error, invalid character
-                m_parsingBuffer->eraseToCurrentPosition();
             }
         }
     }

@@ -28,7 +28,7 @@
 #ifndef EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
 #define EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
 
-#include <stdint.h>
+#include <EmbeddedStAX/Common/Utf.h>
 
 namespace EmbeddedStAX
 {
@@ -36,6 +36,9 @@ namespace XmlValidator
 {
 bool isNameStartChar(const uint32_t character);
 bool isNameChar(const uint32_t character);
+
+bool validateName(const std::string &name);
+bool validateName(const Common::UnicodeString &name);
 }
 }
 #endif // EMBEDDEDSTAX_XMLVALIDATOR_NAME_H

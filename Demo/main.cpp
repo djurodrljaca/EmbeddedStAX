@@ -26,11 +26,61 @@
  */
 
 #include <iostream>
-//#include <XmlReader/ParsingBuffer.h>
+#include <EmbeddedStAX/XmlReader/XmlReader.h>
 
-//using namespace EmbeddedStAX;
+using namespace EmbeddedStAX;
 
 int main(int argc, char **argv)
 {
+    XmlReader::XmlReader xmlReader;
+
+    const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>"
+                             "<?pitarget      pidata       ?>";
+    const size_t bytesWritten = xmlReader.writeData(data);
+    bool success = false;
+
+    if (bytesWritten == data.size())
+    {
+        success = true;
+    }
+
+    std::cout << "Write data: success = " << success << ", bytesWritten = " << bytesWritten
+              << ", data size = " << data.size() << std::endl;
+
+    while (success)
+    {
+        const XmlReader::XmlReader::ParsingResult result = xmlReader.parse();
+
+        switch (result)
+        {
+            case XmlReader::XmlReader::ParsingResult_ProcessingInstruction:
+            {
+                const Common::ProcessingInstruction processingInstruction =
+                        xmlReader.processingInstruction();
+
+                std::cout << "Processing Instruction: name = " << processingInstruction.piTarget()
+                          << ", data = " << processingInstruction.piData() << std::endl;
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_XmlDeclaration:
+            {
+                const Common::XmlDeclaration xmlDeclaration = xmlReader.xmlDeclaration();
+
+                std::cout << "XML declaration: version = " << xmlDeclaration.version()
+                          << ", encoding = " << xmlDeclaration.encoding()
+                          << ", standalone = " << xmlDeclaration.standalone() << std::endl;
+                break;
+            }
+
+            default:
+            {
+                std::cout << "Default: parsing result = " << result << std::endl;
+                success = false;
+                break;
+            }
+        }
+    }
+
     return 0;
 }

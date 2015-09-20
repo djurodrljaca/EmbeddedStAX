@@ -30,6 +30,8 @@
 
 #include <EmbeddedStAX/XmlReader/ParsingBuffer.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/Common/XmlDeclaration.h>
+#include <EmbeddedStAX/Common/ProcessingInstruction.h>
 #include <string>
 
 namespace EmbeddedStAX
@@ -69,6 +71,9 @@ public:
     ParsingResult parse();
     ParsingResult lastParsingResult();
 
+    Common::XmlDeclaration xmlDeclaration() const;
+    Common::ProcessingInstruction processingInstruction() const;
+
 private:
     // Private types
     enum DocumentState
@@ -86,6 +91,8 @@ private:
         ParsingState_Idle,
         ParsingState_ReadingTokenType,
         ParsingState_ReadingProcessingInstruction,
+        ParsingState_ProcessingInstructionRead,
+        ParsingState_XmlDeclarationRead,
         ParsingState_ReadingDocumentType,
         ParsingState_ReadingComment,
         ParsingState_ReadingCData,
@@ -96,15 +103,13 @@ private:
 
 private:
     // Private API
-    ParsingState executeParsingStateIdle();
     ParsingState executeParsingStateReadingTokenType();
-
-    // TODO: ParsingState executeparsingstateReadingProcessingInstruction();
-    // TODO: ParsingState executeparsingstateReadingDocumentType();
-    // TODO: ParsingState executeparsingstateReadingComment();
-    // TODO: ParsingState executeparsingstateReadingCData();
-    // TODO: ParsingState executeparsingstateReadingStartOfElement();
-    // TODO: ParsingState executeparsingstateReadingEndOfElement();
+    ParsingState executeParsingStateReadingProcessingInstruction();
+    // TODO: ParsingState executeParsingStateReadingDocumentType();
+    // TODO: ParsingState executeParsingStateReadingComment();
+    // TODO: ParsingState executeParsingStateReadingCData();
+    // TODO: ParsingState executeParsingStateReadingStartOfElement();
+    // TODO: ParsingState executeParsingStateReadingEndOfElement();
 
     bool setTokenParser(AbstractTokenParser *tokenParser);
 
@@ -115,6 +120,8 @@ private:
     ParsingBuffer m_parsingBuffer;
     AbstractTokenParser *m_tokenParser;
     ParsingResult m_lastParsingResult;
+    Common::XmlDeclaration m_xmlDeclaration;
+    Common::ProcessingInstruction m_processingInstruction;
 };
 }
 }

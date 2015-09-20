@@ -186,3 +186,65 @@ bool XmlValidator::isNameChar(const uint32_t character)
 
     return valid;
 }
+
+/**
+ * Validate a Name
+ *
+ * \param name  UTF-8 encoded Name
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Format:
+ * \code{.unparsed}
+ * Name ::= NameStartChar (NameChar)*
+ * \endcode
+ */
+bool XmlValidator::validateName(const std::string &name)
+{
+    bool valid = false;
+
+    if (!name.empty())
+    {
+        valid = validateName(Common::Utf8::toUnicodeString(name));
+    }
+
+    return valid;
+}
+
+/**
+ * Validate a Name
+ *
+ * \param name  Name (unicode) string
+ *
+ * \retval true     Valid
+ * \retval false    Invalid
+ *
+ * Format:
+ * \code{.unparsed}
+ * Name ::= NameStartChar (NameChar)*
+ * \endcode
+ */
+bool XmlValidator::validateName(const Common::UnicodeString &name)
+{
+    bool valid = false;
+
+    if (!name.empty())
+    {
+        // Validate start character
+        valid = isNameStartChar(name.at(0U));
+
+        // Validate the rest of the characters
+        for (size_t i = 1U; i < name.size(); i++)
+        {
+            valid = isNameChar(name.at(i));
+
+            if (!valid)
+            {
+                break;
+            }
+        }
+    }
+
+    return valid;
+}

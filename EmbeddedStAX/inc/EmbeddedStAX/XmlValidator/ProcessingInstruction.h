@@ -25,16 +25,22 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H
-#define EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H
+#ifndef EMBEDDEDSTAX_XMLVALIDATOR_PROCESSINGINSTRUCTION_H
+#define EMBEDDEDSTAX_XMLVALIDATOR_PROCESSINGINSTRUCTION_H
 
-#include <stdint.h>
+#include <EmbeddedStAX/Common/Utf.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlValidator
 {
-bool isWhitespace(const uint32_t character);
+bool isXmlDeclaration(const Common::UnicodeString &piTarget);
+
+bool validatePiTarget(const std::string &piTarget);
+bool validatePiTarget(const Common::UnicodeString &piTarget);
+
+bool validatePiData(const std::string &piData);
+bool validatePiData(const Common::UnicodeString &piData);
 }
 }
-#endif // EMBEDDEDSTAX_XMLVALIDATOR_WHITESPACE_H
+#endif // EMBEDDEDSTAX_XMLVALIDATOR_PROCESSINGINSTRUCTION_H

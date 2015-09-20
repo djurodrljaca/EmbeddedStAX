@@ -25,4 +25,51 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-//#include <EmbeddedStAX/Common/Common.h>
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+
+#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+
+namespace EmbeddedStAX
+{
+namespace XmlReader
+{
+/**
+ * Token type parser
+ */
+class NameParser: public AbstractTokenParser
+{
+public:
+    // Public API
+    NameParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    ~NameParser();
+
+    bool isValid() const;
+    bool setOption(const Option parsingOption);
+    Result parse();
+    Common::UnicodeString value() const;
+
+private:
+    // Private types
+    enum State
+    {
+        State_ReadingNameStartChar,
+        State_ReadingNameChars,
+        State_Finished,
+        State_Error
+    };
+
+private:
+    // Private API
+    State executeStateReadingNameStartChar();
+    State executeStateReadingNameChars();
+
+private:
+    // Private data
+    State m_state;
+    Common::UnicodeString m_value;
+};
+}
+}
+
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H

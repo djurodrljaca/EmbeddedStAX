@@ -30,7 +30,93 @@
 using namespace EmbeddedStAX::Common;
 
 /**
- * Constructor for Utf8
+ * Compare unicode string
+ *
+ * \param startPosition     Position of the first character in the input string where the
+ *                          comparison will be done
+ * \param inputString       Input string
+ * \param compareString     Compare string
+ */
+bool EmbeddedStAX::Common::compareUnicodeString(const size_t startPosition,
+                                                const UnicodeString &inputString,
+                                                const std::string &compareString)
+{
+    bool match = true;
+
+    if ((startPosition + compareString.size()) > inputString.size())
+    {
+        // Error, compare string is too big
+        match = false;
+    }
+    else
+    {
+        // Compare
+        for (size_t i = 0U; i < compareString.size(); i++)
+        {
+            const size_t position = startPosition + i;
+
+            if (inputString.at(position) != static_cast<uint32_t>(compareString.at(i)))
+            {
+                // Characters do not match
+                match = false;
+                break;
+            }
+        }
+    }
+
+    return match;
+}
+
+/**
+ * Compare unicode string in a case insensitive way. Compare individual characters from input string
+ * with character at the compatable position in either lowercase or uppercase compare string.
+ *
+ * \param startPosition             Position of the first character in the input string where the
+ *                                  comparison will be done
+ * \param inputString               Input string
+ * \param compareStringLowercase    Lowercase compare string
+ * \param compareStringUppercase    Uppercase compare string
+ */
+bool EmbeddedStAX::Common::compareUnicodeString(const size_t startPosition,
+                                                const UnicodeString &inputString,
+                                                const std::string &compareStringLowercase,
+                                                const std::string &compareStringUppercase)
+{
+    bool match = true;
+    const size_t compareSize = compareStringLowercase.size();
+
+    if (compareSize != compareStringUppercase.size())
+    {
+        // Error, compare string sizes do not match
+        match = false;
+    }
+    else if ((startPosition + compareSize) > inputString.size())
+    {
+        // Error, compare string is too big
+        match = false;
+    }
+    else
+    {
+        // Compare
+        for (size_t i = 0U; i < compareSize; i++)
+        {
+            const size_t position = startPosition + i;
+
+            if ((inputString.at(position) != static_cast<uint32_t>(compareStringLowercase.at(i))) &&
+                (inputString.at(position) != static_cast<uint32_t>(compareStringUppercase.at(i))))
+            {
+                // Characters do not match
+                match = false;
+                break;
+            }
+        }
+    }
+
+    return match;
+}
+
+/**
+ * Constructor
  */
 Utf8::Utf8()
 {
@@ -88,7 +174,7 @@ uint32_t Utf8::getChar() const
  *
  * \param unicodeCharacter  Unicode character to convert
  *
- * \return UTF-8 encoded unicode character or an empty string in case of an error
+ * \return UTF-8 encoded string or an empty string in case of an error
  */
 std::string Utf8::toUtf8(const uint32_t unicodeChar)
 {
@@ -158,6 +244,78 @@ std::string Utf8::toUtf8(const uint32_t unicodeChar)
     }
 
     return std::string(utf8, size);
+}
+
+/**
+ * Convert unicode string to UTF-8 string
+ *
+ * \param unicodeString  Unicode string to convert
+ *
+ * \return UTF-8 encoded string or an empty string in case of an error
+ */
+std::string Utf8::toUtf8(const UnicodeString &unicodeString)
+{
+    std::string utf8;
+    std::string utf8Char;
+    utf8.reserve(unicodeString.size());
+
+    for (size_t i = 0U; i < unicodeString.size(); i++)
+    {
+        utf8Char = toUtf8(unicodeString.at(i));
+
+        if (utf8Char.empty())
+        {
+            // Error
+            utf8.clear();
+            break;
+        }
+        else
+        {
+            utf8.append(utf8Char);
+        }
+    }
+
+    return utf8;
+}
+
+/**
+ * Convert UTF-8 string to unicode string
+ *
+ * \param utf8  UTF-8 encoded string to convert
+ *
+ * \return Unicode string or an empty string in case of an error
+ */
+UnicodeString Utf8::toUnicodeString(const std::string &utf8)
+{
+    UnicodeString unicodeString;
+    unicodeString.reserve(utf8.size());
+    Utf8 utf8Parser;
+    Result result = Result_Success;
+
+    for (size_t i = 0U; i < utf8.size(); i++)
+    {
+        result = utf8Parser.write(utf8.at(i));
+
+        if (result == Result_Success)
+        {
+            unicodeString.push_back(utf8Parser.getChar());
+        }
+        else if (result == Result_Error)
+        {
+            break;
+        }
+        else
+        {
+            // More data is needed
+        }
+    }
+
+    if (result != Result_Success)
+    {
+        unicodeString.clear();
+    }
+
+    return unicodeString;
 }
 
 /**

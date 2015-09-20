@@ -25,4 +25,17 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-//#include <EmbeddedStAX/Common/Common.h>
+#ifndef EMBEDDEDSTAX_XMLVALIDATOR_COMMON_H
+#define EMBEDDEDSTAX_XMLVALIDATOR_COMMON_H
+
+#include <stdint.h>
+
+namespace EmbeddedStAX
+{
+namespace XmlValidator
+{
+bool isWhitespace(const uint32_t character);
+bool isChar(const uint32_t character);
+}
+}
+#endif // EMBEDDEDSTAX_XMLVALIDATOR_COMMON_H

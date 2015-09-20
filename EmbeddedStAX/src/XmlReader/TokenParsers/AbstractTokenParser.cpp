@@ -31,12 +31,16 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
+ *
+ * \param parsingBuffer Pointer to a parsing buffer
+ * \param option        Parsing option
+ * \param parserType    Token parser type
  */
 AbstractTokenParser::AbstractTokenParser(ParsingBuffer *parsingBuffer,
-                                         const Option parsingOption,
+                                         const Option option,
                                          const ParserType parserType)
     : m_parsingBuffer(parsingBuffer),
-      m_option(parsingOption),
+      m_option(option),
       m_tokenFound(TokenType_None),
       m_terminationChar(0U),
       m_parserType(parserType)
@@ -83,13 +87,13 @@ AbstractTokenParser::Option AbstractTokenParser::option() const
 /**
  * Set parsing option
  *
- * \param parsingOption New parsing option
+ * \param option    Parsing option
  *
  * \retval false    Parsing option not set
  *
  * \note It has to be overriden if needed in a derived class!
  */
-bool AbstractTokenParser::setOption(const AbstractTokenParser::Option parsingOption)
+bool AbstractTokenParser::setOption(const AbstractTokenParser::Option option)
 {
     return false;
 }

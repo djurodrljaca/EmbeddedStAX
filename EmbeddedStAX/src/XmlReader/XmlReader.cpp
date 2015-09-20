@@ -27,6 +27,7 @@
 
 #include <EmbeddedStAX/XmlReader/XmlReader.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -66,6 +67,8 @@ void XmlReader::startNewDocument()
     m_parsingState = ParsingState_Idle;
     m_lastParsingResult = ParsingResult_None;
     m_parsingBuffer.eraseToCurrentPosition();
+    m_xmlDeclaration.clear();
+    m_processingInstruction.clear();
 
     if (m_tokenParser != NULL)
     {
@@ -105,24 +108,13 @@ XmlReader::ParsingResult XmlReader::parse()
         {
             case ParsingState_Idle:
             {
-                // Idle
-                nextState = executeParsingStateIdle();
-
-                // Check transitions
-                switch (nextState)
+                // Create token parser for reading token type
+                if (setTokenParser(new TokenTypeParser(&m_parsingBuffer)))
                 {
-                    case ParsingState_ReadingTokenType:
-                    {
-                        // Execute another cycle
-                        finishParsing = false;
-                        break;
-                    }
-
-                    default:
-                    {
-                        // Error
-                        break;
-                    }
+                    // Start reading a XML document
+                    m_documentState = DocumentState_PrologWaitForXmlDeclaration;
+                    nextState = ParsingState_ReadingTokenType;
+                    finishParsing = false;
                 }
                 break;
             }
@@ -157,21 +149,77 @@ XmlReader::ParsingResult XmlReader::parse()
                     default:
                     {
                         // Error
+                        nextState = ParsingState_Error;
                         break;
                     }
                 }
                 break;
             }
 
-                // TODO: ParsingState_ReadingProcessingInstruction
+            case ParsingState_ReadingProcessingInstruction:
+            {
+                // Reading processing instruction
+                nextState = executeParsingStateReadingProcessingInstruction();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingProcessingInstruction:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_ProcessingInstructionRead:
+                    {
+                        result = ParsingResult_ProcessingInstruction;
+                        break;
+                    }
+
+                    case ParsingState_XmlDeclarationRead:
+                    {
+                        result = ParsingResult_XmlDeclaration;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
                 // TODO: ParsingState_ReadingDocumentType
                 // TODO: ParsingState_ReadingComment
                 // TODO: ParsingState_ReadingCData
                 // TODO: ParsingState_ReadingStartOfElement
                 // TODO: ParsingState_ReadingEndOfElement
 
+
+            case ParsingState_ProcessingInstructionRead:
+            case ParsingState_XmlDeclarationRead:
+            {
+                // Start reading next token
+                const TokenTypeParser::Option option =
+                        TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                {
+                    // Read token type
+                    nextState = ParsingState_ReadingTokenType;
+                    finishParsing = false;
+                }
+                break;
+            }
+
             default:
             {
+                // Error
+                nextState = ParsingState_Error;
                 break;
             }
         }
@@ -196,26 +244,23 @@ XmlReader::ParsingResult XmlReader::lastParsingResult()
 }
 
 /**
- * Execute parsing state: Idle
+ * Get XML declaration
  *
- * \retval ParsingState_ReadingTokenType    Token parser for reading token type created
- * \retval ParsingState_Error               Error
+ * \return XML declaration
  */
-XmlReader::ParsingState XmlReader::executeParsingStateIdle()
+EmbeddedStAX::Common::XmlDeclaration XmlReader::xmlDeclaration() const
 {
-    ParsingState nextState = ParsingState_Error;
+    return m_xmlDeclaration;
+}
 
-    // Create token parser for reading token type
-    bool success = setTokenParser(new TokenTypeParser(&m_parsingBuffer));
-
-    if (success)
-    {
-        // Start reading a XML document
-        m_documentState = DocumentState_PrologWaitForXmlDeclaration;
-        nextState = ParsingState_ReadingTokenType;
-    }
-
-    return nextState;
+/**
+ * Get processing instruction
+ *
+ * \return Processing instruction
+ */
+EmbeddedStAX::Common::ProcessingInstruction XmlReader::processingInstruction() const
+{
+    return m_processingInstruction;
 }
 
 /**
@@ -233,7 +278,6 @@ XmlReader::ParsingState XmlReader::executeParsingStateIdle()
 XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 {
     ParsingState nextState = ParsingState_Error;
-
     bool finishParsing = false;
 
     while (!finishParsing)
@@ -281,13 +325,23 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_ProcessingInstruction:
                     {
-                        // Processing instruction token found
-                        nextState = ParsingState_ReadingProcessingInstruction;
+                        // Set procesing instruction parser
+                        if (setTokenParser(new ProcessingInstructionParser(&m_parsingBuffer)))
+                        {
+                            // Processing instruction token found
+                            nextState = ParsingState_ReadingProcessingInstruction;
+                        }
+                        else
+                        {
+                            // Error
+                        }
                         break;
                     }
 
                     case AbstractTokenParser::TokenType_DocumentType:
                     {
+                        // TODO: set token parser!
+
                         // Check document state
                         if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
                         {
@@ -309,6 +363,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_Comment:
                     {
+                        // TODO: set token parser!
+
                         // Check document state
                         if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
                         {
@@ -324,6 +380,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_CData:
                     {
+                        // TODO: set token parser!
+
                         // Check document state
                         if (m_documentState == DocumentState_Element)
                         {
@@ -339,6 +397,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_StartOfElement:
                     {
+                        // TODO: set token parser!
+
                         // Start of element token found
                         nextState = ParsingState_ReadingStartOfElement;
                         break;
@@ -346,6 +406,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_EndOfElement:
                     {
+                        // TODO: set token parser!
+
                         // Check document state
                         if (m_documentState == DocumentState_Element)
                         {
@@ -361,6 +423,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     default:
                     {
+                        // Error
                         break;
                     }
                 }
@@ -378,6 +441,137 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
     return nextState;
 }
 
+/**
+ * Execute parsing state: Reading processing instruction
+ *
+ * \retval ParsingState_ReadingProcessingInstruction    Wait for more data
+ * \retval ParsingState_ProcessingInstructionRead       Processing instruction was read
+ * \retval ParsingState_XmlDeclarationRead              XML declaration was read
+ * \retval ParsingState_Error                           Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingProcessingInstruction()
+{
+    ParsingState nextState = ParsingState_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Parse
+        const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+        switch (result)
+        {
+            case AbstractTokenParser::Result_NeedMoreData:
+            {
+                // More data is needed
+                nextState = ParsingState_ReadingProcessingInstruction;
+                break;
+            }
+
+            case AbstractTokenParser::Result_Success:
+            {
+                // Check token type
+                const AbstractTokenParser::TokenType tokenType = m_tokenParser->tokenFound();
+
+                switch (tokenType)
+                {
+                    case AbstractTokenParser::TokenType_ProcessingInstruction:
+                    {
+                        // Get Processing instruction
+                        ProcessingInstructionParser *piParser =
+                                dynamic_cast<ProcessingInstructionParser *>(m_tokenParser);
+
+                        if (piParser != NULL)
+                        {
+                            // Processing instruction read
+                            m_processingInstruction = piParser->processingInstruction();
+
+                            if (m_processingInstruction.isValid())
+                            {
+                                // Check document state
+                                if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                                {
+                                    // A processing instruction was fround instead of a XML
+                                    // declaration at the start of the document. Now start waiting
+                                    // for document type
+                                    m_documentState = DocumentState_PrologWaitForDocumentType;
+                                }
+
+                                nextState = ParsingState_ProcessingInstructionRead;
+                            }
+                            else
+                            {
+                                // Error
+                                m_processingInstruction.clear();
+                            }
+                        }
+                        else
+                        {
+                            // Error
+                        }
+                        break;
+                    }
+
+                    case AbstractTokenParser::TokenType_XmlDeclaration:
+                    {
+                        // Check document state
+                        if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                        {
+                            // Get Processing instruction
+                            ProcessingInstructionParser *piParser =
+                                    dynamic_cast<ProcessingInstructionParser *>(m_tokenParser);
+
+                            if (piParser != NULL)
+                            {
+                                // XML declaration read
+                                m_xmlDeclaration = piParser->xmlDeclaration();
+
+                                if (m_xmlDeclaration.isValid())
+                                {
+                                    // A XML declaration at the start of the document. Now start
+                                    // waiting for document type
+                                    m_documentState = DocumentState_PrologWaitForDocumentType;
+                                    nextState = ParsingState_XmlDeclarationRead;
+                                }
+                                else
+                                {
+                                    // Error
+                                    m_xmlDeclaration.clear();
+                                }
+                            }
+                            else
+                            {
+                                // Error
+                            }
+                        }
+                        else
+                        {
+                            // Error, XML declaration was read at the unexpected time
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        break;
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                // Error
+                break;
+            }
+        }
+    }
+
+    return nextState;
+}
 
 /**
  * Set token parser
@@ -407,46 +601,3 @@ bool XmlReader::setTokenParser(AbstractTokenParser *tokenParser)
 
     return success;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-///**
-// * Execute parsing state machine state: Waiting for start of item
-// *
-// * \retval ParsingState_WaitingForStartOfItem   Waiting for more data
-// * \retval ParsingState_ReadingItemType         Start of item found
-// */
-//XmlReader::ParsingState XmlReader::executeParsingStateIdle()
-//{
-//    ParsingState nextState = ParsingState_Error;
-
-//    // Prepare parsing option
-//    XmlItemParser::Option option = XmlItemParser::Option_None;
-
-//    if (m_documentState == DocumentState_PrologDocumentType)
-//    {
-//        option = XmlItemParser::Option_IgnoreLeadingWhitespace;
-//    }
-
-//    // Initiate reading of an item
-//    if (m_itemParser.configure(XmlItemParser::Action_ReadItem, option))
-//    {
-//        nextState = ParsingState_ReadingItem;
-//    }
-
-//    return nextState;
-//}

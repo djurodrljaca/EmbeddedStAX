@@ -25,46 +25,38 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/XmlValidator/Whitespace.h>
+#ifndef EMBEDDEDSTAX_COMMON_PROCESSINGINSTRUCTION_H
+#define EMBEDDEDSTAX_COMMON_PROCESSINGINSTRUCTION_H
 
-using namespace EmbeddedStAX;
+#include <string>
+#include <stdint.h>
 
-/**
- * Check if character is a "whitespace" character
- *
- * \param character Unicode character
- *
- * \retval true     Character is a whitespace character
- * \retval false    Character is not a whitespace character
- *
- * Allowed values for NameStartChar:
- *  - 0x09 (horizontal tav)
- *  - 0x0A (line feed/new line)
- *  - 0x0D (carrage return)
- *  - 0x20 (space)
- */
-bool XmlValidator::isWhitespace(const uint32_t character)
+namespace EmbeddedStAX
 {
-    bool valid = false;
+namespace Common
+{
+class ProcessingInstruction
+{
+public:
+    // Public API
+    ProcessingInstruction(const std::string &piTarget = std::string(),
+                          const std::string &piData = std::string());
 
-    switch (character)
-    {
-        case 0x09U:
-        case 0x0AU:
-        case 0x0DU:
-        case 0x20U:
-        {
-            // Whitespace character
-            valid = true;
-            break;
-        }
+    bool isValid() const;
+    void clear();
 
-        default:
-        {
-            // Error, invalid value
-            break;
-        }
-    }
+    std::string piTarget() const;
+    void setPiTarget(const std::string &piTarget);
 
-    return valid;
+    std::string piData() const;
+    void setPiData(const std::string &piData);
+
+private:
+    // Private data
+    std::string m_piTarget;
+    std::string m_piData;
+};
 }
+}
+
+#endif // EMBEDDEDSTAX_COMMON_PROCESSINGINSTRUCTION_H

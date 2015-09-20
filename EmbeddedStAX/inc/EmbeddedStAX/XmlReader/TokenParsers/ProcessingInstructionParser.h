@@ -25,57 +25,60 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
+#include <EmbeddedStAX/Common/Common.h>
+#include <EmbeddedStAX/Common/ProcessingInstruction.h>
+#include <EmbeddedStAX/Common/XmlDeclaration.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Token type parser
+ * Processing instruction parser
  */
-class TokenTypeParser: public AbstractTokenParser
+class ProcessingInstructionParser: public AbstractTokenParser
 {
 public:
     // Public API
-    TokenTypeParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
-    ~TokenTypeParser();
+    ProcessingInstructionParser(ParsingBuffer *parsingBuffer);
+    ~ProcessingInstructionParser();
 
     bool isValid() const;
-    bool setOption(const Option parsingOption);
     Result parse();
+
+    Common::ProcessingInstruction processingInstruction() const;
+    Common::XmlDeclaration xmlDeclaration() const;
 
 private:
     // Private types
     enum State
     {
-        State_WaitingForStartOfToken,
-        State_ReadingTokenType,
-        State_ReadingTokenTypeExclamationMark,
-        State_ReadingTokenTypeDocumentType,
-        State_ReadingTokenTypeComment,
-        State_ReadingTokenTypeCData,
+        State_Idle,
+        State_ReadingPiTarget,
+        State_ReadingPiData,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateWaitingForStartOfToken();
-    State executeStateReadingTokenType();
-    State executeStateReadingTokenTypeExclamationMark();
-    State executeStateReadingTokenTypeDocumentType();
-    State executeStateReadingTokenTypeComment();
-    State executeStateReadingTokenTypeCData();
+    State executeStateIdle();
+    State executeStateReadingPiTarget();
+    State executeStateReadingPiData();
 
 private:
     // Private data
     State m_state;
+    NameParser *m_nameParser;
+    Common::UnicodeString m_piTarget;
+    Common::ProcessingInstruction m_processingInstruction;
+    Common::XmlDeclaration m_xmlDeclaration;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TOKENTYPEPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H

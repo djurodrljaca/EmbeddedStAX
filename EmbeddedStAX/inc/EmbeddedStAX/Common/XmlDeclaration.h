@@ -25,61 +25,75 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_COMMON_UTF_H
-#define EMBEDDEDSTAX_COMMON_UTF_H
+#ifndef EMBEDDEDSTAX_COMMON_XMLDECLARATION_H
+#define EMBEDDEDSTAX_COMMON_XMLDECLARATION_H
 
-#include <string>
-#include <stdint.h>
+#include <EmbeddedStAX/Common/Utf.h>
 
 namespace EmbeddedStAX
 {
 namespace Common
 {
-typedef std::basic_string<uint32_t> UnicodeString;
-
-bool compareUnicodeString(const size_t startPosition,
-                          const UnicodeString &inputString,
-                          const std::string &compareString);
-bool compareUnicodeString(const size_t startPosition,
-                          const UnicodeString &inputString,
-                          const std::string &compareStringLowercase,
-                          const std::string &compareStringUppercase);
-
-class Utf8
+class XmlDeclaration
 {
 public:
     // Public types
-    enum Result
+    enum Version
     {
-        Result_Success,
-        Result_Incomplete,
-        Result_Error
+        Version_None,
+        Version_Unknown,
+        Version_v1_0
+    };
+
+    enum Encoding
+    {
+        Encoding_None,
+        Encoding_Unknown,
+        Encoding_Utf8
+    };
+
+    enum Standalone
+    {
+        Standalone_None,
+        Standalone_Unknown,
+        Standalone_No,
+        Standalone_Yes
     };
 
 public:
     // Public API
-    Utf8();
+    XmlDeclaration(const Version version = Version_None,
+                   const Encoding encoding = Encoding_None,
+                   const Standalone standalone = Standalone_None);
 
+    bool isValid() const;
     void clear();
-    Result write(const char data);
-    uint32_t getChar() const;
 
-    static std::string toUtf8(const uint32_t unicodeChar);
-    static std::string toUtf8(const UnicodeString &unicodeString);
-    static UnicodeString toUnicodeString(const std::string &utf8);
+    Version version() const;
+    void setVersion(const Version version);
+
+    Encoding encoding() const;
+    void setEncoding(const Encoding encoding);
+
+    Standalone standalone() const;
+    void setStandalone(const Standalone standalone);
+
+    static XmlDeclaration fromPiData(const UnicodeString &piData);
 
 private:
     // Private API
-    Result writeFirstCharacter(const char data);
-    Result writeNextCharacter(const char data);
+    static size_t skipWhitespace(const size_t startPosition, const UnicodeString &data);
+    static UnicodeString extractValue(const size_t startPosition,
+                                      const UnicodeString &data,
+                                      size_t *nextPosition);
 
 private:
     // Private data
-    size_t m_index;
-    uint32_t m_char;
-    size_t m_charSize;
+    Version m_version;
+    Encoding m_encoding;
+    Standalone m_standalone;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_COMMON_UTF_H
+#endif // EMBEDDEDSTAX_COMMON_XMLDECLARATION_H
