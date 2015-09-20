@@ -603,7 +603,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingProcessingInstructi
                                 {
                                     // A processing instruction was fround instead of a XML
                                     // declaration at the start of the document. Now start waiting
-                                    // for document type
+                                    // for document type.
                                     m_documentState = DocumentState_PrologWaitForDocumentType;
                                 }
 
@@ -638,8 +638,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingProcessingInstructi
 
                                 if (m_xmlDeclaration.isValid())
                                 {
-                                    // A XML declaration at the start of the document. Now start
-                                    // waiting for document type
+                                    // A XML declaration is at the start of the document. Now start
+                                    // waiting for document typel.
                                     m_documentState = DocumentState_PrologWaitForDocumentType;
                                     nextState = ParsingState_XmlDeclarationRead;
                                 }
@@ -727,9 +727,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
                         // Check document state
                         if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
                         {
-                            // A processing instruction was fround instead of a XML
-                            // declaration at the start of the document. Now start waiting
-                            // for document type
+                            // A comment was fround instead of a XML declaration at the start of the
+                            // document. Now start waiting for document type.
                             m_documentState = DocumentState_PrologWaitForDocumentType;
                         }
 
@@ -805,9 +804,12 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingDocumentType()
                         {
                             // A document type was fround. Now start waiting for Misc
                             m_documentState = DocumentState_PrologWaitForMisc;
+                            nextState = ParsingState_DocumentTypeRead;
                         }
-
-                        nextState = ParsingState_DocumentTypeRead;
+                        else
+                        {
+                            // Error, invalid document state
+                        }
                     }
                     else
                     {
