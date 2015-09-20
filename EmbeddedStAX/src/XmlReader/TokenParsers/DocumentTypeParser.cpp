@@ -25,9 +25,9 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
 #include <EmbeddedStAX/XmlValidator/Common.h>
-#include <EmbeddedStAX/XmlValidator/ProcessingInstruction.h>
+#include <EmbeddedStAX/XmlValidator/Name.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -36,19 +36,18 @@ using namespace EmbeddedStAX::XmlReader;
  *
  * \param parsingBuffer Pointer to a parsing buffer
  */
-ProcessingInstructionParser::ProcessingInstructionParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_ProcessingInstruction),
+DocumentTypeParser::DocumentTypeParser(ParsingBuffer *parsingBuffer)
+    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_DocumentType),
       m_state(State_Idle),
       m_nameParser(NULL),
-      m_processingInstruction(),
-      m_xmlDeclaration()
+      m_documentType()
 {
 }
 
 /**
  * Destructor
  */
-ProcessingInstructionParser::~ProcessingInstructionParser()
+DocumentTypeParser::~DocumentTypeParser()
 {
     if (m_nameParser != NULL)
     {
@@ -63,7 +62,7 @@ ProcessingInstructionParser::~ProcessingInstructionParser()
  * \retval true     Valid
  * \retval false    Invalid
  */
-bool ProcessingInstructionParser::isValid() const
+bool DocumentTypeParser::isValid() const
 {
     bool valid = AbstractTokenParser::isValid();
 
@@ -85,7 +84,7 @@ bool ProcessingInstructionParser::isValid() const
  * \retval Result_NeedMoreData  More data is needed
  * \retval Result_Error         Error
  */
-AbstractTokenParser::Result ProcessingInstructionParser::parse()
+AbstractTokenParser::Result DocumentTypeParser::parse()
 {
     Result result = Result_Error;
 
@@ -108,27 +107,27 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
                         delete m_nameParser;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer);
-                    nextState = State_ReadingPiTarget;
+                    m_nameParser = new NameParser(m_parsingBuffer, Option_IgnoreLeadingWhitespace);
+                    nextState = State_ReadingName;
                     finishParsing = false;
                     break;
                 }
 
-                case State_ReadingPiTarget:
+                case State_ReadingName:
                 {
-                    // Reading processing instruction target (name of the PI)
-                    nextState = executeStateReadingPiTarget();
+                    // Reading name of the root element
+                    nextState = executeStateReadingName();
 
                     // Check transitions
                     switch (nextState)
                     {
-                        case State_ReadingPiTarget:
+                        case State_ReadingName:
                         {
                             result = Result_NeedMoreData;
                             break;
                         }
 
-                        case State_ReadingPiData:
+                        case State_ReadingEnd:
                         {
                             // Execute another cycle
                             finishParsing = false;
@@ -145,15 +144,16 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
                     break;
                 }
 
-                case State_ReadingPiData:
+
+                case State_ReadingEnd:
                 {
-                    // Reading processing instruction data
-                    nextState = executeStateReadingPiData();
+                    // Reading end of document type
+                    nextState = executeStateReadingEnd();
 
                     // Check transitions
                     switch (nextState)
                     {
-                        case State_ReadingPiData:
+                        case State_ReadingEnd:
                         {
                             result = Result_NeedMoreData;
                             break;
@@ -164,7 +164,6 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
                             result = Result_Success;
                             break;
                         }
-
                         default:
                         {
                             // Error
@@ -202,30 +201,19 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
  *
  * \return Processing instruction
  */
-EmbeddedStAX::Common::ProcessingInstruction
-ProcessingInstructionParser::processingInstruction() const
+EmbeddedStAX::Common::DocumentType DocumentTypeParser::documentType() const
 {
-    return m_processingInstruction;
+    return m_documentType;
 }
 
 /**
- * Get XML declaration
+ * Execute state: Reading name of the root element
  *
- * \return XML declaration
+ * \retval State_ReadingName    Wait for more data
+ * \retval State_ReadingEnd     Document type read
+ * \retval State_Error          Error
  */
-EmbeddedStAX::Common::XmlDeclaration ProcessingInstructionParser::xmlDeclaration() const
-{
-    return m_xmlDeclaration;
-}
-
-/**
- * Execute state: Reading PITarget
- *
- * \retval State_ReadingPiTarget        Wait for more data
- * \retval State_ReadingPiData          PITarget read
- * \retval State_Error                  Error
- */
-ProcessingInstructionParser::State ProcessingInstructionParser::executeStateReadingPiTarget()
+DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
 {
     State nextState = State_Error;
     bool finishParsing = false;
@@ -242,19 +230,22 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
             case Result_NeedMoreData:
             {
                 // More data is needed
-                nextState = State_ReadingPiTarget;
+                nextState = State_ReadingName;
                 break;
             }
 
             case Result_Success:
             {
-                m_piTarget = m_nameParser->value();
+                const Common::UnicodeString value = m_nameParser->value();
+                m_documentType.setName(Common::Utf8::toUtf8(value));
 
                 delete m_nameParser;
                 m_nameParser = NULL;
 
                 m_parsingBuffer->eraseToCurrentPosition();
-                nextState = State_ReadingPiData;
+
+                // Read end of document type
+                nextState = State_ReadingEnd;
                 break;
             }
 
@@ -270,18 +261,13 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
 }
 
 /**
- * Execute state: Reading PI Data
+ * Execute state: Reading end of document type
  *
- * \retval State_ReadingPiData  Wait for more data
- * \retval State_Finished       Processing instruction or XML declaration read
- * \retval State_Error          Error
- *
- * Format:
- * \code{.unparsed}
- * PI Data ::= (Char* - (Char* '?>' Char*))
- * \endcode
+ * \retval State_ReadingEnd Wait for more data
+ * \retval State_Finished   End of document type read
+ * \retval State_Error      Error
  */
-ProcessingInstructionParser::State ProcessingInstructionParser::executeStateReadingPiData()
+DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
 {
     State nextState = State_Error;
     bool finishParsing = false;
@@ -294,78 +280,38 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
         if (m_parsingBuffer->isMoreDataNeeded())
         {
             // More data is needed
-            nextState = State_ReadingPiData;
+            nextState = State_ReadingEnd;
         }
         else
         {
             // Check character
             const uint32_t uchar = m_parsingBuffer->currentChar();
 
-            if (XmlValidator::isChar(uchar))
+            if (uchar == static_cast<uint32_t>('>'))
             {
-                // Check for "?>" sequence
-                const size_t currentPosition = m_parsingBuffer->currentPosition();
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
 
-                if (currentPosition == 0U)
+                if (m_documentType.isValid())
                 {
-                    // Check next character
-                    m_parsingBuffer->incrementPosition();
-                    finishParsing = false;
+                    // End of document type found
+                    nextState = State_Finished;
                 }
                 else
                 {
-                    if ((uchar == static_cast<uint32_t>('>')) &&
-                        (m_parsingBuffer->at(currentPosition - 1U) == static_cast<uint32_t>('?')))
-                    {
-                        // End of PI Data found
-                        const Common::UnicodeString piData =
-                                m_parsingBuffer->substring(0U, currentPosition - 1U);
-                        m_parsingBuffer->incrementPosition();
-                        m_parsingBuffer->eraseToCurrentPosition();
-
-                        // Check for XML declaration
-                        if (XmlValidator::isXmlDeclaration(m_piTarget))
-                        {
-                            // Parse XML declaration
-                            m_xmlDeclaration = Common::XmlDeclaration::fromPiData(piData);
-
-                            if (m_xmlDeclaration.isValid())
-                            {
-                                // XML declaration read
-                                m_tokenFound = TokenType_XmlDeclaration;
-                                nextState = State_Finished;
-                            }
-                        }
-                        else
-                        {
-                            m_processingInstruction.setPiTarget(Common::Utf8::toUtf8(m_piTarget));
-                            m_processingInstruction.setPiData(Common::Utf8::toUtf8(piData));
-
-                            if (m_processingInstruction.isValid())
-                            {
-                                // Processing instruction read
-                                m_tokenFound = TokenType_ProcessingInstruction;
-                                nextState = State_Finished;
-                            }
-                            else
-                            {
-                                // Error
-                                m_processingInstruction.clear();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Check next character
-                        m_parsingBuffer->incrementPosition();
-                        finishParsing = false;
-                    }
+                    // Error, invalid document type
                 }
+            }
+            else if (XmlValidator::isWhitespace(uchar))
+            {
+                // We are allowed to ignore whitespace characters
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
+                finishParsing = false;
             }
             else
             {
                 // Error, invalid character read
-                m_terminationChar = uchar;
             }
         }
     }

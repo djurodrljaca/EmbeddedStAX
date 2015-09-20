@@ -25,59 +25,33 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
+#ifndef EMBEDDEDSTAX_COMMON_DOCUMENTTYPE_H
+#define EMBEDDEDSTAX_COMMON_DOCUMENTTYPE_H
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
-#include <EmbeddedStAX/Common/Common.h>
-#include <EmbeddedStAX/Common/ProcessingInstruction.h>
-#include <EmbeddedStAX/Common/XmlDeclaration.h>
+#include <string>
+#include <stdint.h>
 
 namespace EmbeddedStAX
 {
-namespace XmlReader
+namespace Common
 {
-/**
- * Processing instruction parser
- */
-class ProcessingInstructionParser: public AbstractTokenParser
+class DocumentType
 {
 public:
     // Public API
-    ProcessingInstructionParser(ParsingBuffer *parsingBuffer);
-    ~ProcessingInstructionParser();
+    DocumentType(const std::string &name = std::string());
 
     bool isValid() const;
-    Result parse();
+    void clear();
 
-    Common::ProcessingInstruction processingInstruction() const;
-    Common::XmlDeclaration xmlDeclaration() const;
-
-private:
-    // Private types
-    enum State
-    {
-        State_Idle,
-        State_ReadingPiTarget,
-        State_ReadingPiData,
-        State_Finished,
-        State_Error
-    };
-
-private:
-    // Private API
-    State executeStateReadingPiTarget();
-    State executeStateReadingPiData();
+    std::string name() const;
+    void setName(const std::string &name);
 
 private:
     // Private data
-    State m_state;
-    NameParser *m_nameParser;
-    Common::UnicodeString m_piTarget;
-    Common::ProcessingInstruction m_processingInstruction;
-    Common::XmlDeclaration m_xmlDeclaration;
+    std::string m_name;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
+#endif // EMBEDDEDSTAX_COMMON_DOCUMENTTYPE_H

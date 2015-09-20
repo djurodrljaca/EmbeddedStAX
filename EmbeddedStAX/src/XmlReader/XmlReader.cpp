@@ -27,6 +27,7 @@
 
 #include <EmbeddedStAX/XmlReader/XmlReader.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
 #include <EmbeddedStAX/XmlValidator/Comment.h>
@@ -71,6 +72,7 @@ void XmlReader::startNewDocument()
     m_parsingBuffer.eraseToCurrentPosition();
     m_xmlDeclaration.clear();
     m_processingInstruction.clear();
+    m_documentType.clear();
     m_value.clear();
 
     if (m_tokenParser != NULL)
@@ -227,15 +229,46 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-                // TODO: ParsingState_ReadingDocumentType
+            case ParsingState_ReadingDocumentType:
+            {
+                // Reading document type
+                nextState = executeParsingStateReadingDocumentType();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingDocumentType:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_DocumentTypeRead:
+                    {
+                        result = ParsingResult_DocumentType;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
                 // TODO: ParsingState_ReadingCData
                 // TODO: ParsingState_ReadingStartOfElement
                 // TODO: ParsingState_ReadingEndOfElement
 
 
-            case ParsingState_XmlDeclarationRead:
-            case ParsingState_ProcessingInstructionRead:
             case ParsingState_CommentRead:
+            case ParsingState_DocumentTypeRead:
+            case ParsingState_ProcessingInstructionRead:
+            case ParsingState_XmlDeclarationRead:
             {
                 // Start reading next token
                 const TokenTypeParser::Option option =
@@ -300,6 +333,16 @@ EmbeddedStAX::Common::XmlDeclaration XmlReader::xmlDeclaration() const
 EmbeddedStAX::Common::ProcessingInstruction XmlReader::processingInstruction() const
 {
     return m_processingInstruction;
+}
+
+/**
+ * Get document type
+ *
+ * \return Document type
+ */
+EmbeddedStAX::Common::DocumentType XmlReader::documentType() const
+{
+    return m_documentType;
 }
 
 /**
@@ -390,23 +433,32 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_DocumentType:
                     {
-                        // TODO: set token parser!
+                        // Set document type parser
+                        if (setTokenParser(new DocumentTypeParser(&m_parsingBuffer)))
+                        {
+                            // Check document state
+                            if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                            {
+                                // The first characters do not start a XML declaration, so we should
+                                // no longer wait for one. Start waiting for document type instead.
+                                m_documentState = DocumentState_PrologWaitForDocumentType;
 
-                        // Check document state
-                        if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
-                        {
-                            // The first characters do not start a XML declaration, so we should no
-                            // longer wait for one. Start waiting for document type instead.
-                            m_documentState = DocumentState_PrologWaitForDocumentType;
-                        }
-                        else if (m_documentState == DocumentState_PrologWaitForDocumentType)
-                        {
-                            // Document type token found
-                            nextState = ParsingState_ReadingDocumentType;
+                                // Document type token found
+                                nextState = ParsingState_ReadingDocumentType;
+                            }
+                            else if (m_documentState == DocumentState_PrologWaitForDocumentType)
+                            {
+                                // Document type token found
+                                nextState = ParsingState_ReadingDocumentType;
+                            }
+                            else
+                            {
+                                // Error, document type is not allowed in the current document state
+                            }
                         }
                         else
                         {
-                            // Error, document type is not allowed in the current document state
+                            // Error
                         }
                         break;
                     }
@@ -682,6 +734,80 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
                         }
 
                         nextState = ParsingState_CommentRead;
+                    }
+                    else
+                    {
+                        // Error
+                        m_value.clear();
+                    }
+                }
+                else
+                {
+                    // Error
+                }
+                break;
+            }
+
+            default:
+            {
+                // Error
+                break;
+            }
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state: Reading document type
+ *
+ * \retval ParsingState_ReadingDocumentType Wait for more data
+ * \retval ParsingState_DocumentTypeRead    Document type was read
+ * \retval ParsingState_Error               Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingDocumentType()
+{
+    ParsingState nextState = ParsingState_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Parse
+        const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+        switch (result)
+        {
+            case AbstractTokenParser::Result_NeedMoreData:
+            {
+                // More data is needed
+                nextState = ParsingState_ReadingDocumentType;
+                break;
+            }
+
+            case AbstractTokenParser::Result_Success:
+            {
+                // Get document type
+                DocumentTypeParser *documentTypeParser =
+                        dynamic_cast<DocumentTypeParser *>(m_tokenParser);
+
+                if (documentTypeParser != NULL)
+                {
+                    // Comment read
+                    m_documentType = documentTypeParser->documentType();
+
+                    if (m_documentType.isValid())
+                    {
+                        // Check document state
+                        if (m_documentState == DocumentState_PrologWaitForDocumentType)
+                        {
+                            // A document type was fround. Now start waiting for Misc
+                            m_documentState = DocumentState_PrologWaitForMisc;
+                        }
+
+                        nextState = ParsingState_DocumentTypeRead;
                     }
                     else
                     {

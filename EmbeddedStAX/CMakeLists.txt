@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 # Directory: Common
 set(embeddedstax_SOURCES_Common
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Common.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/DocumentType.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/ProcessingInstruction.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/XmlDeclaration.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Utf.cpp
@@ -10,6 +11,7 @@ set(embeddedstax_SOURCES_Common
 
 set(embeddedstax_HEADERS_Common
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Common.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/DocumentType.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/ProcessingInstruction.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/XmlDeclaration.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Utf.h
@@ -30,6 +32,7 @@ set(embeddedstax_HEADERS_XmlReader
 set(embeddedstax_SOURCES_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AbstractTokenParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/CommentParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/DocumentTypeParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/NameParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ProcessingInstructionParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/TokenTypeParser.cpp
@@ -38,6 +41,7 @@ set(embeddedstax_SOURCES_XmlReader_TokenParsers
 set(embeddedstax_HEADERS_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/NameParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h

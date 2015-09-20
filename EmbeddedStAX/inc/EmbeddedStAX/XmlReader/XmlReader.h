@@ -32,6 +32,7 @@
 #include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
 #include <EmbeddedStAX/Common/XmlDeclaration.h>
 #include <EmbeddedStAX/Common/ProcessingInstruction.h>
+#include <EmbeddedStAX/Common/DocumentType.h>
 #include <string>
 
 namespace EmbeddedStAX
@@ -73,6 +74,7 @@ public:
 
     Common::XmlDeclaration xmlDeclaration() const;
     Common::ProcessingInstruction processingInstruction() const;
+    Common::DocumentType documentType() const;
     std::string value() const;
 
 private:
@@ -81,7 +83,7 @@ private:
     {
         DocumentState_PrologWaitForXmlDeclaration,
         DocumentState_PrologWaitForDocumentType,
-        DocumentState_PrologMisc,
+        DocumentState_PrologWaitForMisc,
         DocumentState_Element,
         DocumentState_EndOfDocument,
         DocumentState_Error
@@ -95,6 +97,7 @@ private:
         ParsingState_XmlDeclarationRead,
         ParsingState_ProcessingInstructionRead,
         ParsingState_ReadingDocumentType,
+        ParsingState_DocumentTypeRead,
         ParsingState_ReadingComment,
         ParsingState_CommentRead,
         ParsingState_ReadingCData,
@@ -108,7 +111,7 @@ private:
     ParsingState executeParsingStateReadingTokenType();
     ParsingState executeParsingStateReadingProcessingInstruction();
     ParsingState executeParsingStateReadingComment();
-    // TODO: ParsingState executeParsingStateReadingDocumentType();
+    ParsingState executeParsingStateReadingDocumentType();
     // TODO: ParsingState executeParsingStateReadingCData();
     // TODO: ParsingState executeParsingStateReadingStartOfElement();
     // TODO: ParsingState executeParsingStateReadingEndOfElement();
@@ -124,6 +127,7 @@ private:
     ParsingResult m_lastParsingResult;
     Common::XmlDeclaration m_xmlDeclaration;
     Common::ProcessingInstruction m_processingInstruction;
+    Common::DocumentType m_documentType;
     std::string m_value;
 };
 }

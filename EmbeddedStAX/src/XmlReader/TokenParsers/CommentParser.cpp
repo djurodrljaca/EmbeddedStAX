@@ -36,7 +36,7 @@ using namespace EmbeddedStAX::XmlReader;
  * \param parsingBuffer Pointer to a parsing buffer
  */
 CommentParser::CommentParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Name),
+    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Comment),
       m_text()
 {
 }

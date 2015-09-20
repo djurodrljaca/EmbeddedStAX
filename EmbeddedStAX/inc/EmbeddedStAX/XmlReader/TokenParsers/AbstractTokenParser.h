@@ -58,9 +58,11 @@ public:
     enum ParserType
     {
         ParserType_Invalid,
-        ParserType_TokenType,
+        ParserType_Comment,
+        ParserType_DocumentType,
+        ParserType_Name,
         ParserType_ProcessingInstruction,
-        ParserType_Name
+        ParserType_TokenType,
     };
 
     enum TokenType

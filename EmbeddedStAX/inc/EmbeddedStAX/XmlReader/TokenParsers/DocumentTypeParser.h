@@ -25,59 +25,57 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H
 
 #include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
 #include <EmbeddedStAX/Common/Common.h>
-#include <EmbeddedStAX/Common/ProcessingInstruction.h>
-#include <EmbeddedStAX/Common/XmlDeclaration.h>
+#include <EmbeddedStAX/Common/DocumentType.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Processing instruction parser
+ * Document type parser
  */
-class ProcessingInstructionParser: public AbstractTokenParser
+class DocumentTypeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    ProcessingInstructionParser(ParsingBuffer *parsingBuffer);
-    ~ProcessingInstructionParser();
+    DocumentTypeParser(ParsingBuffer *parsingBuffer);
+    ~DocumentTypeParser();
 
     bool isValid() const;
     Result parse();
 
-    Common::ProcessingInstruction processingInstruction() const;
-    Common::XmlDeclaration xmlDeclaration() const;
+    Common::DocumentType documentType() const;
 
 private:
     // Private types
     enum State
     {
         State_Idle,
-        State_ReadingPiTarget,
-        State_ReadingPiData,
+        State_ReadingName,
+        // TODO: add support for reading the other parst of document type!
+        State_ReadingEnd,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateReadingPiTarget();
-    State executeStateReadingPiData();
+    State executeStateReadingName();
+    State executeStateReadingEnd();
 
 private:
     // Private data
     State m_state;
     NameParser *m_nameParser;
     Common::UnicodeString m_piTarget;
-    Common::ProcessingInstruction m_processingInstruction;
-    Common::XmlDeclaration m_xmlDeclaration;
+    Common::DocumentType m_documentType;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_PROCESSINGINSTRUCTIONPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H

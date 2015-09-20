@@ -36,7 +36,8 @@ int main(int argc, char **argv)
 
     const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>"
                              "<?pitarget      pidata       ?>"
-                             "<!--comment text-->";
+                             "<!--comment text-->"
+                             "<!DOCTYPE root >";
     const size_t bytesWritten = xmlReader.writeData(data);
     bool success = false;
 
@@ -77,6 +78,14 @@ int main(int argc, char **argv)
             case XmlReader::XmlReader::ParsingResult_Comment:
             {
                 std::cout << "Comment: text = " << xmlReader.value() << std::endl;
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_DocumentType:
+            {
+                const Common::DocumentType documentType = xmlReader.documentType();
+
+                std::cout << "Document type: name = " << documentType.name() << std::endl;
                 break;
             }
 
