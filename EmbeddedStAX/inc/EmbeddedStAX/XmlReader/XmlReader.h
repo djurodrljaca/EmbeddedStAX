@@ -73,6 +73,7 @@ public:
 
     Common::XmlDeclaration xmlDeclaration() const;
     Common::ProcessingInstruction processingInstruction() const;
+    std::string value() const;
 
 private:
     // Private types
@@ -91,10 +92,11 @@ private:
         ParsingState_Idle,
         ParsingState_ReadingTokenType,
         ParsingState_ReadingProcessingInstruction,
-        ParsingState_ProcessingInstructionRead,
         ParsingState_XmlDeclarationRead,
+        ParsingState_ProcessingInstructionRead,
         ParsingState_ReadingDocumentType,
         ParsingState_ReadingComment,
+        ParsingState_CommentRead,
         ParsingState_ReadingCData,
         ParsingState_ReadingStartOfElement,
         ParsingState_ReadingEndOfElement,
@@ -105,8 +107,8 @@ private:
     // Private API
     ParsingState executeParsingStateReadingTokenType();
     ParsingState executeParsingStateReadingProcessingInstruction();
+    ParsingState executeParsingStateReadingComment();
     // TODO: ParsingState executeParsingStateReadingDocumentType();
-    // TODO: ParsingState executeParsingStateReadingComment();
     // TODO: ParsingState executeParsingStateReadingCData();
     // TODO: ParsingState executeParsingStateReadingStartOfElement();
     // TODO: ParsingState executeParsingStateReadingEndOfElement();
@@ -122,6 +124,7 @@ private:
     ParsingResult m_lastParsingResult;
     Common::XmlDeclaration m_xmlDeclaration;
     Common::ProcessingInstruction m_processingInstruction;
+    std::string m_value;
 };
 }
 }

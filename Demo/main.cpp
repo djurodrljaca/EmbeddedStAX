@@ -35,7 +35,8 @@ int main(int argc, char **argv)
     XmlReader::XmlReader xmlReader;
 
     const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>"
-                             "<?pitarget      pidata       ?>";
+                             "<?pitarget      pidata       ?>"
+                             "<!--comment text-->";
     const size_t bytesWritten = xmlReader.writeData(data);
     bool success = false;
 
@@ -53,6 +54,16 @@ int main(int argc, char **argv)
 
         switch (result)
         {
+            case XmlReader::XmlReader::ParsingResult_XmlDeclaration:
+            {
+                const Common::XmlDeclaration xmlDeclaration = xmlReader.xmlDeclaration();
+
+                std::cout << "XML declaration: version = " << xmlDeclaration.version()
+                          << ", encoding = " << xmlDeclaration.encoding()
+                          << ", standalone = " << xmlDeclaration.standalone() << std::endl;
+                break;
+            }
+
             case XmlReader::XmlReader::ParsingResult_ProcessingInstruction:
             {
                 const Common::ProcessingInstruction processingInstruction =
@@ -63,13 +74,9 @@ int main(int argc, char **argv)
                 break;
             }
 
-            case XmlReader::XmlReader::ParsingResult_XmlDeclaration:
+            case XmlReader::XmlReader::ParsingResult_Comment:
             {
-                const Common::XmlDeclaration xmlDeclaration = xmlReader.xmlDeclaration();
-
-                std::cout << "XML declaration: version = " << xmlDeclaration.version()
-                          << ", encoding = " << xmlDeclaration.encoding()
-                          << ", standalone = " << xmlDeclaration.standalone() << std::endl;
+                std::cout << "Comment: text = " << xmlReader.value() << std::endl;
                 break;
             }
 

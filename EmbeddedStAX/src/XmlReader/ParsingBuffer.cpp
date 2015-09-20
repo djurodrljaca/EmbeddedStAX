@@ -168,21 +168,13 @@ bool ParsingBuffer::setCurrentPosition(const size_t position)
 
 /**
  * Increment current position by one
- *
- * \retval true     Position incremented
- * \retval false    Position not incremented
  */
-bool ParsingBuffer::incrementPosition()
+void ParsingBuffer::incrementPosition()
 {
-    bool success = false;
-
     if (m_position < m_buffer.size())
     {
         m_position++;
-        success = true;
     }
-
-    return success;
 }
 
 /**

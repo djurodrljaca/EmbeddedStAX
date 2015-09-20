@@ -26,8 +26,10 @@
  */
 
 #include <EmbeddedStAX/XmlReader/XmlReader.h>
-#include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
+#include <EmbeddedStAX/XmlValidator/Comment.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -69,6 +71,7 @@ void XmlReader::startNewDocument()
     m_parsingBuffer.eraseToCurrentPosition();
     m_xmlDeclaration.clear();
     m_processingInstruction.clear();
+    m_value.clear();
 
     if (m_tokenParser != NULL)
     {
@@ -171,15 +174,46 @@ XmlReader::ParsingResult XmlReader::parse()
                         break;
                     }
 
+                    case ParsingState_XmlDeclarationRead:
+                    {
+                        result = ParsingResult_XmlDeclaration;
+                        break;
+                    }
+
                     case ParsingState_ProcessingInstructionRead:
                     {
                         result = ParsingResult_ProcessingInstruction;
                         break;
                     }
 
-                    case ParsingState_XmlDeclarationRead:
+                    default:
                     {
-                        result = ParsingResult_XmlDeclaration;
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_ReadingComment:
+            {
+                // Reading comment
+                nextState = executeParsingStateReadingComment();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingComment:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_CommentRead:
+                    {
+                        result = ParsingResult_Comment;
                         break;
                     }
 
@@ -194,14 +228,14 @@ XmlReader::ParsingResult XmlReader::parse()
             }
 
                 // TODO: ParsingState_ReadingDocumentType
-                // TODO: ParsingState_ReadingComment
                 // TODO: ParsingState_ReadingCData
                 // TODO: ParsingState_ReadingStartOfElement
                 // TODO: ParsingState_ReadingEndOfElement
 
 
-            case ParsingState_ProcessingInstructionRead:
             case ParsingState_XmlDeclarationRead:
+            case ParsingState_ProcessingInstructionRead:
+            case ParsingState_CommentRead:
             {
                 // Start reading next token
                 const TokenTypeParser::Option option =
@@ -226,6 +260,11 @@ XmlReader::ParsingResult XmlReader::parse()
 
         // Update parsing state
         m_parsingState = nextState;
+
+        if (m_parsingState == ParsingState_Error)
+        {
+            m_documentState == DocumentState_Error;
+        }
     }
 
     // Save last parsing result
@@ -261,6 +300,17 @@ EmbeddedStAX::Common::XmlDeclaration XmlReader::xmlDeclaration() const
 EmbeddedStAX::Common::ProcessingInstruction XmlReader::processingInstruction() const
 {
     return m_processingInstruction;
+}
+
+/**
+ * Get value. Value depends on the parsing result. It can contain:
+ * - Comment Text
+ *
+ * \return Value
+ */
+std::string XmlReader::value() const
+{
+   return m_value;
 }
 
 /**
@@ -363,18 +413,24 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_Comment:
                     {
-                        // TODO: set token parser!
-
-                        // Check document state
-                        if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                        // Set comment parser
+                        if (setTokenParser(new CommentParser(&m_parsingBuffer)))
                         {
-                            // The first characters do not start a XML declaration, so we should no
-                            // longer wait for one. Start waiting for document type instead.
-                            m_documentState = DocumentState_PrologWaitForDocumentType;
-                        }
+                            // Check document state
+                            if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                            {
+                                // The first characters do not start a XML declaration, so we should
+                                // no longer wait for one. Start waiting for document type instead.
+                                m_documentState = DocumentState_PrologWaitForDocumentType;
+                            }
 
-                        // Comment token found
-                        nextState = ParsingState_ReadingComment;
+                            // Comment token found
+                            nextState = ParsingState_ReadingComment;
+                        }
+                        else
+                        {
+                            // Error
+                        }
                         break;
                     }
 
@@ -558,6 +614,84 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingProcessingInstructi
                         // Error
                         break;
                     }
+                }
+                break;
+            }
+
+            default:
+            {
+                // Error
+                break;
+            }
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state: Reading comment
+ *
+ * \retval ParsingState_ReadingComment  Wait for more data
+ * \retval ParsingState_CommentRead     Processing instruction was read
+ * \retval ParsingState_Error           Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
+{
+    ParsingState nextState = ParsingState_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Parse
+        const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+        switch (result)
+        {
+            case AbstractTokenParser::Result_NeedMoreData:
+            {
+                // More data is needed
+                nextState = ParsingState_ReadingComment;
+                break;
+            }
+
+            case AbstractTokenParser::Result_Success:
+            {
+                // Get comment
+                CommentParser *commentParser = dynamic_cast<CommentParser *>(m_tokenParser);
+
+                if (commentParser != NULL)
+                {
+                    // Comment read
+                    Common::UnicodeString commentText = commentParser->text();
+
+                    if (XmlValidator::validateCommentText(commentText))
+                    {
+                        // Save comment text
+                        m_value = Common::Utf8::toUtf8(commentText);
+
+                        // Check document state
+                        if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
+                        {
+                            // A processing instruction was fround instead of a XML
+                            // declaration at the start of the document. Now start waiting
+                            // for document type
+                            m_documentState = DocumentState_PrologWaitForDocumentType;
+                        }
+
+                        nextState = ParsingState_CommentRead;
+                    }
+                    else
+                    {
+                        // Error
+                        m_value.clear();
+                    }
+                }
+                else
+                {
+                    // Error
                 }
                 break;
             }

@@ -25,52 +25,34 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
-#define EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_COMMENTPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_COMMENTPARSER_H
 
-#include <EmbeddedStAX/Common/Utf.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Parsing buffer
- *
- * Holds the parsing buffer
+ * Token type parser
  */
-class ParsingBuffer
+class CommentParser: public AbstractTokenParser
 {
 public:
     // Public API
-    ParsingBuffer();
+    CommentParser(ParsingBuffer *parsingBuffer);
+    ~CommentParser();
 
-    size_t size() const;
-    void clear();
-    void erase(const size_t size);
-    void eraseToCurrentPosition();
-
-    uint32_t at(const size_t position) const;
-    uint32_t firstChar() const;
-    uint32_t currentChar() const;
-    bool isMoreDataNeeded() const;
-
-    size_t currentPosition() const;
-    bool setCurrentPosition(const size_t position);
-    void incrementPosition();
-
-    Common::UnicodeString substring(const size_t position,
-                                    const size_t size = std::string::npos) const;
-
-    size_t writeData(const std::string &data);
+    bool isValid() const;
+    Result parse();
+    Common::UnicodeString text() const;
 
 private:
     // Private data
-    Common::Utf8 m_utf8;
-    Common::UnicodeString m_buffer;
-    size_t m_position;
+    Common::UnicodeString m_text;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_PARSINGBUFFER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_COMMENTPARSER_H
