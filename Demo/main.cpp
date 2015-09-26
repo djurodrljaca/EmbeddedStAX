@@ -37,7 +37,14 @@ int main(int argc, char **argv)
     const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>"
                              "<?pitarget      pidata       ?>"
                              "<!--comment text-->"
-                             "<!DOCTYPE root >";
+                             "<!DOCTYPE root >"
+                             "<?pitarget2      pidata2       ?>"
+                             "<!--comment text2-->"
+                             "<root a1='asd' a2=\"fgh\">asd"
+                             "  <child1 /> some text"
+                             "  <child2 a='b'>more text</child2>"
+                             "  <child3><child4>asdfgh</child4></child3>"
+                             "</root>";
     const size_t bytesWritten = xmlReader.writeData(data);
     bool success = false;
 
@@ -77,7 +84,7 @@ int main(int argc, char **argv)
 
             case XmlReader::XmlReader::ParsingResult_Comment:
             {
-                std::cout << "Comment: text = " << xmlReader.value() << std::endl;
+                std::cout << "Comment: text = " << xmlReader.text() << std::endl;
                 break;
             }
 

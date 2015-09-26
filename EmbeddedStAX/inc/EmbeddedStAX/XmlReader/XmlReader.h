@@ -75,7 +75,8 @@ public:
     Common::XmlDeclaration xmlDeclaration() const;
     Common::ProcessingInstruction processingInstruction() const;
     Common::DocumentType documentType() const;
-    std::string value() const;
+    std::string text() const;
+    std::string name() const;
 
 private:
     // Private types
@@ -100,9 +101,15 @@ private:
         ParsingState_DocumentTypeRead,
         ParsingState_ReadingComment,
         ParsingState_CommentRead,
-        ParsingState_ReadingCData,
         ParsingState_ReadingStartOfElement,
+        ParsingState_StartOfElementRead,
+        ParsingState_EmptyElementRead,
+
         ParsingState_ReadingEndOfElement,
+        ParsingState_EndOfElementRead,
+
+        ParsingState_ReadingTextNode,
+        ParsingState_ReadingCData,
         ParsingState_Error
     };
 
@@ -112,9 +119,9 @@ private:
     ParsingState executeParsingStateReadingProcessingInstruction();
     ParsingState executeParsingStateReadingComment();
     ParsingState executeParsingStateReadingDocumentType();
-    // TODO: ParsingState executeParsingStateReadingCData();
-    // TODO: ParsingState executeParsingStateReadingStartOfElement();
+    ParsingState executeParsingStateReadingStartOfElement();
     // TODO: ParsingState executeParsingStateReadingEndOfElement();
+    // TODO: ParsingState executeParsingStateReadingCData();
 
     bool setTokenParser(AbstractTokenParser *tokenParser);
 
@@ -128,7 +135,8 @@ private:
     Common::XmlDeclaration m_xmlDeclaration;
     Common::ProcessingInstruction m_processingInstruction;
     Common::DocumentType m_documentType;
-    std::string m_value;
+    std::string m_text;
+    std::string m_name;
 };
 }
 }

@@ -319,6 +319,56 @@ UnicodeString Utf8::toUnicodeString(const std::string &utf8)
 }
 
 /**
+ * Calculate size of an UTF-8 encoded string from the unicode string
+ *
+ * \param value         Unicode string
+ * \param startPosition Start position of the unicode string
+ * \param endPosition   End position of the unicode string
+ *
+ * \return Size of UTF-8 encoded string from the unicode string or zero if an error occured
+ */
+size_t Utf8::calculateSize(const UnicodeString &value,
+                           const size_t startPosition,
+                           const size_t endPosition)
+{
+    size_t size = 0U;
+
+    for (size_t i = startPosition; (i < value.size()) && (i < endPosition); i++)
+    {
+        const uint32_t unicodeChar = value.at(i);
+
+        if (unicodeChar <= 0x7FU)
+        {
+            // 1 byte UTF-8 character
+            size = size + 1U;
+        }
+        else if (unicodeChar <= 0x7FFU)
+        {
+            // 2 byte UTF-8 character
+            size = size + 2U;
+        }
+        else if (unicodeChar <= 0xFFFFU)
+        {
+            // 3 byte UTF-8 character
+            size = size + 3U;
+        }
+        else if (unicodeChar <= 0x10FFFFU)
+        {
+            // 4 byte UTF-8 character
+            size = size + 4U;
+        }
+        else
+        {
+            // Error, invalid unicode character
+            size = 0U;
+            break;
+        }
+    }
+
+    return size;
+}
+
+/**
  * Write first character
  *
  * \param data  Data to write

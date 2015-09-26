@@ -73,7 +73,8 @@ void XmlReader::startNewDocument()
     m_xmlDeclaration.clear();
     m_processingInstruction.clear();
     m_documentType.clear();
-    m_value.clear();
+    m_text.clear();
+    m_name.clear();
 
     if (m_tokenParser != NULL)
     {
@@ -260,13 +261,54 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-                // TODO: ParsingState_ReadingCData
-                // TODO: ParsingState_ReadingStartOfElement
+            case ParsingState_ReadingStartOfElement:
+            {
+                // Reading element type
+                nextState = executeParsingStateReadingStartOfElement();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingStartOfElement:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_StartOfElementRead:
+                    case ParsingState_EmptyElementRead:
+                    {
+                        result = ParsingResult_StartOfElement;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case ParsingState_EmptyElementRead:
+            {
+                // TODO: set element name?
+                nextState = ParsingState_EndOfElementRead;
+                result = ParsingResult_EndOfElement;
+                break;
+            }
+
                 // TODO: ParsingState_ReadingEndOfElement
+                // TODO: ParsingState_ReadingTextNode
+                // TODO: ParsingState_ReadingCData
 
 
             case ParsingState_CommentRead:
             case ParsingState_DocumentTypeRead:
+            case ParsingState_EndOfElementRead:
             case ParsingState_ProcessingInstructionRead:
             case ParsingState_XmlDeclarationRead:
             {
@@ -346,14 +388,25 @@ EmbeddedStAX::Common::DocumentType XmlReader::documentType() const
 }
 
 /**
- * Get value. Value depends on the parsing result. It can contain:
+ * Get text. Value depends on the parsing result. It can contain:
  * - Comment Text
+ * - TODO: add others
  *
- * \return Value
+ * \return Text
  */
-std::string XmlReader::value() const
+std::string XmlReader::text() const
 {
-   return m_value;
+    return m_text;
+}
+
+/**
+ * Get element name
+ *
+ * \return Element name
+ */
+std::string XmlReader::name() const
+{
+    return m_name;
 }
 
 /**
@@ -722,7 +775,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
                     if (XmlValidator::validateCommentText(commentText))
                     {
                         // Save comment text
-                        m_value = Common::Utf8::toUtf8(commentText);
+                        m_text = Common::Utf8::toUtf8(commentText);
 
                         // Check document state
                         if (m_documentState == DocumentState_PrologWaitForXmlDeclaration)
@@ -737,7 +790,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
                     else
                     {
                         // Error
-                        m_value.clear();
+                        m_text.clear();
                     }
                 }
                 else
@@ -814,7 +867,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingDocumentType()
                     else
                     {
                         // Error
-                        m_value.clear();
+                        m_text.clear();
                     }
                 }
                 else
@@ -833,6 +886,19 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingDocumentType()
     }
 
     return nextState;
+}
+
+/**
+ * Execute parsing state: Reading start of element
+ *
+ * \retval ParsingState_ReadingStartOfElement   Wait for more data
+ * \retval ParsingState_StartOfElementRead      Start of element was read
+ * \retval ParsingState_EmptyElementRead        Empty element was read
+ * \retval ParsingState_Error                   Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingStartOfElement()
+{
+    // TODO: implement
 }
 
 /**

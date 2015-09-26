@@ -25,64 +25,45 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_COMMON_UTF_H
-#define EMBEDDEDSTAX_COMMON_UTF_H
+#ifndef EMBEDDEDSTAX_COMMON_ATTRIBUTE_H
+#define EMBEDDEDSTAX_COMMON_ATTRIBUTE_H
 
 #include <string>
 #include <stdint.h>
+#include <EmbeddedStAX/Common/Common.h>
 
 namespace EmbeddedStAX
 {
 namespace Common
 {
-typedef std::basic_string<uint32_t> UnicodeString;
-
-bool compareUnicodeString(const size_t startPosition,
-                          const UnicodeString &inputString,
-                          const std::string &compareString);
-bool compareUnicodeString(const size_t startPosition,
-                          const UnicodeString &inputString,
-                          const std::string &compareStringLowercase,
-                          const std::string &compareStringUppercase);
-
-class Utf8
+class Attribute
 {
 public:
-    // Public types
-    enum Result
-    {
-        Result_Success,
-        Result_Incomplete,
-        Result_Error
-    };
-
-public:
     // Public API
-    Utf8();
+    Attribute(const std::string &name = std::string(),
+              const std::string &value = std::string(),
+              const QuotationMark quotationMark = QuotationMark_Quote);
 
+    bool isValid() const;
     void clear();
-    Result write(const char data);
-    uint32_t getChar() const;
 
-    static std::string toUtf8(const uint32_t unicodeChar);
-    static std::string toUtf8(const UnicodeString &unicodeString);
-    static UnicodeString toUnicodeString(const std::string &utf8);
-    static size_t calculateSize(const UnicodeString &value,
-                                const size_t startPosition,
-                                const size_t endPosition);
+    std::string name() const;
+    void setName(const std::string &name);
 
-private:
-    // Private API
-    Result writeFirstCharacter(const char data);
-    Result writeNextCharacter(const char data);
+    std::string value() const;
+    void setValue(const std::string &value,
+                  const QuotationMark quotationMark = QuotationMark_Quote);
+
+    QuotationMark valueQuotationMark() const;
+    void setValueQuotationMark(const QuotationMark &quotationMark);
 
 private:
     // Private data
-    size_t m_index;
-    uint32_t m_char;
-    size_t m_charSize;
+    std::string m_name;
+    std::string m_value;
+    QuotationMark m_quotationMark;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_COMMON_UTF_H
+#endif // EMBEDDEDSTAX_COMMON_ATTRIBUTE_H

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # Directory: Common
 set(embeddedstax_SOURCES_Common
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Attribute.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Common.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/DocumentType.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/ProcessingInstruction.cpp
@@ -10,6 +11,7 @@ set(embeddedstax_SOURCES_Common
     )
 
 set(embeddedstax_HEADERS_Common
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Attribute.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/Common.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/DocumentType.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/Common/ProcessingInstruction.h
@@ -49,17 +51,21 @@ set(embeddedstax_HEADERS_XmlReader_TokenParsers
 
 # Directory: XmlValidator
 set(embeddedstax_SOURCES_XmlValidator
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Attribute.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Comment.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Common.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Name.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/ProcessingInstruction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Reference.cpp
     )
 
 set(embeddedstax_HEADERS_XmlValidator
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Attribute.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Comment.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Common.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Name.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/ProcessingInstruction.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Reference.h
     )
 
 # Directory: XmlWriter
