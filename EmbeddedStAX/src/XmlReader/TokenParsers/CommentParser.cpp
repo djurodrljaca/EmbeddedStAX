@@ -49,7 +49,7 @@ CommentParser::~CommentParser()
 }
 
 /**
- * Check if token parser is valid
+ * Check if parser is valid
  *
  * \retval true     Valid
  * \retval false    Invalid

@@ -25,4 +25,75 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-//#include <EmbeddedStAX/Common/Common.h>
+#include <EmbeddedStAX/Common/Common.h>
+
+using namespace EmbeddedStAX;
+
+/**
+ * Parse digit
+ *
+ * \param      digitCharacter   Digit character
+ * \param      base             Digit's base (10 for decimal and 16 for hexadecimal)
+ * \param[out] digitValue       Output for the parsed digit value
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool Common::parseDigit(const uint32_t digitCharacter, const uint32_t base, uint32_t *digitValue)
+{
+    bool success = false;
+
+    if (digitValue != NULL)
+    {
+        switch (base)
+        {
+            case 10U:
+            {
+                if ((static_cast<uint32_t>('0') <= digitCharacter) &&
+                    (digitCharacter <= static_cast<uint32_t>('9')))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('0'));
+                    success = true;
+                }
+
+                break;
+            }
+
+            case 16U:
+            {
+                if ((static_cast<uint32_t>('0') <= digitCharacter) &&
+                    (digitCharacter <= static_cast<uint32_t>('9')))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('0'));
+                    success = true;
+                }
+                else if ((static_cast<uint32_t>('a') <= digitCharacter) &&
+                         (digitCharacter <= static_cast<uint32_t>('f')))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('a'));
+                    success = true;
+                }
+                else if ((static_cast<uint32_t>('A') <= digitCharacter) &&
+                         (digitCharacter <= static_cast<uint32_t>('F')))
+                {
+                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('A'));
+                    success = true;
+                }
+                else
+                {
+                    // Error, invalid digit
+                }
+
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid base
+                break;
+            }
+        }
+    }
+
+    return success;
+}

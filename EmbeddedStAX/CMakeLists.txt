@@ -33,19 +33,23 @@ set(embeddedstax_HEADERS_XmlReader
 # Directory: XmlReader/TokenParsers
 set(embeddedstax_SOURCES_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AbstractTokenParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AttributeValueParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/CommentParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/DocumentTypeParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/NameParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ProcessingInstructionParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ReferenceParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/TokenTypeParser.cpp
     )
 
 set(embeddedstax_HEADERS_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/NameParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h
     )
 

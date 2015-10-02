@@ -25,27 +25,27 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ATTRIBUTEVALUEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ATTRIBUTEVALUEPARSER_H
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h>
+#include <EmbeddedStAX/Common/Common.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Name parser
+ * Reference parser
  */
-class NameParser: public AbstractTokenParser
+class AttributeValueParser: public AbstractTokenParser
 {
 public:
     // Public API
-    NameParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
-    ~NameParser();
+    AttributeValueParser(ParsingBuffer *parsingBuffer);
+    ~AttributeValueParser();
 
     bool isValid() const;
-    bool setOption(const Option parsingOption);
     Result parse();
     Common::UnicodeString value() const;
 
@@ -53,23 +53,27 @@ private:
     // Private types
     enum State
     {
-        State_ReadingNameStartChar,
-        State_ReadingNameChars,
+        State_ReadingQuotationMark,
+        State_ReadingAttributeValue,
+        State_ReadingReference,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateReadingNameStartChar();
-    State executeStateReadingNameChars();
+    State executeStateReadingQuotationMark();
+    State executeStateReadingAttributeValue();
+    State executeStateReadingReference();
 
 private:
     // Private data
     State m_state;
+    ReferenceParser *m_referenceParser;
     Common::UnicodeString m_value;
+    Common::QuotationMark m_quotationMark;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ATTRIBUTEVALUEPARSER_H

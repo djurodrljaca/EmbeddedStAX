@@ -26,81 +26,11 @@
  */
 
 #include <EmbeddedStAX/XmlValidator/Reference.h>
+#include <EmbeddedStAX/Common/Common.h>
 #include <EmbeddedStAX/XmlValidator/Common.h>
 #include <EmbeddedStAX/XmlValidator/Name.h>
 
 using namespace EmbeddedStAX;
-
-static bool parseDigit(const uint32_t digitCharacter, const uint32_t base, uint32_t *digitValue);
-
-/**
- * Parse digit
- *
- * \param      digitCharacter   Digit character
- * \param      base             Digit's base (10 for decimal and 16 for hexadecimal)
- * \param[out] digitValue       Output for the parsed digit value
- *
- * \retval true     Success
- * \retval false    Error
- */
-static bool parseDigit(const uint32_t digitCharacter, const uint32_t base, uint32_t *digitValue)
-{
-    bool success = false;
-
-    if (digitValue != NULL)
-    {
-        switch (base)
-        {
-            case 10U:
-            {
-                if ((static_cast<uint32_t>('0') <= digitCharacter) &&
-                    (digitCharacter <= static_cast<uint32_t>('9')))
-                {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('0'));
-                    success = true;
-                }
-
-                break;
-            }
-
-            case 16U:
-            {
-                if ((static_cast<uint32_t>('0') <= digitCharacter) &&
-                    (digitCharacter <= static_cast<uint32_t>('9')))
-                {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('0'));
-                    success = true;
-                }
-                else if ((static_cast<uint32_t>('a') <= digitCharacter) &&
-                         (digitCharacter <= static_cast<uint32_t>('f')))
-                {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('a'));
-                    success = true;
-                }
-                else if ((static_cast<uint32_t>('A') <= digitCharacter) &&
-                         (digitCharacter <= static_cast<uint32_t>('F')))
-                {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('A'));
-                    success = true;
-                }
-                else
-                {
-                    // Error, invalid digit
-                }
-
-                break;
-            }
-
-            default:
-            {
-                // Error, invalid base
-                break;
-            }
-        }
-    }
-
-    return success;
-}
 
 /**
  * Validate a Reference
@@ -424,14 +354,18 @@ bool XmlValidator::validateCharacterReferece(const Common::UnicodeString &value,
                 {
                     // Parse digit from character
                     uint32_t digitValue;
-                    valid = parseDigit(character, base, &digitValue);
+                    valid = Common::parseDigit(character, base, &digitValue);
 
                     if (valid)
                     {
                         // Add the digit to the character value
                         charValue = (charValue * base) + digitValue;
 
-                        // TODO: check for overflow of charValue?
+                        if (!Common::isUnicodeChar(charValue))
+                        {
+                            // Error, invalid character value
+                            validationFinished = true;
+                        }
                     }
                     else
                     {

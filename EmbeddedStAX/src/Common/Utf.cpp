@@ -30,6 +30,26 @@
 using namespace EmbeddedStAX::Common;
 
 /**
+ * Check if character is a valid unicode character
+ *
+ * \param uchar     Character
+ *
+ * \retval true     Unicode character
+ * \retval false    Not an unicode character
+ */
+bool EmbeddedStAX::Common::isUnicodeChar(const uint32_t uchar)
+{
+    bool valid = false;
+
+    if (uchar <= 0x10FFFFU)
+    {
+        valid = true;
+    }
+
+    return valid;
+}
+
+/**
  * Compare unicode string
  *
  * \param startPosition     Position of the first character in the input string where the
@@ -473,7 +493,7 @@ Utf8::Result Utf8::writeNextCharacter(const char data)
             {
                 // Last byte of a unicode character found, check if the unicode character value is
                 // valid
-                if (m_char <= 0x10FFFFU)
+                if (isUnicodeChar(m_char))
                 {
                     m_charSize = 0U;
                     m_index = 0U;

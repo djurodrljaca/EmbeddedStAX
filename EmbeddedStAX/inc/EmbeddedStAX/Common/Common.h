@@ -29,6 +29,7 @@
 #define EMBEDDEDSTAX_COMMON_COMMON_H
 
 #include <string>
+#include <stdint.h>
 
 namespace EmbeddedStAX
 {
@@ -40,6 +41,8 @@ enum QuotationMark
     QuotationMark_Quote,
     QuotationMark_Apostrophe
 };
+
+bool parseDigit(const uint32_t digitCharacter, const uint32_t base, uint32_t *digitValue);
 }
 }
 

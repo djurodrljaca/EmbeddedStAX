@@ -25,27 +25,26 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_REFERENCEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_REFERENCEPARSER_H
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Name parser
+ * Reference parser
  */
-class NameParser: public AbstractTokenParser
+class ReferenceParser: public AbstractTokenParser
 {
 public:
     // Public API
-    NameParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
-    ~NameParser();
+    ReferenceParser(ParsingBuffer *parsingBuffer);
+    ~ReferenceParser();
 
     bool isValid() const;
-    bool setOption(const Option parsingOption);
     Result parse();
     Common::UnicodeString value() const;
 
@@ -53,23 +52,33 @@ private:
     // Private types
     enum State
     {
-        State_ReadingNameStartChar,
-        State_ReadingNameChars,
+        State_ReadingStartOfReference,
+        State_ReadingReferenceType,
+        State_ReadingEntityReferenceName,
+        State_ReadingCharacterReferenceType,
+        State_ReadingCharacterReferenceDecimal,
+        State_ReadingCharacterReferenceHexadecimal,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateReadingNameStartChar();
-    State executeStateReadingNameChars();
+    State executeStateReadingStartOfReference();
+    State executeStateReadingReferenceType();
+    State executeStateReadingEntityReferenceName();
+    State executeStateReadingCharacterReferenceType();
+    State executeStateReadingCharacterReferenceDecimal();
+    State executeStateReadingCharacterReferenceHexadecimal();
 
 private:
     // Private data
     State m_state;
+    NameParser *m_nameParser;
     Common::UnicodeString m_value;
+    uint32_t m_charRefValue;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_NAMEPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_REFERENCEPARSER_H

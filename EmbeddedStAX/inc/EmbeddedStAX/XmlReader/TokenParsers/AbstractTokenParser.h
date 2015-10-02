@@ -62,21 +62,24 @@ public:
         ParserType_DocumentType,
         ParserType_Name,
         ParserType_ProcessingInstruction,
+        ParserType_Reference,
         ParserType_TokenType,
     };
 
     enum TokenType
     {
         TokenType_None,
-        TokenType_Whitespace,
-        TokenType_ProcessingInstruction,
-        TokenType_XmlDeclaration,
-        TokenType_DocumentType,
-        TokenType_Comment,
         TokenType_CData,
-        TokenType_StartOfElement,
+        TokenType_CharacterReference,
+        TokenType_Comment,
+        TokenType_DocumentType,
         TokenType_EndOfElement,
+        TokenType_EntityReference,
+        TokenType_ProcessingInstruction,
+        TokenType_StartOfElement,
         TokenType_TextNode,
+        TokenType_Whitespace,
+        TokenType_XmlDeclaration,
     };
 
 public:

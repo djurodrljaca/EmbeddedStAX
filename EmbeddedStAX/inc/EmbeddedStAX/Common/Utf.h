@@ -37,6 +37,7 @@ namespace Common
 {
 typedef std::basic_string<uint32_t> UnicodeString;
 
+bool isUnicodeChar(const uint32_t uchar);
 bool compareUnicodeString(const size_t startPosition,
                           const UnicodeString &inputString,
                           const std::string &compareString);
