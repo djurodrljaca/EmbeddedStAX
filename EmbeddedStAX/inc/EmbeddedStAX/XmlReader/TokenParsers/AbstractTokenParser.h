@@ -58,6 +58,7 @@ public:
     enum ParserType
     {
         ParserType_Invalid,
+        ParserType_AttributeValue,
         ParserType_Comment,
         ParserType_DocumentType,
         ParserType_Name,
@@ -74,6 +75,7 @@ public:
         TokenType_Comment,
         TokenType_DocumentType,
         TokenType_EndOfElement,
+        TokenType_EmptyElement,
         TokenType_EntityReference,
         TokenType_ProcessingInstruction,
         TokenType_StartOfElement,

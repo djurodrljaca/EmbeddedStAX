@@ -253,7 +253,6 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->eraseToCurrentPosition();
                 nextState = State_ReadingPiData;
                 break;
             }

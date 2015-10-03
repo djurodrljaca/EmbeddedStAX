@@ -28,9 +28,8 @@
 #ifndef EMBEDDEDSTAX_COMMON_ATTRIBUTE_H
 #define EMBEDDEDSTAX_COMMON_ATTRIBUTE_H
 
-#include <string>
-#include <stdint.h>
 #include <EmbeddedStAX/Common/Common.h>
+#include <EmbeddedStAX/Common/Utf.h>
 
 namespace EmbeddedStAX
 {
@@ -40,18 +39,18 @@ class Attribute
 {
 public:
     // Public API
-    Attribute(const std::string &name = std::string(),
-              const std::string &value = std::string(),
+    Attribute(const UnicodeString &name = UnicodeString(),
+              const UnicodeString &value = UnicodeString(),
               const QuotationMark quotationMark = QuotationMark_Quote);
 
     bool isValid() const;
     void clear();
 
-    std::string name() const;
-    void setName(const std::string &name);
+    UnicodeString name() const;
+    void setName(const UnicodeString &name);
 
-    std::string value() const;
-    void setValue(const std::string &value,
+    UnicodeString value() const;
+    void setValue(const UnicodeString &value,
                   const QuotationMark quotationMark = QuotationMark_Quote);
 
     QuotationMark valueQuotationMark() const;
@@ -59,8 +58,8 @@ public:
 
 private:
     // Private data
-    std::string m_name;
-    std::string m_value;
+    UnicodeString m_name;
+    UnicodeString m_value;
     QuotationMark m_quotationMark;
 };
 }

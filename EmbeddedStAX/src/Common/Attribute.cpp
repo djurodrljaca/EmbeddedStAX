@@ -41,8 +41,8 @@ using namespace EmbeddedStAX::Common;
  * \note Quotation mark is needed for the case that there is a unescaped quote character in the
  *       value string.
  */
-Attribute::Attribute(const std::string &name,
-                     const std::string &value,
+Attribute::Attribute(const UnicodeString &name,
+                     const UnicodeString &value,
                      const QuotationMark quotationMark)
     : m_name(name),
       m_value(value),
@@ -82,7 +82,7 @@ void Attribute::clear()
  *
  * \return Attribute name
  */
-std::string Attribute::name() const
+UnicodeString Attribute::name() const
 {
     return m_name;
 }
@@ -92,7 +92,7 @@ std::string Attribute::name() const
  *
  * \param name  Attribute name
  */
-void Attribute::setName(const std::string &name)
+void Attribute::setName(const UnicodeString &name)
 {
     m_name = name;
 }
@@ -102,7 +102,7 @@ void Attribute::setName(const std::string &name)
  *
  * \return Attribute value
  */
-std::string Attribute::value() const
+UnicodeString Attribute::value() const
 {
     return m_value;
 }
@@ -116,7 +116,7 @@ std::string Attribute::value() const
  * \note Quotation mark is needed for the case that there is a unescaped quote character in the
  *       value string.
  */
-void Attribute::setValue(const std::string &value, const QuotationMark quotationMark)
+void Attribute::setValue(const UnicodeString &value, const QuotationMark quotationMark)
 {
     m_value = value;
     m_quotationMark = quotationMark;

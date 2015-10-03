@@ -242,8 +242,6 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->eraseToCurrentPosition();
-
                 // Read end of document type
                 nextState = State_ReadingEnd;
                 break;

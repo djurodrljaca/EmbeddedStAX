@@ -27,6 +27,7 @@
 
 #include <EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h>
+#include <EmbeddedStAX/XmlValidator/Common.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -36,9 +37,9 @@ using namespace EmbeddedStAX::XmlReader;
  * \param parsingBuffer Pointer to a parsing buffer
  * \param option        Parsing option
  */
-AttributeValueParser::AttributeValueParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Reference),
-      m_state(State_ReadingStartOfReference),
+AttributeValueParser::AttributeValueParser(ParsingBuffer *parsingBuffer, Option option)
+    : AbstractTokenParser(parsingBuffer, option, ParserType_AttributeValue),
+      m_state(State_ReadingQuotationMark),
       m_referenceParser(NULL),
       m_value(),
       m_quotationMark(Common::QuotationMark_None)
@@ -69,15 +70,58 @@ bool AttributeValueParser::isValid() const
 
     if (valid)
     {
-        if ((m_option != Option_None) ||
-            ((m_quotationMark != Common::QuotationMark_Quote) &&
-             (m_quotationMark != Common::QuotationMark_Apostrophe)))
+        switch (m_option)
         {
-            valid = false;
+            case Option_None:
+            case Option_IgnoreLeadingWhitespace:
+            {
+                // Valid option
+                break;
+            }
+
+            default:
+            {
+                // Invalid option
+                valid = false;
+                break;
+            }
         }
     }
 
     return valid;
+}
+
+/**
+ * Set parsing option
+ *
+ * \param parsingOption New parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
+ */
+bool AttributeValueParser::setOption(const AbstractTokenParser::Option parsingOption)
+{
+    bool success = false;
+
+    switch (parsingOption)
+    {
+        case Option_None:
+        case Option_IgnoreLeadingWhitespace:
+        {
+            // Valid option
+            m_option = parsingOption;
+            success = true;
+            break;
+        }
+
+        default:
+        {
+            // Invalid option
+            break;
+        }
+    }
+
+    return success;
 }
 
 /**
@@ -156,7 +200,7 @@ AbstractTokenParser::Result AttributeValueParser::parse()
 
                         case State_Finished:
                         {
-                            result == Result_Success;
+                            result = Result_Success;
                             break;
                         }
 
@@ -248,38 +292,52 @@ EmbeddedStAX::Common::UnicodeString AttributeValueParser::value() const
 AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMark()
 {
     State nextState = State_Error;
+    bool finishParsing = false;
 
-    // Check if more data is needed
-    if (m_parsingBuffer->isMoreDataNeeded())
+    while (!finishParsing)
     {
-        // More data is needed
-        nextState = State_ReadingQuotationMark;
-    }
-    else
-    {
-        // Check character
-        const uint32_t uchar = m_parsingBuffer->currentChar();
+        finishParsing = true;
 
-        if (uchar == static_cast<uint32_t>('"'))
+        // Check if more data is needed
+        if (m_parsingBuffer->isMoreDataNeeded())
         {
-            // Quote found, now start reading the attribute value
-            m_quotationMark = Common::QuotationMark_Quote;
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
-            nextState = State_ReadingAttributeValue;
-        }
-        else if (uchar == static_cast<uint32_t>('\''))
-        {
-            // Apostrophe found, now start reading the attribute value
-            m_quotationMark = Common::QuotationMark_Apostrophe;
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
+            // More data is needed
             nextState = State_ReadingAttributeValue;
         }
         else
         {
-            // Error, invalid character read
-            m_terminationChar = uchar;
+            // Check character
+            const uint32_t uchar = m_parsingBuffer->currentChar();
+
+            if (uchar == static_cast<uint32_t>('"'))
+            {
+                // Quote found, now start reading the attribute value
+                m_quotationMark = Common::QuotationMark_Quote;
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
+                nextState = State_ReadingAttributeValue;
+            }
+            else if (uchar == static_cast<uint32_t>('\''))
+            {
+                // Apostrophe found, now start reading the attribute value
+                m_quotationMark = Common::QuotationMark_Apostrophe;
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
+                nextState = State_ReadingAttributeValue;
+            }
+            else if (XmlValidator::isWhitespace(uchar))
+            {
+                if (m_option == Option_IgnoreLeadingWhitespace)
+                {
+                    // Ignore leading whitespace
+                    finishParsing = false;
+                }
+            }
+            else
+            {
+                // Error, invalid character read
+                m_terminationChar = uchar;
+            }
         }
     }
 
@@ -398,7 +456,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_nameParser->parse();
+    const Result result = m_referenceParser->parse();
 
     switch (result)
     {
@@ -412,7 +470,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
         case Result_Success:
         {
             // Check for end of entity reference
-            const uint32_t terminationChar = m_nameParser->terminationChar();
+            const uint32_t terminationChar = m_referenceParser->terminationChar();
 
             if (terminationChar == static_cast<uint32_t>(';'))
             {

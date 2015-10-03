@@ -25,57 +25,68 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H
 
 #include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
-#include <EmbeddedStAX/Common/Common.h>
-#include <EmbeddedStAX/Common/DocumentType.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h>
+#include <EmbeddedStAX/Common/Attribute.h>
+#include <list>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Document type parser
+ * Start Of Element parser
  */
-class DocumentTypeParser: public AbstractTokenParser
+class StartOfElementParser: public AbstractTokenParser
 {
 public:
     // Public API
-    DocumentTypeParser(ParsingBuffer *parsingBuffer);
-    ~DocumentTypeParser();
+    StartOfElementParser(ParsingBuffer *parsingBuffer);
+    ~StartOfElementParser();
 
     bool isValid() const;
     Result parse();
 
-    Common::DocumentType documentType() const;
+    Common::UnicodeString name() const;
+    std::list<Common::Attribute> attributeList() const;
 
 private:
     // Private types
     enum State
     {
         State_Idle,
-        State_ReadingName,
-        // TODO: add support for reading the other parts of document type!
-        State_ReadingEnd,
+        State_ReadingElementName,
+        State_ReadingAttributeName,
+        State_ReadingEqualSign,
+        State_ReadingAttributeValue,
+        State_ReadingNextAttribute,
+        State_ReadingEndOfEmptyElement,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateReadingName();
-    State executeStateReadingEnd();
+    State executeStateReadingElementName();
+    State executeStateReadingAttributeName();
+    State executeStateReadingEqualSign();
+    State executeStateReadingAttributeValue();
+    State executeStateReadingNextAttribute();
+    State executeStateReadingEndOfEmptyElement();
 
 private:
     // Private data
     State m_state;
     NameParser *m_nameParser;
-    Common::UnicodeString m_piTarget;
-    Common::DocumentType m_documentType;
+    AttributeValueParser *m_attributeValueParser;
+    Common::UnicodeString m_elementName;
+    Common::UnicodeString m_attributeName;
+    std::list<Common::Attribute> m_attributeList;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_DOCUMENTTYPEPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H

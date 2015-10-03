@@ -445,9 +445,9 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
         case Result_Success:
         {
             // Check for end of entity reference
-            const uint32_t terminationChar = m_nameParser->terminationChar();
+            const uint32_t uchar = m_parsingBuffer->currentChar();
 
-            if (terminationChar == static_cast<uint32_t>(';'))
+            if (uchar == static_cast<uint32_t>(';'))
             {
                 // End of entity reference found
                 m_value = m_nameParser->value();
@@ -455,6 +455,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
                 delete m_nameParser;
                 m_nameParser = NULL;
 
+                m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
                 m_tokenFound = TokenType_EntityReference;
                 nextState = State_Finished;

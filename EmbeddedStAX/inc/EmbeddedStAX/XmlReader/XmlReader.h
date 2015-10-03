@@ -30,10 +30,12 @@
 
 #include <EmbeddedStAX/XmlReader/ParsingBuffer.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
-#include <EmbeddedStAX/Common/XmlDeclaration.h>
-#include <EmbeddedStAX/Common/ProcessingInstruction.h>
+#include <EmbeddedStAX/Common/Attribute.h>
 #include <EmbeddedStAX/Common/DocumentType.h>
-#include <string>
+#include <EmbeddedStAX/Common/ProcessingInstruction.h>
+#include <EmbeddedStAX/Common/Utf.h>
+#include <EmbeddedStAX/Common/XmlDeclaration.h>
+#include <list>
 
 namespace EmbeddedStAX
 {
@@ -75,8 +77,9 @@ public:
     Common::XmlDeclaration xmlDeclaration() const;
     Common::ProcessingInstruction processingInstruction() const;
     Common::DocumentType documentType() const;
-    std::string text() const;
-    std::string name() const;
+    Common::UnicodeString text() const;
+    Common::UnicodeString name() const;
+    std::list<Common::Attribute> attributeList() const;
 
 private:
     // Private types
@@ -135,8 +138,10 @@ private:
     Common::XmlDeclaration m_xmlDeclaration;
     Common::ProcessingInstruction m_processingInstruction;
     Common::DocumentType m_documentType;
-    std::string m_text;
-    std::string m_name;
+    Common::UnicodeString m_text;
+    Common::UnicodeString m_name;
+    std::list<Common::Attribute> m_attributeList;
+    std::list<Common::UnicodeString> m_openElementList;
 };
 }
 }

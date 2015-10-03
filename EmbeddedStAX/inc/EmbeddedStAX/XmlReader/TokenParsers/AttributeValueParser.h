@@ -42,10 +42,11 @@ class AttributeValueParser: public AbstractTokenParser
 {
 public:
     // Public API
-    AttributeValueParser(ParsingBuffer *parsingBuffer);
+    AttributeValueParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
     ~AttributeValueParser();
 
     bool isValid() const;
+    bool setOption(const Option parsingOption);
     Result parse();
     Common::UnicodeString value() const;
 
@@ -72,6 +73,7 @@ private:
     ReferenceParser *m_referenceParser;
     Common::UnicodeString m_value;
     Common::QuotationMark m_quotationMark;
+    // TODO: add a flag for unprocessed entity references?
 };
 }
 }

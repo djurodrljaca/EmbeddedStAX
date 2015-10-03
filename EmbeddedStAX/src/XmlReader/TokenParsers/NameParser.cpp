@@ -152,6 +152,7 @@ AbstractTokenParser::Result NameParser::parse()
                             result = Result_NeedMoreData;
                             break;
                         }
+
                         case State_ReadingNameChars:
                         {
                             // Execute another cycle

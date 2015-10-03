@@ -84,7 +84,8 @@ int main(int argc, char **argv)
 
             case XmlReader::XmlReader::ParsingResult_Comment:
             {
-                std::cout << "Comment: text = " << xmlReader.text() << std::endl;
+                const std::string text = Common::Utf8::toUtf8(xmlReader.text());
+                std::cout << "Comment: text = " << text << std::endl;
                 break;
             }
 
@@ -93,6 +94,30 @@ int main(int argc, char **argv)
                 const Common::DocumentType documentType = xmlReader.documentType();
 
                 std::cout << "Document type: name = " << documentType.name() << std::endl;
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_StartOfElement:
+            {
+                const std::string name = Common::Utf8::toUtf8(xmlReader.name());
+
+                std::cout << "Start of element: name = " << name << std::endl;
+
+                const std::list<Common::Attribute> attributeList = xmlReader.attributeList();
+
+                for (std::list<Common::Attribute>::const_iterator it = attributeList.begin();
+                     it != attributeList.end();
+                     it++)
+                {
+                    const Common::Attribute &attribute = *it;
+                    const std::string attributeName = Common::Utf8::toUtf8(attribute.name());
+                    const std::string attributeValue = Common::Utf8::toUtf8(attribute.value());
+
+                    std::cout << "    Attribute: name = " << attributeName << " value = "
+                              << attributeValue << std::endl;
+
+                }
+
                 break;
             }
 
