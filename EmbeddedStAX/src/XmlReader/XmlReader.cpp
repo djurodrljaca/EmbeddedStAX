@@ -26,6 +26,7 @@
  */
 
 #include <EmbeddedStAX/XmlReader/XmlReader.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/CDataParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
@@ -351,14 +352,54 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ReadingCData:
+            {
+                // Reading CDATA
+                nextState = executeParsingStateReadingCData();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingCData:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_CDataRead:
+                    {
+                        // CDATA was read
+                        result = ParsingResult_CData;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             case ParsingState_EmptyElementRead:
             {
                 // For an empty element, just return the "end of element" result
+                // Check for end of root element
+                if (m_openElementList.empty())
+                {
+                    // End of root element, document is finished
+                    m_documentState = DocumentState_EndOfDocument;
+                }
+
                 nextState = ParsingState_EndOfElementRead;
                 result = ParsingResult_EndOfElement;
                 break;
             }
 
+            case ParsingState_CDataRead:
             case ParsingState_StartOfElementRead:
             {
                 // Start reading next token
@@ -372,14 +413,6 @@ XmlReader::ParsingResult XmlReader::parse()
             }
 
                 // TODO: ParsingState_ReadingEndOfElement
-                // TODO: ParsingState_ReadingCData
-
-
-            case ParsingState_EndOfElementRead:
-            {
-                // TODO: check for end of root element!
-                break;
-            }
 
             case ParsingState_TextNodeRead:
             {
@@ -412,21 +445,32 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_CDataRead:
             case ParsingState_CommentRead:
+            case ParsingState_EndOfElementRead:
             case ParsingState_ProcessingInstructionRead:
             {
-                // TODO: read text node if document state is "element"?
-
-                // Start reading next token
-                const TokenTypeParser::Option option =
-                        TokenTypeParser::Option_IgnoreLeadingWhitespace;
-
-                if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                if (m_documentState == DocumentState_Element)
                 {
-                    // Read token type
-                    nextState = ParsingState_ReadingTokenType;
-                    finishParsing = false;
+                    // Start reading next token
+                    if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTextNode;
+                        finishParsing = false;
+                    }
+                }
+                else
+                {
+                    // Start reading next token
+                    const TokenTypeParser::Option option =
+                            TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                    if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTokenType;
+                        finishParsing = false;
+                    }
                 }
                 break;
             }
@@ -497,7 +541,7 @@ EmbeddedStAX::Common::DocumentType XmlReader::documentType() const
  * Get text. Value depends on the parsing result. It can contain:
  * - Comment Text
  * - Text Node
- * - TODO: add others
+ * - CDATA
  *
  * \return Text
  */
@@ -658,17 +702,23 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
 
                     case AbstractTokenParser::TokenType_CData:
                     {
-                        // TODO: set token parser!
-
-                        // Check document state
-                        if (m_documentState == DocumentState_Element)
+                        // Set comment parser
+                        if (setTokenParser(new CDataParser(&m_parsingBuffer)))
                         {
-                            // CDATA token found
-                            nextState = ParsingState_ReadingCData;
+                            // Check document state
+                            if (m_documentState == DocumentState_Element)
+                            {
+                                // CDATA token found
+                                nextState = ParsingState_ReadingCData;
+                            }
+                            else
+                            {
+                                // Error, CDATA is only allowed inside an element
+                            }
                         }
                         else
                         {
-                            // Error, CDATA is only allowed inside an element
+                            // Error
                         }
                         break;
                     }
@@ -1115,12 +1165,12 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
 
         case AbstractTokenParser::Result_Success:
         {
-            // Get comment
+            // Get text node
             TextNodeParser *textNodeParser = dynamic_cast<TextNodeParser *>(m_tokenParser);
 
             if (textNodeParser != NULL)
             {
-                // Comment read
+                // Text node read
                 const Common::UnicodeString text = textNodeParser->text();
 
                 // TODO: validate text node?
@@ -1128,6 +1178,62 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
                 // Save text
                 m_text = text;
                 nextState = ParsingState_TextNodeRead;
+            }
+            else
+            {
+                // Error
+            }
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state: Reading CDATA
+ *
+ * \retval ParsingState_ReadingCData    Wait for more data
+ * \retval ParsingState_CDataRead       CDATA was read
+ * \retval ParsingState_Error           Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingCData()
+{
+    ParsingState nextState = ParsingState_Error;
+
+    // Parse
+    const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+    switch (result)
+    {
+        case AbstractTokenParser::Result_NeedMoreData:
+        {
+            // More data is needed
+            nextState = ParsingState_ReadingCData;
+            break;
+        }
+
+        case AbstractTokenParser::Result_Success:
+        {
+            // Get CDATA text
+            CDataParser *cdataParser = dynamic_cast<CDataParser *>(m_tokenParser);
+
+            if (cdataParser != NULL)
+            {
+                // CDATA text read
+                const Common::UnicodeString text = cdataParser->text();
+
+                // TODO: validate CDATA?
+
+                // Save CDATA text
+                m_text = text;
+                nextState = ParsingState_CDataRead;
             }
             else
             {

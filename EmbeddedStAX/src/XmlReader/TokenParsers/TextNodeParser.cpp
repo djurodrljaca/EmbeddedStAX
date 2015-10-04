@@ -36,7 +36,7 @@ using namespace EmbeddedStAX::XmlReader;
  * \param parsingBuffer Pointer to a parsing buffer
  */
 TextNodeParser::TextNodeParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Comment),
+    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_TextNode),
       m_state(State_Idle),
       m_referenceParser(NULL),
       m_text()
@@ -289,6 +289,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
                 if (position < 2U)
                 {
                     // Valid text character, continue
+                    m_parsingBuffer->incrementPosition();
                     finishParsing = false;
                 }
                 else

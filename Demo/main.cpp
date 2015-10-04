@@ -34,16 +34,17 @@ int main(int argc, char **argv)
 {
     XmlReader::XmlReader xmlReader;
 
-    const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>"
-                             "<?pitarget      pidata       ?>"
-                             "<!--comment text-->"
-                             "<!DOCTYPE root >"
-                             "<?pitarget2      pidata2       ?>"
-                             "<!--comment text2-->"
-                             "<root a1='asd' a2=\"fgh; 'amp' entity reference ('&amp;')\">asd; 'amp' entity reference ('&amp;')"
-                             "  <child1 /> some text"
-                             "  <child2 a='b'>more text</child2>"
-                             "  <child3><child4>asdfgh</child4></child3>"
+    const std::string data = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>\n"
+                             "<?pitarget      pidata       ?>\n"
+                             "<!--comment text-->\n"
+                             "<!DOCTYPE root >\n"
+                             "<?pitarget2      pidata2       ?>\n"
+                             "<!--comment text2-->\n"
+                             "<root a1='asd' a2=\"fgh; 'amp' entity reference ('&amp;')\">"
+                             "asd; 'amp' entity reference ('&amp;')<![CDATA[asdasdasdasdasd]]>\n"
+                             "  <child1 /> some text\n"
+                             "  <child2 a='b'>more text</child2>\n"
+                             "  <child3><child4>asdfgh</child4></child3>\n"
                              "</root>";
     const size_t bytesWritten = xmlReader.writeData(data);
     bool success = false;
@@ -117,7 +118,6 @@ int main(int argc, char **argv)
                               << attributeValue << std::endl;
 
                 }
-
                 break;
             }
 
@@ -125,6 +125,21 @@ int main(int argc, char **argv)
             {
                 const std::string text = Common::Utf8::toUtf8(xmlReader.text());
                 std::cout << "Text Node: text = " << text << std::endl;
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_CData:
+            {
+                const std::string text = Common::Utf8::toUtf8(xmlReader.text());
+                std::cout << "CDATA: text = " << text << std::endl;
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_EndOfElement:
+            {
+                const std::string name = Common::Utf8::toUtf8(xmlReader.name());
+
+                std::cout << "End of element: name = " << name << std::endl;
                 break;
             }
 

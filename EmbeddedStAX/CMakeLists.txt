@@ -34,6 +34,7 @@ set(embeddedstax_HEADERS_XmlReader
 set(embeddedstax_SOURCES_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AbstractTokenParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/AttributeValueParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/CDataParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/CommentParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/DocumentTypeParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/NameParser.cpp
@@ -47,6 +48,7 @@ set(embeddedstax_SOURCES_XmlReader_TokenParsers
 set(embeddedstax_HEADERS_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/CDataParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/NameParser.h

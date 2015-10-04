@@ -59,11 +59,13 @@ public:
     {
         ParserType_Invalid,
         ParserType_AttributeValue,
+        ParserType_CData,
         ParserType_Comment,
         ParserType_DocumentType,
         ParserType_Name,
         ParserType_ProcessingInstruction,
         ParserType_Reference,
+        ParserType_TextNode,
         ParserType_TokenType,
     };
 
