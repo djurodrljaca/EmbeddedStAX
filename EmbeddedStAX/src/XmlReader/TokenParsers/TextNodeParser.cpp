@@ -25,8 +25,7 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h>
-#include <EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/TextNodeParser.h>
 #include <EmbeddedStAX/XmlValidator/Common.h>
 
 using namespace EmbeddedStAX::XmlReader;
@@ -35,27 +34,20 @@ using namespace EmbeddedStAX::XmlReader;
  * Constructor
  *
  * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-AttributeValueParser::AttributeValueParser(ParsingBuffer *parsingBuffer, Option option)
-    : AbstractTokenParser(parsingBuffer, option, ParserType_AttributeValue),
-      m_state(State_ReadingQuotationMark),
+TextNodeParser::TextNodeParser(ParsingBuffer *parsingBuffer)
+    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Comment),
+      m_state(State_Idle),
       m_referenceParser(NULL),
-      m_value(),
-      m_quotationMark(Common::QuotationMark_None)
+      m_text()
 {
 }
 
 /**
  * Destructor
  */
-AttributeValueParser::~AttributeValueParser()
+TextNodeParser::~TextNodeParser()
 {
-    if (m_referenceParser != NULL)
-    {
-        delete m_referenceParser;
-        m_referenceParser = NULL;
-    }
 }
 
 /**
@@ -64,7 +56,7 @@ AttributeValueParser::~AttributeValueParser()
  * \retval true     Valid
  * \retval false    Invalid
  */
-bool AttributeValueParser::isValid() const
+bool TextNodeParser::isValid() const
 {
     bool valid = AbstractTokenParser::isValid();
 
@@ -73,7 +65,6 @@ bool AttributeValueParser::isValid() const
         switch (m_option)
         {
             case Option_None:
-            case Option_IgnoreLeadingWhitespace:
             {
                 // Valid option
                 break;
@@ -92,46 +83,18 @@ bool AttributeValueParser::isValid() const
 }
 
 /**
- * Set parsing option
- *
- * \param parsingOption New parsing option
- *
- * \retval true     Parsing option set
- * \retval false    Parsing option not set
- */
-bool AttributeValueParser::setOption(const AbstractTokenParser::Option parsingOption)
-{
-    bool success = false;
-
-    switch (parsingOption)
-    {
-        case Option_None:
-        case Option_IgnoreLeadingWhitespace:
-        {
-            // Valid option
-            m_option = parsingOption;
-            success = true;
-            break;
-        }
-
-        default:
-        {
-            // Invalid option
-            break;
-        }
-    }
-
-    return success;
-}
-
-/**
  * Parse
  *
  * \retval Result_Success       Success
  * \retval Result_NeedMoreData  More data is needed
  * \retval Result_Error         Error
+ *
+ * Format:
+ * \code{.unparsed}
+ * content ::= CharData? ((element | Reference | CDSect | PI | Comment) CharData?)*
+ * \endcode
  */
-AbstractTokenParser::Result AttributeValueParser::parse()
+AbstractTokenParser::Result TextNodeParser::parse()
 {
     Result result = Result_Error;
 
@@ -146,46 +109,25 @@ AbstractTokenParser::Result AttributeValueParser::parse()
 
             switch (m_state)
             {
-                case State_ReadingQuotationMark:
+                case State_Idle:
                 {
-                    // Reading quotation mark
-                    nextState = executeStateReadingQuotationMark();
-
-                    // Check transitions
-                    switch (nextState)
-                    {
-                        case State_ReadingQuotationMark:
-                        {
-                            result = Result_NeedMoreData;
-                            break;
-                        }
-
-                        case State_ReadingAttributeValue:
-                        {
-                            // Execute another cycle
-                            finishParsing = false;
-                            break;
-                        }
-
-                        default:
-                        {
-                            // Error
-                            nextState = State_Error;
-                            break;
-                        }
-                    }
+                    // Erase all characters to the current position and start reading text
+                    m_parsingBuffer->eraseToCurrentPosition();
+                    m_text.clear();
+                    nextState = State_ReadingText;
+                    finishParsing = false;
                     break;
                 }
 
-                case State_ReadingAttributeValue:
+                case State_ReadingText:
                 {
-                    // Reading attribute value
-                    nextState = executeStateReadingAttributeValue();
+                    // Reading text
+                    nextState = executeStateReadingText();
 
                     // Check transitions
                     switch (nextState)
                     {
-                        case State_ReadingAttributeValue:
+                        case State_ReadingText:
                         {
                             result = Result_NeedMoreData;
                             break;
@@ -228,7 +170,7 @@ AbstractTokenParser::Result AttributeValueParser::parse()
                             break;
                         }
 
-                        case State_ReadingAttributeValue:
+                        case State_ReadingText:
                         {
                             // Execute another cycle
                             finishParsing = false;
@@ -268,28 +210,30 @@ AbstractTokenParser::Result AttributeValueParser::parse()
 }
 
 /**
- * Get value string
+ * Get text string
  *
- * \return Value string
+ * \return Text string
  */
-EmbeddedStAX::Common::UnicodeString AttributeValueParser::value() const
+EmbeddedStAX::Common::UnicodeString TextNodeParser::text() const
 {
-    return m_value;
+    return m_text;
 }
 
 /**
- * Execute state: Reading quotation mark
+ * Execute state: Reading text
  *
- * \retval State_ReadingQuotationMark   Wait for more data
- * \retval State_ReadingAttributeValue  Quotation mark found
- * \retval State_Error                  Error, unexpected character
+ * \retval State_ReadingText        Wait for more data
+ * \retval State_ReadingReference   Start of reference found
+ * \retval State_Finished           End of text node found
+ * \retval State_Error              Error, unexpected character
  *
  * Format:
  * \code{.unparsed}
- * Quotation mark ::= ('"' | "'")
+ * Text node ::= CharData? (Reference CharData?)*
+ * CharData  ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
  * \endcode
  */
-AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMark()
+TextNodeParser::State TextNodeParser::executeStateReadingText()
 {
     State nextState = State_Error;
     bool finishParsing = false;
@@ -302,76 +246,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMa
         if (m_parsingBuffer->isMoreDataNeeded())
         {
             // More data is needed
-            nextState = State_ReadingAttributeValue;
-        }
-        else
-        {
-            // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
-
-            if (uchar == static_cast<uint32_t>('"'))
-            {
-                // Quote found, now start reading the attribute value
-                m_quotationMark = Common::QuotationMark_Quote;
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
-                nextState = State_ReadingAttributeValue;
-            }
-            else if (uchar == static_cast<uint32_t>('\''))
-            {
-                // Apostrophe found, now start reading the attribute value
-                m_quotationMark = Common::QuotationMark_Apostrophe;
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
-                nextState = State_ReadingAttributeValue;
-            }
-            else if (XmlValidator::isWhitespace(uchar))
-            {
-                if (m_option == Option_IgnoreLeadingWhitespace)
-                {
-                    // Ignore leading whitespace
-                    finishParsing = false;
-                }
-            }
-            else
-            {
-                // Error, invalid character read
-                m_terminationChar = uchar;
-            }
-        }
-    }
-
-    return nextState;
-}
-
-/**
- * Execute state: Reading attribute value
- *
- * \retval State_ReadingAttributeValue  Wait for more data
- * \retval State_ReadingReference       Start of reference found
- * \retval State_Finished               End of attribute value found
- * \retval State_Error                  Error, unexpected character
- *
- * Format:
- * \code{.unparsed}
- * AttValue ::= '"' ([^<&"] | Reference)* '"'
- *           |  "'" ([^<&'] | Reference)* "'"
- * \endcode
- */
-AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeValue()
-{
-    State nextState = State_Error;
-    bool finishParsing = false;
-
-    while (!finishParsing)
-    {
-        finishParsing = true;
-
-        // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
-        {
-            // More data is needed
-            nextState = State_ReadingAttributeValue;
+            nextState = State_ReadingText;
         }
         else
         {
@@ -380,11 +255,20 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
 
             if (uchar == static_cast<uint32_t>('<'))
             {
-                // Invalid character found
+                // Add text
+                const size_t size = m_parsingBuffer->currentPosition();
+                m_text.append(m_parsingBuffer->substring(0U, size));
+
+                // End of text node found
                 m_parsingBuffer->eraseToCurrentPosition();
+                nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('&'))
             {
+                // Add text
+                const size_t size = m_parsingBuffer->currentPosition();
+                m_text.append(m_parsingBuffer->substring(0U, size));
+
                 // Possible start of Reference found, parse it
                 m_parsingBuffer->eraseToCurrentPosition();
 
@@ -397,45 +281,37 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
                 m_referenceParser = new ReferenceParser(m_parsingBuffer);
                 nextState = State_ReadingReference;
             }
-            else if (uchar == static_cast<uint32_t>('"'))
+            else if (uchar == static_cast<uint32_t>('>'))
             {
-                m_parsingBuffer->incrementPosition();
+                // Check if this character is part of the "]]>" sequence
+                const size_t position = m_parsingBuffer->currentPosition();
 
-                if (m_quotationMark == Common::QuotationMark_Quote)
+                if (position < 2U)
                 {
-                    // End of attribute value found
-                    m_parsingBuffer->eraseToCurrentPosition();
-                    nextState = State_Finished;
+                    // Valid text character, continue
+                    finishParsing = false;
                 }
                 else
                 {
-                    // Add character to value
-                    m_value.push_back(uchar);
-                    finishParsing = false;
-                }
-            }
-            else if (uchar == static_cast<uint32_t>('\''))
-            {
-                m_parsingBuffer->incrementPosition();
+                    const Common::UnicodeString sequence = m_parsingBuffer->substring(position - 2U,
+                                                                                      position);
 
-                if (m_quotationMark == Common::QuotationMark_Apostrophe)
-                {
-                    // End of attribute value found
-                    m_parsingBuffer->eraseToCurrentPosition();
-                    nextState = State_Finished;
-                }
-                else
-                {
-                    // Add character to value
-                    m_value.push_back(uchar);
-                    finishParsing = false;
+                    if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
+                    {
+                        // Error, Invalid sequence
+                    }
+                    else
+                    {
+                        // Valid sequence, continue
+                        m_parsingBuffer->incrementPosition();
+                        finishParsing = false;
+                    }
                 }
             }
             else
             {
-                // Add character to value
+                // Valid character, continue, continue
                 m_parsingBuffer->incrementPosition();
-                m_value.push_back(uchar);
                 finishParsing = false;
             }
         }
@@ -447,11 +323,11 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
 /**
  * Execute state: Reading reference
  *
- * \retval State_ReadingReference       Wait for more data
- * \retval State_ReadingAttributeValue  End of a valid reference found
- * \retval State_Error                  Error, invalid reference
+ * \retval State_ReadingReference   Wait for more data
+ * \retval State_ReadingText        End of a valid reference found
+ * \retval State_Error              Error, invalid reference
  */
-AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
+TextNodeParser::State TextNodeParser::executeStateReadingReference()
 {
     State nextState = State_Error;
 
@@ -480,45 +356,45 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
                     if (Common::compareUnicodeString(0U, name, std::string("amp")))
                     {
                         // Reference to '&' character found, add it to the value
-                        m_value.push_back(static_cast<uint32_t>('&'));
+                        m_text.push_back(static_cast<uint32_t>('&'));
                     }
                     else if (Common::compareUnicodeString(0U, name, std::string("lt")))
                     {
                         // Reference to '<' character found, add it to the value
-                        m_value.push_back(static_cast<uint32_t>('<'));
+                        m_text.push_back(static_cast<uint32_t>('<'));
                     }
                     else if (Common::compareUnicodeString(0U, name, std::string("gt")))
                     {
                         // Reference to '>' character found, add it to the value
-                        m_value.push_back(static_cast<uint32_t>('>'));
+                        m_text.push_back(static_cast<uint32_t>('>'));
                     }
                     else if (Common::compareUnicodeString(0U, name, std::string("apos")))
                     {
                         // Reference to "'" character found, add it to the value
-                        m_value.push_back(static_cast<uint32_t>('\''));
+                        m_text.push_back(static_cast<uint32_t>('\''));
                     }
                     else if (Common::compareUnicodeString(0U, name, std::string("quot")))
                     {
                         // Reference to '"' character found, add it to the value
-                        m_value.push_back(static_cast<uint32_t>('"'));
+                        m_text.push_back(static_cast<uint32_t>('"'));
                     }
                     else
                     {
                         // Unknown entity reference, add the full entity reference to the value
-                        m_value.push_back(static_cast<uint32_t>('&'));
-                        m_value.append(name);
-                        m_value.push_back(static_cast<uint32_t>(';'));
+                        m_text.push_back(static_cast<uint32_t>('&'));
+                        m_text.append(name);
+                        m_text.push_back(static_cast<uint32_t>(';'));
                     }
 
-                    nextState = State_ReadingAttributeValue;
+                    nextState = State_ReadingText;
                     break;
                 }
 
                 case TokenType_CharacterReference:
                 {
                     // Add the character from the character reference to the value
-                    m_value.append(m_referenceParser->value());
-                    nextState = State_ReadingAttributeValue;
+                    m_text.append(m_referenceParser->value());
+                    nextState = State_ReadingText;
                     break;
                 }
 

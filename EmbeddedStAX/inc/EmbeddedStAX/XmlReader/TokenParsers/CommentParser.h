@@ -35,7 +35,7 @@ namespace EmbeddedStAX
 namespace XmlReader
 {
 /**
- * Token type parser
+ * Comment parser
  */
 class CommentParser: public AbstractTokenParser
 {

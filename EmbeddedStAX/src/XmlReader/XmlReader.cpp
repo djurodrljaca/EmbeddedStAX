@@ -30,6 +30,7 @@
 #include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/StartOfElementParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/TextNodeParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
 #include <EmbeddedStAX/XmlValidator/Comment.h>
 
@@ -309,6 +310,47 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ReadingTextNode:
+            {
+                // Reading text node
+                nextState = executeParsingStateReadingTextNode();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingTextNode:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_TextNodeRead:
+                    {
+                        // Check if any text was read
+                        if (m_text.empty())
+                        {
+                            // No text was read, continue parsing
+                            finishParsing = false;
+                        }
+                        else
+                        {
+                            // Text was read
+                            result = ParsingResult_TextNode;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             case ParsingState_EmptyElementRead:
             {
                 // For an empty element, just return the "end of element" result
@@ -319,13 +361,17 @@ XmlReader::ParsingResult XmlReader::parse()
 
             case ParsingState_StartOfElementRead:
             {
-                // TODO: start reading text node?
+                // Start reading next token
+                if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
+                {
+                    // Read token type
+                    nextState = ParsingState_ReadingTextNode;
+                    finishParsing = false;
+                }
                 break;
             }
 
-                // TODO:
                 // TODO: ParsingState_ReadingEndOfElement
-                // TODO: ParsingState_ReadingTextNode
                 // TODO: ParsingState_ReadingCData
 
 
@@ -335,11 +381,43 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-            case ParsingState_CommentRead:
+            case ParsingState_TextNodeRead:
+            {
+                // Start reading next token
+                const TokenTypeParser::Option option =
+                        TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                {
+                    // Read token type
+                    nextState = ParsingState_ReadingTokenType;
+                    finishParsing = false;
+                }
+                break;
+            }
+
             case ParsingState_DocumentTypeRead:
-            case ParsingState_ProcessingInstructionRead:
             case ParsingState_XmlDeclarationRead:
             {
+                // Start reading next token
+                const TokenTypeParser::Option option =
+                        TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                {
+                    // Read token type
+                    nextState = ParsingState_ReadingTokenType;
+                    finishParsing = false;
+                }
+                break;
+            }
+
+            case ParsingState_CDataRead:
+            case ParsingState_CommentRead:
+            case ParsingState_ProcessingInstructionRead:
+            {
+                // TODO: read text node if document state is "element"?
+
                 // Start reading next token
                 const TokenTypeParser::Option option =
                         TokenTypeParser::Option_IgnoreLeadingWhitespace;
@@ -418,6 +496,7 @@ EmbeddedStAX::Common::DocumentType XmlReader::documentType() const
 /**
  * Get text. Value depends on the parsing result. It can contain:
  * - Comment Text
+ * - Text Node
  * - TODO: add others
  *
  * \return Text
@@ -800,7 +879,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingComment()
             if (commentParser != NULL)
             {
                 // Comment read
-                Common::UnicodeString commentText = commentParser->text();
+                const Common::UnicodeString commentText = commentParser->text();
 
                 if (XmlValidator::validateCommentText(commentText))
                 {
@@ -993,6 +1072,62 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingStartOfElement()
                         break;
                     }
                 }
+            }
+            else
+            {
+                // Error
+            }
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state: Reading text node
+ *
+ * \retval ParsingState_ReadingTextNode Wait for more data
+ * \retval ParsingState_TextNodeRead    Text node was read
+ * \retval ParsingState_Error           Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
+{
+    ParsingState nextState = ParsingState_Error;
+
+    // Parse
+    const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+    switch (result)
+    {
+        case AbstractTokenParser::Result_NeedMoreData:
+        {
+            // More data is needed
+            nextState = ParsingState_ReadingTextNode;
+            break;
+        }
+
+        case AbstractTokenParser::Result_Success:
+        {
+            // Get comment
+            TextNodeParser *textNodeParser = dynamic_cast<TextNodeParser *>(m_tokenParser);
+
+            if (textNodeParser != NULL)
+            {
+                // Comment read
+                const Common::UnicodeString text = textNodeParser->text();
+
+                // TODO: validate text node?
+
+                // Save text
+                m_text = text;
+                nextState = ParsingState_TextNodeRead;
             }
             else
             {

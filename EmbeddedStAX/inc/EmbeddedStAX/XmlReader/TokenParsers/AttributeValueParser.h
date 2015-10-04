@@ -36,7 +36,7 @@ namespace EmbeddedStAX
 namespace XmlReader
 {
 /**
- * Reference parser
+ * Attribute value parser
  */
 class AttributeValueParser: public AbstractTokenParser
 {

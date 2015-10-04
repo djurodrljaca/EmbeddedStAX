@@ -107,12 +107,14 @@ private:
         ParsingState_ReadingStartOfElement,
         ParsingState_StartOfElementRead,
         ParsingState_EmptyElementRead,
+        ParsingState_ReadingTextNode,
+        ParsingState_TextNodeRead,
 
         ParsingState_ReadingEndOfElement,
         ParsingState_EndOfElementRead,
 
-        ParsingState_ReadingTextNode,
         ParsingState_ReadingCData,
+        ParsingState_CDataRead,
         ParsingState_Error
     };
 
@@ -123,6 +125,7 @@ private:
     ParsingState executeParsingStateReadingComment();
     ParsingState executeParsingStateReadingDocumentType();
     ParsingState executeParsingStateReadingStartOfElement();
+    ParsingState executeParsingStateReadingTextNode();
     // TODO: ParsingState executeParsingStateReadingEndOfElement();
     // TODO: ParsingState executeParsingStateReadingCData();
 

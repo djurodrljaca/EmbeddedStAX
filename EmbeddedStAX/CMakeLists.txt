@@ -40,6 +40,7 @@ set(embeddedstax_SOURCES_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ProcessingInstructionParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/ReferenceParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/StartOfElementParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/TextNodeParser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlReader/TokenParsers/TokenTypeParser.cpp
     )
 
@@ -52,6 +53,7 @@ set(embeddedstax_HEADERS_XmlReader_TokenParsers
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/StartOfElementParser.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/TextNodeParser.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h
     )
 

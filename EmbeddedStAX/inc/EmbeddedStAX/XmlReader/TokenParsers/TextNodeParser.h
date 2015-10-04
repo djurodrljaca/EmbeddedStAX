@@ -25,68 +25,53 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H
-#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TEXTNODEPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TEXTNODEPARSER_H
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
-#include <EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h>
-#include <EmbeddedStAX/Common/Attribute.h>
-#include <list>
+#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/ReferenceParser.h>
 
 namespace EmbeddedStAX
 {
 namespace XmlReader
 {
 /**
- * Start of element parser
+ * Text node parser
  */
-class StartOfElementParser: public AbstractTokenParser
+class TextNodeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    StartOfElementParser(ParsingBuffer *parsingBuffer);
-    ~StartOfElementParser();
+    TextNodeParser(ParsingBuffer *parsingBuffer);
+    ~TextNodeParser();
 
     bool isValid() const;
     Result parse();
-
-    Common::UnicodeString name() const;
-    std::list<Common::Attribute> attributeList() const;
+    Common::UnicodeString text() const;
 
 private:
     // Private types
     enum State
     {
         State_Idle,
-        State_ReadingElementName,
-        State_ReadingAttributeName,
-        State_ReadingEqualSign,
-        State_ReadingAttributeValue,
-        State_ReadingNextAttribute,
-        State_ReadingEndOfEmptyElement,
+        State_ReadingText,
+        State_ReadingReference,
         State_Finished,
         State_Error
     };
 
 private:
     // Private API
-    State executeStateReadingElementName();
-    State executeStateReadingAttributeName();
-    State executeStateReadingEqualSign();
-    State executeStateReadingAttributeValue();
-    State executeStateReadingNextAttribute();
-    State executeStateReadingEndOfEmptyElement();
+    State executeStateReadingText();
+    State executeStateReadingReference();
 
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
-    AttributeValueParser *m_attributeValueParser;
-    Common::UnicodeString m_elementName;
-    Common::UnicodeString m_attributeName;
-    std::list<Common::Attribute> m_attributeList;
+    ReferenceParser *m_referenceParser;
+    Common::UnicodeString m_text;
 };
 }
 }
 
-#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_STARTOFELEMENTPARSER_H
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_TEXTNODEPARSER_H

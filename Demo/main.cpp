@@ -40,7 +40,7 @@ int main(int argc, char **argv)
                              "<!DOCTYPE root >"
                              "<?pitarget2      pidata2       ?>"
                              "<!--comment text2-->"
-                             "<root a1='asd' a2=\"fgh\">asd"
+                             "<root a1='asd' a2=\"fgh; 'amp' entity reference ('&amp;')\">asd; 'amp' entity reference ('&amp;')"
                              "  <child1 /> some text"
                              "  <child2 a='b'>more text</child2>"
                              "  <child3><child4>asdfgh</child4></child3>"
@@ -118,6 +118,13 @@ int main(int argc, char **argv)
 
                 }
 
+                break;
+            }
+
+            case XmlReader::XmlReader::ParsingResult_TextNode:
+            {
+                const std::string text = Common::Utf8::toUtf8(xmlReader.text());
+                std::cout << "Text Node: text = " << text << std::endl;
                 break;
             }
 
