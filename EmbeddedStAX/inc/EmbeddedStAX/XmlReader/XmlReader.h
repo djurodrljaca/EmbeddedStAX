@@ -111,10 +111,8 @@ private:
         ParsingState_TextNodeRead,
         ParsingState_ReadingCData,
         ParsingState_CDataRead,
-
         ParsingState_ReadingEndOfElement,
         ParsingState_EndOfElementRead,
-
         ParsingState_Error
     };
 
@@ -127,7 +125,7 @@ private:
     ParsingState executeParsingStateReadingStartOfElement();
     ParsingState executeParsingStateReadingTextNode();
     ParsingState executeParsingStateReadingCData();
-    // TODO: ParsingState executeParsingStateReadingEndOfElement();
+    ParsingState executeParsingStateReadingEndOfElement();
 
     bool setTokenParser(AbstractTokenParser *tokenParser);
 

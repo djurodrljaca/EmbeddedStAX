@@ -25,9 +25,8 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/EndOfElementParser.h>
 #include <EmbeddedStAX/XmlValidator/Common.h>
-#include <EmbeddedStAX/XmlValidator/Name.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -35,19 +34,20 @@ using namespace EmbeddedStAX::XmlReader;
  * Constructor
  *
  * \param parsingBuffer Pointer to a parsing buffer
+ * \param option        Parsing option
  */
-DocumentTypeParser::DocumentTypeParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_DocumentType),
+EndOfElementParser::EndOfElementParser(ParsingBuffer *parsingBuffer)
+    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Reference),
       m_state(State_Idle),
       m_nameParser(NULL),
-      m_documentType()
+      m_elementName()
 {
 }
 
 /**
  * Destructor
  */
-DocumentTypeParser::~DocumentTypeParser()
+EndOfElementParser::~EndOfElementParser()
 {
     if (m_nameParser != NULL)
     {
@@ -62,7 +62,7 @@ DocumentTypeParser::~DocumentTypeParser()
  * \retval true     Valid
  * \retval false    Invalid
  */
-bool DocumentTypeParser::isValid() const
+bool EndOfElementParser::isValid() const
 {
     bool valid = AbstractTokenParser::isValid();
 
@@ -84,7 +84,7 @@ bool DocumentTypeParser::isValid() const
  * \retval Result_NeedMoreData  More data is needed
  * \retval Result_Error         Error
  */
-AbstractTokenParser::Result DocumentTypeParser::parse()
+AbstractTokenParser::Result EndOfElementParser::parse()
 {
     Result result = Result_Error;
 
@@ -101,36 +101,45 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
             {
                 case State_Idle:
                 {
-                    // Start reading name
+                    // Initialize name parser
                     if (m_nameParser != NULL)
                     {
                         delete m_nameParser;
+                        m_nameParser = NULL;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer, Option_IgnoreLeadingWhitespace);
-                    nextState = State_ReadingName;
+                    m_nameParser = new NameParser(m_parsingBuffer, Option_None);
+
+                    // Execute another cycle
+                    nextState = State_ReadingElementName;
                     finishParsing = false;
                     break;
                 }
 
-                case State_ReadingName:
+                case State_ReadingElementName:
                 {
-                    // Reading name of the root element
-                    nextState = executeStateReadingName();
+                    // Reading element name
+                    nextState = executeStateReadingElementName();
 
                     // Check transitions
                     switch (nextState)
                     {
-                        case State_ReadingName:
+                        case State_ReadingElementName:
                         {
                             result = Result_NeedMoreData;
                             break;
                         }
 
-                        case State_ReadingEnd:
+                        case State_ReadingEndOfElement:
                         {
                             // Execute another cycle
                             finishParsing = false;
+                            break;
+                        }
+
+                        case State_Finished:
+                        {
+                            result = Result_Success;
                             break;
                         }
 
@@ -144,16 +153,15 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                     break;
                 }
 
-
-                case State_ReadingEnd:
+                case State_ReadingEndOfElement:
                 {
-                    // Reading end of document type
-                    nextState = executeStateReadingEnd();
+                    // Reading end of element
+                    nextState = executeStateReadingEndOfElement();
 
                     // Check transitions
                     switch (nextState)
                     {
-                        case State_ReadingEnd:
+                        case State_ReadingEndOfElement:
                         {
                             result = Result_NeedMoreData;
                             break;
@@ -164,6 +172,7 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                             result = Result_Success;
                             break;
                         }
+
                         default:
                         {
                             // Error
@@ -197,60 +206,86 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
 }
 
 /**
- * Get processing instruction
+ * Get element name
  *
- * \return Processing instruction
+ * \return Element name
  */
-EmbeddedStAX::Common::DocumentType DocumentTypeParser::documentType() const
+EmbeddedStAX::Common::UnicodeString EndOfElementParser::name() const
 {
-    return m_documentType;
+    return m_elementName;
 }
 
 /**
- * Execute state: Reading name of the root element
+ * Execute state: Reading element name
  *
- * \retval State_ReadingName    Wait for more data
- * \retval State_ReadingEnd     Document type read
- * \retval State_Error          Error
+ * \retval State_ReadingElementName     Wait for more data
+ * \retval State_ReadingEndOfElement    End of element name found
+ * \retval State_Finished               End of element found
+ * \retval State_Error                  Error, unexpected character
+ *
+ * Format:
+ * \code{.unparsed}
+ * ETag ::= '</' Name S? '>'
+ * \endcode
  */
-DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
+EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
 {
     State nextState = State_Error;
-    bool finishParsing = false;
 
-    while (!finishParsing)
+    // Parse
+    const Result result = m_nameParser->parse();
+
+    switch (result)
     {
-        finishParsing = true;
-
-        // Parse
-        const Result result = m_nameParser->parse();
-
-        switch (result)
+        case Result_NeedMoreData:
         {
-            case Result_NeedMoreData:
-            {
-                // More data is needed
-                nextState = State_ReadingName;
-                break;
-            }
+            // More data is needed
+            nextState = State_ReadingElementName;
+            break;
+        }
 
-            case Result_Success:
+        case Result_Success:
+        {
+            // Check for end of entity reference
+            const uint32_t uchar = m_parsingBuffer->currentChar();
+
+            if (uchar == static_cast<uint32_t>('>'))
             {
-                m_documentType.setName(m_nameParser->value());
+                // End of element found
+                m_elementName = m_nameParser->value();
 
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                // Read end of document type
-                nextState = State_ReadingEnd;
-                break;
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
+                m_tokenFound = TokenType_EndOfElement;
+                nextState = State_Finished;
             }
-
-            default:
+            else if (XmlValidator::isWhitespace(uchar))
             {
-                // Error
-                break;
+                // End of element name, try to read end of element
+                m_elementName = m_nameParser->value();
+
+                delete m_nameParser;
+                m_nameParser = NULL;
+
+                m_parsingBuffer->incrementPosition();
+                m_parsingBuffer->eraseToCurrentPosition();
+                nextState = State_ReadingEndOfElement;
             }
+            else
+            {
+                // Error, invalid character
+                m_terminationChar = uchar;
+            }
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
         }
     }
 
@@ -258,13 +293,13 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
 }
 
 /**
- * Execute state: Reading end of document type
+ * Execute state: Reading end of element
  *
- * \retval State_ReadingEnd Wait for more data
- * \retval State_Finished   End of document type read
- * \retval State_Error      Error
+ * \retval State_ReadingEndOfElement    Wait for more data
+ * \retval State_ReadingFinished        End of element found
+ * \retval State_Error                  Error, unexpected character
  */
-DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
+EndOfElementParser::State EndOfElementParser::executeStateReadingEndOfElement()
 {
     State nextState = State_Error;
     bool finishParsing = false;
@@ -277,7 +312,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
         if (m_parsingBuffer->isMoreDataNeeded())
         {
             // More data is needed
-            nextState = State_ReadingEnd;
+            nextState = State_ReadingEndOfElement;
         }
         else
         {
@@ -286,22 +321,15 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
 
             if (uchar == static_cast<uint32_t>('>'))
             {
+                // End of element found
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-
-                if (m_documentType.isValid())
-                {
-                    // End of document type found
-                    nextState = State_Finished;
-                }
-                else
-                {
-                    // Error, invalid document type
-                }
+                m_tokenFound = TokenType_EndOfElement;
+                nextState = State_Finished;
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
-                // We are allowed to ignore whitespace characters
+                // Ignore trailing whitespace
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
                 finishParsing = false;
@@ -309,6 +337,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
             else
             {
                 // Error, invalid character read
+                m_terminationChar = uchar;
             }
         }
     }

@@ -28,7 +28,7 @@
 #ifndef EMBEDDEDSTAX_COMMON_DOCUMENTTYPE_H
 #define EMBEDDEDSTAX_COMMON_DOCUMENTTYPE_H
 
-#include <string>
+#include <EmbeddedStAX/Common/Utf.h>
 #include <stdint.h>
 
 namespace EmbeddedStAX
@@ -39,17 +39,17 @@ class DocumentType
 {
 public:
     // Public API
-    DocumentType(const std::string &name = std::string());
+    DocumentType(const UnicodeString &name = UnicodeString());
 
     bool isValid() const;
     void clear();
 
-    std::string name() const;
-    void setName(const std::string &name);
+    UnicodeString name() const;
+    void setName(const UnicodeString &name);
 
 private:
     // Private data
-    std::string m_name;
+    UnicodeString m_name;
 };
 }
 }

@@ -25,56 +25,53 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#include <EmbeddedStAX/Common/DocumentType.h>
-#include <EmbeddedStAX/XmlValidator/Name.h>
+#ifndef EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ENDOFELEMENTPARSER_H
+#define EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ENDOFELEMENTPARSER_H
 
-using namespace EmbeddedStAX::Common;
+#include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
 
-/**
- * Constructor
- *
- * \param name  Name of the root element
- */
-DocumentType::DocumentType(const UnicodeString &name)
-    : m_name(name)
+namespace EmbeddedStAX
 {
+namespace XmlReader
+{
+/**
+ * End of element parser
+ */
+class EndOfElementParser: public AbstractTokenParser
+{
+public:
+    // Public API
+    EndOfElementParser(ParsingBuffer *parsingBuffer);
+    ~EndOfElementParser();
+
+    bool isValid() const;
+    Result parse();
+
+    Common::UnicodeString name() const;
+
+private:
+    // Private types
+    enum State
+    {
+        State_Idle,
+        State_ReadingElementName,
+        State_ReadingEndOfElement,
+        State_Finished,
+        State_Error
+    };
+
+private:
+    // Private API
+    State executeStateReadingElementName();
+    State executeStateReadingEndOfElement();
+
+private:
+    // Private data
+    State m_state;
+    NameParser *m_nameParser;
+    Common::UnicodeString m_elementName;
+};
+}
 }
 
-/**
- * Check if processing instruction is valid
- *
- * \retval true     Valid
- * \retval false    Invalid
- */
-bool DocumentType::isValid() const
-{
-    return XmlValidator::validateName(m_name);
-}
-
-/**
- * Clear
- */
-void DocumentType::clear()
-{
-    m_name.clear();
-}
-
-/**
- * Get name of the root element
- *
- * \return Name of the root element
- */
-UnicodeString DocumentType::name() const
-{
-    return m_name;
-}
-
-/**
- * Set processing instruction name
- *
- * \param piTarget  Processing instruction name
- */
-void DocumentType::setName(const UnicodeString &name)
-{
-    m_name = name;
-}
+#endif // EMBEDDEDSTAX_XMLREADER_TOKENPARSERS_ENDOFELEMENTPARSER_H

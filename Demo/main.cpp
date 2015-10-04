@@ -44,8 +44,11 @@ int main(int argc, char **argv)
                              "asd; 'amp' entity reference ('&amp;')<![CDATA[asdasdasdasdasd]]>\n"
                              "  <child1 /> some text\n"
                              "  <child2 a='b'>more text</child2>\n"
-                             "  <child3><child4>asdfgh</child4></child3>\n"
-                             "</root>";
+                             "  <child3><child4>asdfgh</child4        ></child3>\n"
+                             "  <child5/>some text\n"
+                             "</root>\n"
+                             "<?pitarget      pidata       ?>\n"
+                             "<!--comment text-->";
     const size_t bytesWritten = xmlReader.writeData(data);
     bool success = false;
 
@@ -93,8 +96,9 @@ int main(int argc, char **argv)
             case XmlReader::XmlReader::ParsingResult_DocumentType:
             {
                 const Common::DocumentType documentType = xmlReader.documentType();
+                const std::string name = Common::Utf8::toUtf8(documentType.name());
 
-                std::cout << "Document type: name = " << documentType.name() << std::endl;
+                std::cout << "Document type: name = " << name << std::endl;
                 break;
             }
 

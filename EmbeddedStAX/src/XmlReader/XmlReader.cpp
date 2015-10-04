@@ -29,6 +29,7 @@
 #include <EmbeddedStAX/XmlReader/TokenParsers/CDataParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/EndOfElementParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/StartOfElementParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/TextNodeParser.h>
@@ -384,9 +385,48 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
+            case ParsingState_ReadingEndOfElement:
+            {
+                // Reading end of element
+                nextState = executeParsingStateReadingEndOfElement();
+
+                // Check transitions
+                switch (nextState)
+                {
+                    case ParsingState_ReadingEndOfElement:
+                    {
+                        // More data is needed
+                        result = ParsingResult_NeedMoreData;
+                        break;
+                    }
+
+                    case ParsingState_EndOfElementRead:
+                    {
+                        // Check for end of root element
+                        if (m_openElementList.empty())
+                        {
+                            // End of root element, document is finished
+                            m_documentState = DocumentState_EndOfDocument;
+                        }
+
+                        // End of element was read
+                        nextState = ParsingState_EndOfElementRead;
+                        result = ParsingResult_EndOfElement;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Error
+                        nextState = ParsingState_Error;
+                        break;
+                    }
+                }
+                break;
+            }
+
             case ParsingState_EmptyElementRead:
             {
-                // For an empty element, just return the "end of element" result
                 // Check for end of root element
                 if (m_openElementList.empty())
                 {
@@ -394,14 +434,19 @@ XmlReader::ParsingResult XmlReader::parse()
                     m_documentState = DocumentState_EndOfDocument;
                 }
 
+                m_name.clear();
+                m_attributeList.clear();
+
+                // For an empty element, just return the "end of element" result
                 nextState = ParsingState_EndOfElementRead;
                 result = ParsingResult_EndOfElement;
                 break;
             }
 
             case ParsingState_CDataRead:
-            case ParsingState_StartOfElementRead:
             {
+                m_text.clear();
+
                 // Start reading next token
                 if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
                 {
@@ -412,10 +457,25 @@ XmlReader::ParsingResult XmlReader::parse()
                 break;
             }
 
-                // TODO: ParsingState_ReadingEndOfElement
+            case ParsingState_StartOfElementRead:
+            {
+                m_name.clear();
+                m_attributeList.clear();
+
+                // Start reading next token
+                if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
+                {
+                    // Read token type
+                    nextState = ParsingState_ReadingTextNode;
+                    finishParsing = false;
+                }
+                break;
+            }
 
             case ParsingState_TextNodeRead:
             {
+                m_text.clear();
+
                 // Start reading next token
                 const TokenTypeParser::Option option =
                         TokenTypeParser::Option_IgnoreLeadingWhitespace;
@@ -446,9 +506,68 @@ XmlReader::ParsingResult XmlReader::parse()
             }
 
             case ParsingState_CommentRead:
+            {
+                m_text.clear();
+
+                if (m_documentState == DocumentState_Element)
+                {
+                    // Start reading next token
+                    if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTextNode;
+                        finishParsing = false;
+                    }
+                }
+                else
+                {
+                    // Start reading next token
+                    const TokenTypeParser::Option option =
+                            TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                    if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTokenType;
+                        finishParsing = false;
+                    }
+                }
+                break;
+            }
+
             case ParsingState_EndOfElementRead:
+            {
+                m_name.clear();
+
+                if (m_documentState == DocumentState_Element)
+                {
+                    // Start reading next token
+                    if (setTokenParser(new TextNodeParser(&m_parsingBuffer)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTextNode;
+                        finishParsing = false;
+                    }
+                }
+                else
+                {
+                    // Start reading next token
+                    const TokenTypeParser::Option option =
+                            TokenTypeParser::Option_IgnoreLeadingWhitespace;
+
+                    if (setTokenParser(new TokenTypeParser(&m_parsingBuffer, option)))
+                    {
+                        // Read token type
+                        nextState = ParsingState_ReadingTokenType;
+                        finishParsing = false;
+                    }
+                }
+                break;
+            }
             case ParsingState_ProcessingInstructionRead:
             {
+                m_processingInstruction.clear();
+
                 if (m_documentState == DocumentState_Element)
                 {
                     // Start reading next token
@@ -730,24 +849,43 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
                         {
                             m_name.clear();
                             m_attributeList.clear();
-                            nextState = ParsingState_ReadingStartOfElement;
+
+                            // Check document state
+                            if ((m_documentState == DocumentState_PrologWaitForXmlDeclaration) ||
+                                (m_documentState == DocumentState_PrologWaitForDocumentType) ||
+                                (m_documentState == DocumentState_PrologWaitForMisc) ||
+                                (m_documentState == DocumentState_Element))
+                            {
+                                // End of element token found
+                                m_documentState = DocumentState_Element;
+                                nextState = ParsingState_ReadingStartOfElement;
+                            }
+                            else
+                            {
+                                // Error, end of element is only allowed at the end of an open
+                                // element
+                            }
                         }
                         break;
                     }
 
                     case AbstractTokenParser::TokenType_EndOfElement:
                     {
-                        // TODO: set token parser!
+                        if (setTokenParser(new EndOfElementParser(&m_parsingBuffer)))
+                        {
+                            m_name.clear();
 
-                        // Check document state
-                        if (m_documentState == DocumentState_Element)
-                        {
-                            // End of element token found
-                            nextState = ParsingState_ReadingEndOfElement;
-                        }
-                        else
-                        {
-                            // Error, end of element is only allowed at the end of an open element
+                            // Check document state
+                            if (m_documentState == DocumentState_Element)
+                            {
+                                // End of element token found
+                                nextState = ParsingState_ReadingEndOfElement;
+                            }
+                            else
+                            {
+                                // Error, end of element is only allowed at the end of an open
+                                // element
+                            }
                         }
                         break;
                     }
@@ -1096,6 +1234,26 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingStartOfElement()
                         {
                             case AbstractTokenParser::TokenType_StartOfElement:
                             {
+                                // Check for start of root element
+                                bool success = true;
+
+                                if (m_openElementList.empty())
+                                {
+                                    const Common::UnicodeString rootName = m_documentType.name();
+
+                                    if (!rootName.empty())
+                                    {
+                                        // Root element name was set in the document type, make sure
+                                        // that the root element name matches
+                                        if (m_name != rootName)
+                                        {
+                                            // Error, root element name does not match the root
+                                            // element name from the document type
+                                            success = false;
+                                        }
+                                    }
+                                }
+
                                 m_openElementList.push_back(m_name);
                                 nextState = ParsingState_StartOfElementRead;
                                 break;
@@ -1234,6 +1392,69 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingCData()
                 // Save CDATA text
                 m_text = text;
                 nextState = ParsingState_CDataRead;
+            }
+            else
+            {
+                // Error
+            }
+            break;
+        }
+
+        default:
+        {
+            // Error
+            break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute parsing state: Reading end of element
+ *
+ * \retval ParsingState_ReadingEndOfElement Wait for more data
+ * \retval ParsingState_EndOfElementRead    End of element was read
+ * \retval ParsingState_Error               Error
+ */
+XmlReader::ParsingState XmlReader::executeParsingStateReadingEndOfElement()
+{
+    ParsingState nextState = ParsingState_Error;
+
+    // Parse
+    const AbstractTokenParser::Result result = m_tokenParser->parse();
+
+    switch (result)
+    {
+        case AbstractTokenParser::Result_NeedMoreData:
+        {
+            // More data is needed
+            nextState = ParsingState_ReadingEndOfElement;
+            break;
+        }
+
+        case AbstractTokenParser::Result_Success:
+        {
+            // Get start of element
+            EndOfElementParser *endOfElementParser =
+                    dynamic_cast<EndOfElementParser *>(m_tokenParser);
+
+            if (endOfElementParser != NULL)
+            {
+                // Start of element read
+                m_name = endOfElementParser->name();
+
+                // Check if end of element matches currently open element
+                if (m_name == m_openElementList.back())
+                {
+                    // Element name matches
+                    m_openElementList.pop_back();
+                    nextState = ParsingState_EndOfElementRead;
+                }
+                else
+                {
+                    // Error
+                }
             }
             else
             {

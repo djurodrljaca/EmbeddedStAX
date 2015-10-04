@@ -48,6 +48,11 @@ TextNodeParser::TextNodeParser(ParsingBuffer *parsingBuffer)
  */
 TextNodeParser::~TextNodeParser()
 {
+    if (m_referenceParser != NULL)
+    {
+        delete m_referenceParser;
+        m_referenceParser = NULL;
+    }
 }
 
 /**
