@@ -33,13 +33,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
  */
-ProcessingInstructionParser::ProcessingInstructionParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_ProcessingInstruction),
-      m_state(State_Idle),
-      m_nameParser(NULL),
+ProcessingInstructionParser::ProcessingInstructionParser()
+    : AbstractTokenParser(ParserType_ProcessingInstruction),
+      m_state(State_ReadingPiTarget),
+      m_nameParser(),
       m_processingInstruction(),
       m_xmlDeclaration()
 {
@@ -50,32 +48,27 @@ ProcessingInstructionParser::ProcessingInstructionParser(ParsingBuffer *parsingB
  */
 ProcessingInstructionParser::~ProcessingInstructionParser()
 {
-    if (m_nameParser != NULL)
-    {
-        delete m_nameParser;
-        m_nameParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get processing instruction
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Processing instruction
  */
-bool ProcessingInstructionParser::isValid() const
+EmbeddedStAX::Common::ProcessingInstruction
+ProcessingInstructionParser::processingInstruction() const
 {
-    bool valid = AbstractTokenParser::isValid();
+    return m_processingInstruction;
+}
 
-    if (valid)
-    {
-        if (option() != Option_None)
-        {
-            valid = false;
-        }
-    }
-
-    return valid;
+/**
+ * Get XML declaration
+ *
+ * \return XML declaration
+ */
+EmbeddedStAX::Common::XmlDeclaration ProcessingInstructionParser::xmlDeclaration() const
+{
+    return m_xmlDeclaration;
 }
 
 /**
@@ -89,7 +82,7 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -100,20 +93,6 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
 
             switch (m_state)
             {
-                case State_Idle:
-                {
-                    // Start reading name
-                    if (m_nameParser != NULL)
-                    {
-                        delete m_nameParser;
-                    }
-
-                    m_nameParser = new NameParser(parsingBuffer());
-                    nextState = State_ReadingPiTarget;
-                    finishParsing = false;
-                    break;
-                }
-
                 case State_ReadingPiTarget:
                 {
                     // Reading processing instruction target (name of the PI)
@@ -175,6 +154,12 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -198,24 +183,19 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
 }
 
 /**
- * Get processing instruction
+ * Initialize parser's additional data
  *
- * \return Processing instruction
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::ProcessingInstruction
-ProcessingInstructionParser::processingInstruction() const
+bool ProcessingInstructionParser::initializeAdditionalData()
 {
-    return m_processingInstruction;
-}
+    m_state = State_ReadingPiTarget;
+    m_processingInstruction.clear();
+    m_xmlDeclaration.clear();
+    parsingBuffer()->eraseToCurrentPosition();
 
-/**
- * Get XML declaration
- *
- * \return XML declaration
- */
-EmbeddedStAX::Common::XmlDeclaration ProcessingInstructionParser::xmlDeclaration() const
-{
-    return m_xmlDeclaration;
+    return m_nameParser.initialize(parsingBuffer());
 }
 
 /**
@@ -235,7 +215,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
         finishParsing = true;
 
         // Parse
-        const Result result = m_nameParser->parse();
+        const Result result = m_nameParser.parse();
 
         switch (result)
         {
@@ -248,11 +228,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
 
             case Result_Success:
             {
-                m_piTarget = m_nameParser->value();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
+                m_piTarget = m_nameParser.value();
                 nextState = State_ReadingPiData;
                 break;
             }

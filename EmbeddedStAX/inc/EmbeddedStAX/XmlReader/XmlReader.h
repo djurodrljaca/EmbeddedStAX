@@ -29,7 +29,14 @@
 #define EMBEDDEDSTAX_XMLREADER_XMLREADER_H
 
 #include <EmbeddedStAX/XmlReader/ParsingBuffer.h>
-#include <EmbeddedStAX/XmlReader/TokenParsers/AbstractTokenParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/CDataParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/CommentParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/EndOfElementParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/DocumentTypeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/ProcessingInstructionParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/StartOfElementParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/TextNodeParser.h>
+#include <EmbeddedStAX/XmlReader/TokenParsers/TokenTypeParser.h>
 #include <EmbeddedStAX/Common/Attribute.h>
 #include <EmbeddedStAX/Common/DocumentType.h>
 #include <EmbeddedStAX/Common/ProcessingInstruction.h>
@@ -134,7 +141,6 @@ private:
     DocumentState m_documentState;
     ParsingState m_parsingState;
     ParsingBuffer m_parsingBuffer;
-    AbstractTokenParser *m_tokenParser;
     ParsingResult m_lastParsingResult;
     Common::XmlDeclaration m_xmlDeclaration;
     Common::ProcessingInstruction m_processingInstruction;
@@ -143,6 +149,15 @@ private:
     Common::UnicodeString m_name;
     std::list<Common::Attribute> m_attributeList;
     std::list<Common::UnicodeString> m_openElementList;
+
+    CDataParser m_cDataParser;
+    CommentParser m_commentParser;
+    DocumentTypeParser m_documentTypeParser;
+    EndOfElementParser m_endOfElementParser;
+    ProcessingInstructionParser m_processingInstructionParser;
+    StartOfElementParser m_startOfElementParser;
+    TextNodeParser m_textNodeParser;
+    TokenTypeParser m_tokenTypeParser;
 };
 }
 }

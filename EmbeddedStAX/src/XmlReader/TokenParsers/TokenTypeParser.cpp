@@ -33,12 +33,9 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option option)
-    : AbstractTokenParser(parsingBuffer, option, ParserType_TokenType),
+TokenTypeParser::TokenTypeParser()
+    : AbstractTokenParser(ParserType_TokenType),
       m_state(State_WaitingForStartOfToken)
 {
 }
@@ -48,74 +45,6 @@ TokenTypeParser::TokenTypeParser(ParsingBuffer *parsingBuffer, Option option)
  */
 TokenTypeParser::~TokenTypeParser()
 {
-}
-
-/**
- * Check if parser is valid
- *
- * \retval true     Valid
- * \retval false    Invalid
- */
-bool TokenTypeParser::isValid() const
-{
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            case Option_IgnoreLeadingWhitespace:
-            case Option_Synchronization:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Set parsing option
- *
- * \param parsingOption New parsing option
- *
- * \retval true     Parsing option set
- * \retval false    Parsing option not set
- */
-bool TokenTypeParser::setOption(const AbstractTokenParser::Option parsingOption)
-{
-    bool success = false;
-
-    switch (parsingOption)
-    {
-        case Option_None:
-        case Option_IgnoreLeadingWhitespace:
-        case Option_Synchronization:
-        {
-            // Valid option
-            setOption(parsingOption);
-            success = true;
-            break;
-        }
-
-        default:
-        {
-            // Invalid option
-            break;
-        }
-    }
-
-    return success;
 }
 
 /**
@@ -129,7 +58,7 @@ AbstractTokenParser::Result TokenTypeParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -337,6 +266,12 @@ AbstractTokenParser::Result TokenTypeParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -357,6 +292,52 @@ AbstractTokenParser::Result TokenTypeParser::parse()
     }
 
     return result;
+}
+
+/**
+ * Set parsing option
+ *
+ * \param option    New parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
+ */
+bool TokenTypeParser::setOption(const Option option)
+{
+    bool success = false;
+
+    switch (option)
+    {
+        case Option_None:
+        case Option_IgnoreLeadingWhitespace:
+        case Option_Synchronization:
+        {
+            // Valid option
+            AbstractTokenParser::setOption(option);
+            success = true;
+            break;
+        }
+
+        default:
+        {
+            // Invalid option
+            break;
+        }
+    }
+
+    return success;
+}
+
+/**
+ * Initialize parser's additional data
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool TokenTypeParser::initializeAdditionalData()
+{
+    m_state = State_WaitingForStartOfToken;
+    return true;
 }
 
 /**

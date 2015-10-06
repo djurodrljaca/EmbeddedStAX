@@ -57,7 +57,6 @@ public:
 
     enum ParserType
     {
-        ParserType_Invalid,
         ParserType_AttributeValue,
         ParserType_CData,
         ParserType_Comment,
@@ -88,30 +87,31 @@ public:
 
 public:
     // Public API
-    AbstractTokenParser(ParsingBuffer *parsingBuffer,
-                        const Option option,
-                        const ParserType parserType);
+    AbstractTokenParser(const ParserType parserType);
     virtual ~AbstractTokenParser() = 0;
 
-    virtual bool isValid() const;
     Option option() const;
-    virtual bool setOption(const Option option);
     ParserType parserType() const;
     TokenType tokenType() const;
     uint32_t terminationChar() const;
+
+    bool initialize(ParsingBuffer *parsingBuffer, const Option option = Option_None);
     virtual Result parse() = 0;
 
 protected:
     // Protected API
+    bool isInitialized() const;
+    virtual bool setOption(const Option option);
     ParsingBuffer *parsingBuffer();
     void setTokenType(const TokenType tokenType);
     void setTerminationChar(const uint32_t uchar);
-
+    virtual bool initializeAdditionalData();
 
 private:
     // Private data
-    Option m_option;
+    bool m_initialized;
     ParsingBuffer *m_parsingBuffer;
+    Option m_option;
     TokenType m_tokenType;
     uint32_t m_terminationChar;
     const ParserType m_parserType;

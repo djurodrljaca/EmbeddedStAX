@@ -32,11 +32,10 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
  */
-CDataParser::CDataParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_CData),
+CDataParser::CDataParser()
+    : AbstractTokenParser(ParserType_CData),
+      m_state(State_ReadingCData),
       m_text()
 {
 }
@@ -49,35 +48,13 @@ CDataParser::~CDataParser()
 }
 
 /**
- * Check if parser is valid
+ * Get text string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Text string
  */
-bool CDataParser::isValid() const
+EmbeddedStAX::Common::UnicodeString CDataParser::text() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
+    return m_text;
 }
 
 /**
@@ -86,77 +63,68 @@ bool CDataParser::isValid() const
  * \retval Result_Success       Success
  * \retval Result_NeedMoreData  More data is needed
  * \retval Result_Error         Error
- *
- * Format:
- * \code{.unparsed}
- * CDATA text ::= Char*
- * CDATA end  ::= ']]>'
- * \endcode
  */
 AbstractTokenParser::Result CDataParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
         while (!finishParsing)
         {
             finishParsing = true;
+            State nextState = State_Error;
 
-            // Check if more data is needed
-            if (parsingBuffer()->isMoreDataNeeded())
+            switch (m_state)
             {
-                // More data is needed
-                result = Result_NeedMoreData;
-            }
-            else
-            {
-                // Check for "]]>" sequence
-                const uint32_t uchar = parsingBuffer()->currentChar();
-
-                if (uchar == static_cast<uint32_t>('>'))
+                case State_ReadingCData:
                 {
-                    const size_t position = parsingBuffer()->currentPosition();
+                    // Reading CDATA
+                    nextState = executeStateReadingCData();
 
-                    if (position < 2U)
+                    // Check transitions
+                    switch (nextState)
                     {
-                        // Valid text character, continue
-                        finishParsing = false;
-                    }
-                    else
-                    {
-                        const Common::UnicodeString sequence =
-                                parsingBuffer()->substring(position - 2U, position);
-
-                        if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
+                        case State_ReadingCData:
                         {
-                            // End of CDATA found
-                            m_text.append(parsingBuffer()->substring(0U, position - 2U));
-                            parsingBuffer()->incrementPosition();
-                            parsingBuffer()->eraseToCurrentPosition();
+                            result = Result_NeedMoreData;
+                            break;
+                        }
+
+                        case State_Finished:
+                        {
                             result = Result_Success;
+                            break;
                         }
-                        else
+
+                        default:
                         {
-                            // Continue
-                            parsingBuffer()->incrementPosition();
-                            finishParsing = false;
+                            // Error
+                            nextState = State_Error;
+                            break;
                         }
                     }
+                    break;
                 }
-                else if (XmlValidator::isChar(uchar))
+
+                case State_Finished:
                 {
-                    // Check next character
-                    parsingBuffer()->incrementPosition();
-                    finishParsing = false;
+                    result = Result_Success;
+                    break;
                 }
-                else
+
+                default:
                 {
-                    // Error, invalid character
+                    // Error, invalid state
+                    nextState = State_Error;
+                    break;
                 }
             }
+
+            // Update state
+            m_state = nextState;
         }
     }
 
@@ -170,11 +138,94 @@ AbstractTokenParser::Result CDataParser::parse()
 }
 
 /**
- * Get text string
+ * Initialize parser's additional data
  *
- * \return Text string
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString CDataParser::text() const
+bool CDataParser::initializeAdditionalData()
 {
-    return m_text;
+    m_state = State_ReadingCData;
+    m_text.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+    return true;
+}
+
+/**
+ * Execute state: Reading CDATA
+ *
+ * \retval State_ReadingCData   Wait for more data
+ * \retval State_Finished       CDATA found
+ * \retval State_Error          Error, unexpected character
+ *
+ * Format:
+ * \code{.unparsed}
+ * CDATA text ::= Char*
+ * CDATA end  ::= ']]>'
+ * \endcode
+ */
+CDataParser::State CDataParser::executeStateReadingCData()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Check if more data is needed
+        if (parsingBuffer()->isMoreDataNeeded())
+        {
+            // More data is needed
+            nextState = State_ReadingCData;
+        }
+        else
+        {
+            // Check for "]]>" sequence
+            const uint32_t uchar = parsingBuffer()->currentChar();
+
+            if (uchar == static_cast<uint32_t>('>'))
+            {
+                const size_t position = parsingBuffer()->currentPosition();
+
+                if (position < 2U)
+                {
+                    // Valid text character, continue
+                    finishParsing = false;
+                }
+                else
+                {
+                    const Common::UnicodeString sequence = parsingBuffer()->substring(position - 2U,
+                                                                                      position);
+
+                    if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
+                    {
+                        // End of CDATA found
+                        m_text.append(parsingBuffer()->substring(0U, position - 2U));
+                        parsingBuffer()->incrementPosition();
+                        parsingBuffer()->eraseToCurrentPosition();
+                        nextState = State_Finished;
+                    }
+                    else
+                    {
+                        // Check next character
+                        parsingBuffer()->incrementPosition();
+                        finishParsing = false;
+                    }
+                }
+            }
+            else if (XmlValidator::isChar(uchar))
+            {
+                // Check next character
+                parsingBuffer()->incrementPosition();
+                finishParsing = false;
+            }
+            else
+            {
+                // Error, invalid character
+            }
+        }
+    }
+
+    return nextState;
 }

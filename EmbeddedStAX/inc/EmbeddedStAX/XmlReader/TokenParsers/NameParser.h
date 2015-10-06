@@ -41,13 +41,12 @@ class NameParser: public AbstractTokenParser
 {
 public:
     // Public API
-    NameParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    NameParser();
     ~NameParser();
 
-    bool isValid() const;
-    bool setOption(const Option parsingOption);
-    Result parse();
     Common::UnicodeString value() const;
+
+    virtual Result parse();
 
 private:
     // Private types
@@ -61,6 +60,9 @@ private:
 
 private:
     // Private API
+    virtual bool setOption(const Option option);
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingNameStartChar();
     State executeStateReadingNameChars();
 

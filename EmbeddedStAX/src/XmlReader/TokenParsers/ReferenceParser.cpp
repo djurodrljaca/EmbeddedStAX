@@ -34,14 +34,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-ReferenceParser::ReferenceParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Reference),
+ReferenceParser::ReferenceParser()
+    : AbstractTokenParser(ParserType_Reference),
       m_state(State_ReadingStartOfReference),
-      m_nameParser(NULL),
+      m_nameParser(),
       m_value(),
       m_charRefValue(0U)
 {
@@ -52,32 +49,16 @@ ReferenceParser::ReferenceParser(ParsingBuffer *parsingBuffer)
  */
 ReferenceParser::~ReferenceParser()
 {
-    if (m_nameParser != NULL)
-    {
-        delete m_nameParser;
-        m_nameParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get value string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Value string
  */
-bool ReferenceParser::isValid() const
+EmbeddedStAX::Common::UnicodeString ReferenceParser::value() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        if (option() != Option_None)
-        {
-            valid = false;
-        }
-    }
-
-    return valid;
+    return m_value;
 }
 
 /**
@@ -91,7 +72,7 @@ AbstractTokenParser::Result ReferenceParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -287,6 +268,12 @@ AbstractTokenParser::Result ReferenceParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -310,13 +297,19 @@ AbstractTokenParser::Result ReferenceParser::parse()
 }
 
 /**
- * Get value string
+ * Initialize parser's additional data
  *
- * \return Value string
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString ReferenceParser::value() const
+bool ReferenceParser::initializeAdditionalData()
 {
-    return m_value;
+    m_state = State_ReadingStartOfReference;
+    m_value.clear();
+    m_charRefValue = 0U;
+    parsingBuffer()->eraseToCurrentPosition();
+
+    return m_nameParser.initialize(parsingBuffer());
 }
 
 /**
@@ -396,13 +389,14 @@ ReferenceParser::State ReferenceParser::executeStateReadingReferenceType()
         else if (XmlValidator::isNameStartChar(uchar))
         {
             // Entity reference found, now start reading the entity reference name
-            if (m_nameParser != NULL)
+            if (m_nameParser.initialize(parsingBuffer()))
             {
-                delete m_nameParser;
+                nextState = State_ReadingEntityReferenceName;
             }
-
-            m_nameParser = new NameParser(parsingBuffer());
-            nextState = State_ReadingEntityReferenceName;
+            else
+            {
+                // Error, failed to initialize parser
+            }
         }
         else
         {
@@ -431,7 +425,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_nameParser->parse();
+    const Result result = m_nameParser.parse();
 
     switch (result)
     {
@@ -450,11 +444,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
             if (uchar == static_cast<uint32_t>(';'))
             {
                 // End of entity reference found
-                m_value = m_nameParser->value();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
+                m_value = m_nameParser.value();
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EntityReference);

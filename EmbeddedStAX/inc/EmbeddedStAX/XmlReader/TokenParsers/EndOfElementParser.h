@@ -41,19 +41,17 @@ class EndOfElementParser: public AbstractTokenParser
 {
 public:
     // Public API
-    EndOfElementParser(ParsingBuffer *parsingBuffer);
+    EndOfElementParser();
     ~EndOfElementParser();
 
-    bool isValid() const;
-    Result parse();
-
     Common::UnicodeString name() const;
+
+    virtual Result parse();
 
 private:
     // Private types
     enum State
     {
-        State_Idle,
         State_ReadingElementName,
         State_ReadingEndOfElement,
         State_Finished,
@@ -62,13 +60,15 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingElementName();
     State executeStateReadingEndOfElement();
 
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
+    NameParser m_nameParser;
     Common::UnicodeString m_elementName;
 };
 }

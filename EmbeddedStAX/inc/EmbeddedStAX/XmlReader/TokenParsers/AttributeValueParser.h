@@ -42,13 +42,12 @@ class AttributeValueParser: public AbstractTokenParser
 {
 public:
     // Public API
-    AttributeValueParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    AttributeValueParser();
     ~AttributeValueParser();
 
-    bool isValid() const;
-    bool setOption(const Option parsingOption);
-    Result parse();
     Common::UnicodeString value() const;
+
+    virtual Result parse();
 
 private:
     // Private types
@@ -63,6 +62,9 @@ private:
 
 private:
     // Private API
+    virtual bool setOption(const Option option);
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingQuotationMark();
     State executeStateReadingAttributeValue();
     State executeStateReadingReference();
@@ -70,7 +72,7 @@ private:
 private:
     // Private data
     State m_state;
-    ReferenceParser *m_referenceParser;
+    ReferenceParser m_referenceParser;
     Common::UnicodeString m_value;
     Common::QuotationMark m_quotationMark;
     // TODO: add a flag for unprocessed entity references?

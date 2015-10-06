@@ -33,14 +33,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-AttributeValueParser::AttributeValueParser(ParsingBuffer *parsingBuffer, Option option)
-    : AbstractTokenParser(parsingBuffer, option, ParserType_AttributeValue),
+AttributeValueParser::AttributeValueParser()
+    : AbstractTokenParser(ParserType_AttributeValue),
       m_state(State_ReadingQuotationMark),
-      m_referenceParser(NULL),
+      m_referenceParser(),
       m_value(),
       m_quotationMark(Common::QuotationMark_None)
 {
@@ -51,77 +48,16 @@ AttributeValueParser::AttributeValueParser(ParsingBuffer *parsingBuffer, Option 
  */
 AttributeValueParser::~AttributeValueParser()
 {
-    if (m_referenceParser != NULL)
-    {
-        delete m_referenceParser;
-        m_referenceParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get value string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Value string
  */
-bool AttributeValueParser::isValid() const
+EmbeddedStAX::Common::UnicodeString AttributeValueParser::value() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            case Option_IgnoreLeadingWhitespace:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Set parsing option
- *
- * \param parsingOption New parsing option
- *
- * \retval true     Parsing option set
- * \retval false    Parsing option not set
- */
-bool AttributeValueParser::setOption(const AbstractTokenParser::Option parsingOption)
-{
-    bool success = false;
-
-    switch (parsingOption)
-    {
-        case Option_None:
-        case Option_IgnoreLeadingWhitespace:
-        {
-            // Valid option
-            setOption(parsingOption);
-            success = true;
-            break;
-        }
-
-        default:
-        {
-            // Invalid option
-            break;
-        }
-    }
-
-    return success;
+    return m_value;
 }
 
 /**
@@ -135,7 +71,7 @@ AbstractTokenParser::Result AttributeValueParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -245,6 +181,12 @@ AbstractTokenParser::Result AttributeValueParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -268,13 +210,52 @@ AbstractTokenParser::Result AttributeValueParser::parse()
 }
 
 /**
- * Get value string
+ * Set parsing option
  *
- * \return Value string
+ * \param option    New parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
  */
-EmbeddedStAX::Common::UnicodeString AttributeValueParser::value() const
+bool AttributeValueParser::setOption(const Option option)
 {
-    return m_value;
+    bool success = false;
+
+    switch (option)
+    {
+        case Option_None:
+        case Option_IgnoreLeadingWhitespace:
+        {
+            // Valid option
+            AbstractTokenParser::setOption(option);
+            success = true;
+            break;
+        }
+
+        default:
+        {
+            // Invalid option
+            break;
+        }
+    }
+
+    return success;
+}
+
+/**
+ * Initialize parser's additional data
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool AttributeValueParser::initializeAdditionalData()
+{
+    m_state = State_ReadingQuotationMark;
+    m_value.clear();
+    m_quotationMark = Common::QuotationMark_None;
+    parsingBuffer()->eraseToCurrentPosition();
+
+    return m_referenceParser.initialize(parsingBuffer());;
 }
 
 /**
@@ -388,14 +369,14 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
                 // Possible start of Reference found, parse it
                 parsingBuffer()->eraseToCurrentPosition();
 
-                if (m_referenceParser != NULL)
+                if (m_referenceParser.initialize(parsingBuffer()))
                 {
-                    delete m_referenceParser;
-                    m_referenceParser = NULL;
+                    nextState = State_ReadingReference;
                 }
-
-                m_referenceParser = new ReferenceParser(parsingBuffer());
-                nextState = State_ReadingReference;
+                else
+                {
+                    // Error, failed to initialize reference parser
+                }
             }
             else if (uchar == static_cast<uint32_t>('"'))
             {
@@ -456,7 +437,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_referenceParser->parse();
+    const Result result = m_referenceParser.parse();
 
     switch (result)
     {
@@ -470,12 +451,12 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
         case Result_Success:
         {
             // End of reference found
-            switch (m_referenceParser->tokenType())
+            switch (m_referenceParser.tokenType())
             {
                 case TokenType_EntityReference:
                 {
                     // Check the entity reference name
-                    const Common::UnicodeString name = m_referenceParser->value();
+                    const Common::UnicodeString name = m_referenceParser.value();
 
                     if (Common::compareUnicodeString(0U, name, std::string("amp")))
                     {
@@ -517,7 +498,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
                 case TokenType_CharacterReference:
                 {
                     // Add the character from the character reference to the value
-                    m_value.append(m_referenceParser->value());
+                    m_value.append(m_referenceParser.value());
                     nextState = State_ReadingAttributeValue;
                     break;
                 }
@@ -528,10 +509,6 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
                     break;
                 }
             }
-
-            // Delete reference parser
-            delete m_referenceParser;
-            m_referenceParser = NULL;
             break;
         }
 

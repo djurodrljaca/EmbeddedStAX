@@ -32,13 +32,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
  */
-TextNodeParser::TextNodeParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_TextNode),
-      m_state(State_Idle),
-      m_referenceParser(NULL),
+TextNodeParser::TextNodeParser()
+    : AbstractTokenParser(ParserType_TextNode),
+      m_state(State_ReadingText),
+      m_referenceParser(),
       m_text()
 {
 }
@@ -48,43 +46,16 @@ TextNodeParser::TextNodeParser(ParsingBuffer *parsingBuffer)
  */
 TextNodeParser::~TextNodeParser()
 {
-    if (m_referenceParser != NULL)
-    {
-        delete m_referenceParser;
-        m_referenceParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get text string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Text string
  */
-bool TextNodeParser::isValid() const
+EmbeddedStAX::Common::UnicodeString TextNodeParser::text() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
+    return m_text;
 }
 
 /**
@@ -103,7 +74,7 @@ AbstractTokenParser::Result TextNodeParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -114,16 +85,6 @@ AbstractTokenParser::Result TextNodeParser::parse()
 
             switch (m_state)
             {
-                case State_Idle:
-                {
-                    // Erase all characters to the current position and start reading text
-                    parsingBuffer()->eraseToCurrentPosition();
-                    m_text.clear();
-                    nextState = State_ReadingText;
-                    finishParsing = false;
-                    break;
-                }
-
                 case State_ReadingText:
                 {
                     // Reading text
@@ -192,6 +153,12 @@ AbstractTokenParser::Result TextNodeParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -215,13 +182,18 @@ AbstractTokenParser::Result TextNodeParser::parse()
 }
 
 /**
- * Get text string
+ * Initialize parser's additional data
  *
- * \return Text string
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString TextNodeParser::text() const
+bool TextNodeParser::initializeAdditionalData()
 {
-    return m_text;
+    m_state = State_ReadingText;
+    m_text.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+
+    return m_referenceParser.initialize(parsingBuffer());
 }
 
 /**
@@ -276,14 +248,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
 
                 // Possible start of Reference found, parse it
                 parsingBuffer()->eraseToCurrentPosition();
-
-                if (m_referenceParser != NULL)
-                {
-                    delete m_referenceParser;
-                    m_referenceParser = NULL;
-                }
-
-                m_referenceParser = new ReferenceParser(parsingBuffer());
+                m_referenceParser.initialize(parsingBuffer());
                 nextState = State_ReadingReference;
             }
             else if (uchar == static_cast<uint32_t>('>'))
@@ -338,7 +303,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_referenceParser->parse();
+    const Result result = m_referenceParser.parse();
 
     switch (result)
     {
@@ -352,12 +317,12 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
         case Result_Success:
         {
             // End of reference found
-            switch (m_referenceParser->tokenType())
+            switch (m_referenceParser.tokenType())
             {
                 case TokenType_EntityReference:
                 {
                     // Check the entity reference name
-                    const Common::UnicodeString name = m_referenceParser->value();
+                    const Common::UnicodeString name = m_referenceParser.value();
 
                     if (Common::compareUnicodeString(0U, name, std::string("amp")))
                     {
@@ -399,7 +364,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
                 case TokenType_CharacterReference:
                 {
                     // Add the character from the character reference to the value
-                    m_text.append(m_referenceParser->value());
+                    m_text.append(m_referenceParser.value());
                     nextState = State_ReadingText;
                     break;
                 }
@@ -410,10 +375,6 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
                     break;
                 }
             }
-
-            // Delete reference parser
-            delete m_referenceParser;
-            m_referenceParser = NULL;
             break;
         }
 

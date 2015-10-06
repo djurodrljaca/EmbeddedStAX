@@ -32,15 +32,12 @@ using namespace EmbeddedStAX::XmlReader;
 /**
  * Constructor
  *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  * \param parserType    Token parser type
  */
-AbstractTokenParser::AbstractTokenParser(ParsingBuffer *parsingBuffer,
-                                         const Option option,
-                                         const ParserType parserType)
-    : m_parsingBuffer(parsingBuffer),
-      m_option(option),
+AbstractTokenParser::AbstractTokenParser(const ParserType parserType)
+    : m_initialized(false),
+      m_parsingBuffer(NULL),
+      m_option(Option_None),
       m_tokenType(TokenType_None),
       m_terminationChar(0U),
       m_parserType(parserType)
@@ -56,25 +53,6 @@ AbstractTokenParser::~AbstractTokenParser()
 }
 
 /**
- * Check if parser is valid
- *
- * \retval true     Valid
- * \retval false    Invalid
- */
-bool AbstractTokenParser::isValid() const
-{
-    bool valid = false;
-
-    if ((m_parsingBuffer != NULL) &&
-        (m_parserType != ParserType_Invalid))
-    {
-        valid = true;
-    }
-
-    return valid;
-}
-
-/**
  * Get parsing option
  *
  * \return Parsing option
@@ -82,20 +60,6 @@ bool AbstractTokenParser::isValid() const
 AbstractTokenParser::Option AbstractTokenParser::option() const
 {
     return m_option;
-}
-
-/**
- * Set parsing option
- *
- * \param option    Parsing option
- *
- * \retval false    Parsing option not set
- *
- * \note It has to be overriden if needed in a derived class!
- */
-bool AbstractTokenParser::setOption(const AbstractTokenParser::Option option)
-{
-    return false;
 }
 
 /**
@@ -129,6 +93,75 @@ uint32_t AbstractTokenParser::terminationChar() const
 }
 
 /**
+ * Initialize parser
+ *
+ * \param parsingBuffer Pointer to a parsing buffer
+ * \param option        Parsing option
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note This should be called before parsing of a new token is started.
+ */
+bool AbstractTokenParser::initialize(ParsingBuffer *parsingBuffer,
+                                     const AbstractTokenParser::Option option)
+{
+    // First make sure that initialization flag is cleared
+    m_initialized = false;
+
+    // Initialize parser
+    bool success = false;
+
+    if (parsingBuffer != NULL)
+    {
+        // First the parsing buffer must be initiaized and then everything else
+        m_parsingBuffer = parsingBuffer;
+        m_tokenType = TokenType_None;
+        m_terminationChar = 0U;
+
+        success = setOption(option);
+    }
+
+    if (success)
+    {
+        // It is important that everyting else is initialized up to this point
+        success = initializeAdditionalData();
+    }
+
+    // Update initialized flag
+    m_initialized = success;
+
+    return success;
+}
+
+/**
+ * Check if parser is initialized
+ *
+ * \retval true     Initialized
+ * \retval false    Uninitialized
+ */
+bool AbstractTokenParser::isInitialized() const
+{
+    return m_initialized;
+}
+
+/**
+ * Set parsing option
+ *
+ * \param option    Parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
+ *
+ * \note It has to be overriden if only specific options are allowed in a derived class!
+ */
+bool AbstractTokenParser::setOption(const Option option)
+{
+    m_option = option;
+    return true;
+}
+
+/**
  * Get parsing buffer
  *
  * \return Parsing buffer
@@ -156,4 +189,17 @@ void AbstractTokenParser::setTokenType(const AbstractTokenParser::TokenType toke
 void AbstractTokenParser::setTerminationChar(const uint32_t uchar)
 {
     m_terminationChar = uchar;
+}
+
+/**
+ * Initialize parser's additional data
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note It has to be overriden in a derived class if it contains any additional data!
+ */
+bool AbstractTokenParser::initializeAdditionalData()
+{
+    return true;
 }

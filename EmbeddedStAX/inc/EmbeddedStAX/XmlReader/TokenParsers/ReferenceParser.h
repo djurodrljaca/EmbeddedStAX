@@ -41,12 +41,12 @@ class ReferenceParser: public AbstractTokenParser
 {
 public:
     // Public API
-    ReferenceParser(ParsingBuffer *parsingBuffer);
+    ReferenceParser();
     ~ReferenceParser();
 
-    bool isValid() const;
-    Result parse();
     Common::UnicodeString value() const;
+
+    virtual Result parse();
 
 private:
     // Private types
@@ -64,6 +64,8 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingStartOfReference();
     State executeStateReadingReferenceType();
     State executeStateReadingEntityReferenceName();
@@ -74,7 +76,7 @@ private:
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
+    NameParser m_nameParser;
     Common::UnicodeString m_value;
     uint32_t m_charRefValue;
 };

@@ -42,18 +42,17 @@ class TextNodeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    TextNodeParser(ParsingBuffer *parsingBuffer);
+    TextNodeParser();
     ~TextNodeParser();
 
-    bool isValid() const;
-    Result parse();
     Common::UnicodeString text() const;
+
+    Result parse();
 
 private:
     // Private types
     enum State
     {
-        State_Idle,
         State_ReadingText,
         State_ReadingReference,
         State_Finished,
@@ -62,13 +61,15 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingText();
     State executeStateReadingReference();
 
 private:
     // Private data
     State m_state;
-    ReferenceParser *m_referenceParser;
+    ReferenceParser m_referenceParser;
     Common::UnicodeString m_text;
 };
 }

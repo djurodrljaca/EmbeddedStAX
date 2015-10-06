@@ -32,15 +32,12 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-StartOfElementParser::StartOfElementParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Reference),
-      m_state(State_Idle),
-      m_nameParser(NULL),
-      m_attributeValueParser(NULL),
+StartOfElementParser::StartOfElementParser()
+    : AbstractTokenParser(ParserType_Reference),
+      m_state(State_ReadingElementName),
+      m_nameParser(),
+      m_attributeValueParser(),
       m_elementName(),
       m_attributeName(),
       m_attributeList()
@@ -52,38 +49,26 @@ StartOfElementParser::StartOfElementParser(ParsingBuffer *parsingBuffer)
  */
 StartOfElementParser::~StartOfElementParser()
 {
-    if (m_nameParser != NULL)
-    {
-        delete m_nameParser;
-        m_nameParser = NULL;
-    }
-
-    if (m_attributeValueParser != NULL)
-    {
-        delete m_attributeValueParser;
-        m_attributeValueParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get element name
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Element name
  */
-bool StartOfElementParser::isValid() const
+EmbeddedStAX::Common::UnicodeString StartOfElementParser::name() const
 {
-    bool valid = AbstractTokenParser::isValid();
+    return m_elementName;
+}
 
-    if (valid)
-    {
-        if (option() != Option_None)
-        {
-            valid = false;
-        }
-    }
-
-    return valid;
+/**
+ * Get attribute list
+ *
+ * \return Attribute list
+ */
+std::list<EmbeddedStAX::Common::Attribute> StartOfElementParser::attributeList() const
+{
+    return m_attributeList;
 }
 
 /**
@@ -97,7 +82,7 @@ AbstractTokenParser::Result StartOfElementParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -108,23 +93,6 @@ AbstractTokenParser::Result StartOfElementParser::parse()
 
             switch (m_state)
             {
-                case State_Idle:
-                {
-                    // Initialize name parser
-                    if (m_nameParser != NULL)
-                    {
-                        delete m_nameParser;
-                        m_nameParser = NULL;
-                    }
-
-                    m_nameParser = new NameParser(parsingBuffer(), Option_None);
-
-                    // Execute another cycle
-                    nextState = State_ReadingElementName;
-                    finishParsing = false;
-                    break;
-                }
-
                 case State_ReadingElementName:
                 {
                     // Reading element name
@@ -331,6 +299,12 @@ AbstractTokenParser::Result StartOfElementParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -354,23 +328,27 @@ AbstractTokenParser::Result StartOfElementParser::parse()
 }
 
 /**
- * Get element name
+ * Initialize parser's additional data
  *
- * \return Element name
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString StartOfElementParser::name() const
+bool StartOfElementParser::initializeAdditionalData()
 {
-    return m_elementName;
-}
+    m_state = State_ReadingElementName;
+    m_elementName.clear();
+    m_attributeName.clear();
+    m_attributeList.clear();
+    parsingBuffer()->eraseToCurrentPosition();
 
-/**
- * Get attribute list
- *
- * \return Attribute list
- */
-std::list<EmbeddedStAX::Common::Attribute> StartOfElementParser::attributeList() const
-{
-    return m_attributeList;
+    bool success = m_nameParser.initialize(parsingBuffer());
+
+    if (success)
+    {
+        success = m_attributeValueParser.initialize(parsingBuffer());
+    }
+
+    return success;
 }
 
 /**
@@ -393,7 +371,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_nameParser->parse();
+    const Result result = m_nameParser.parse();
 
     switch (result)
     {
@@ -412,12 +390,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
             if (uchar == static_cast<uint32_t>('>'))
             {
                 // End of start of element found
-                m_elementName = m_nameParser->value();
+                m_elementName = m_nameParser.value();
                 m_attributeList.clear();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
@@ -426,12 +400,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
             else if (uchar == static_cast<uint32_t>('/'))
             {
                 // End of empty element found
-                m_elementName = m_nameParser->value();
+                m_elementName = m_nameParser.value();
                 m_attributeList.clear();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfEmptyElement;
@@ -439,16 +409,12 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // End of element name, try to read attribute name
-                m_elementName = m_nameParser->value();
+                m_elementName = m_nameParser.value();
                 m_attributeList.clear();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
 
-                m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
+                m_nameParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeName;
             }
             else
@@ -483,7 +449,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_nameParser->parse();
+    const Result result = m_nameParser.parse();
 
     switch (result)
     {
@@ -497,11 +463,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
         case Result_Success:
         {
             // End of attribute name found
-            m_attributeName = m_nameParser->value();
-
-            delete m_nameParser;
-            m_nameParser = NULL;
-
+            m_attributeName = m_nameParser.value();
             nextState = State_ReadingEqualSign;
             break;
         }
@@ -509,14 +471,11 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
         case Result_Error:
         {
             // Check for end of entity reference
-            const uint32_t terminationChar = m_nameParser->terminationChar();
+            const uint32_t terminationChar = m_nameParser.terminationChar();
 
             if (terminationChar == static_cast<uint32_t>('>'))
             {
                 // End of start of element found
-                delete m_nameParser;
-                m_nameParser = NULL;
-
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
@@ -525,9 +484,6 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
             else if (terminationChar == static_cast<uint32_t>('/'))
             {
                 // End of empty element found
-                delete m_nameParser;
-                m_nameParser = NULL;
-
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfEmptyElement;
@@ -587,14 +543,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEqualSign()
                 // Equal sign found
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
-
-                if (m_attributeValueParser != NULL)
-                {
-                    delete m_attributeValueParser;
-                }
-
-                m_attributeValueParser = new AttributeValueParser(parsingBuffer(),
-                                                                  Option_IgnoreLeadingWhitespace);
+                m_attributeValueParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeValue;
             }
             else if (XmlValidator::isWhitespace(uchar))
@@ -626,7 +575,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeVa
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_attributeValueParser->parse();
+    const Result result = m_attributeValueParser.parse();
 
     switch (result)
     {
@@ -640,12 +589,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeVa
         case Result_Success:
         {
             // Add attribute to the attribute list
-            Common::Attribute attribute(m_attributeName, m_attributeValueParser->value());
+            Common::Attribute attribute(m_attributeName, m_attributeValueParser.value());
             m_attributeList.push_back(attribute);
-
-            delete m_attributeValueParser;
-            m_attributeValueParser = NULL;
-
             nextState = State_ReadingNextAttribute;
             break;
         }
@@ -709,13 +654,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribu
                 // Whitespace found, try to read attribute name
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
-
-                if (m_nameParser != NULL)
-                {
-                    m_nameParser = NULL;
-                }
-
-                m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
+                m_nameParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeName;
             }
             else

@@ -62,6 +62,9 @@ private:
     UnicodeString m_value;
     QuotationMark m_quotationMark;
 };
+
+// TODO: create attribute list class (add search by name and index)
+
 }
 }
 

@@ -33,13 +33,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
  */
-DocumentTypeParser::DocumentTypeParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_DocumentType),
-      m_state(State_Idle),
-      m_nameParser(NULL),
+DocumentTypeParser::DocumentTypeParser()
+    : AbstractTokenParser(ParserType_DocumentType),
+      m_state(State_ReadingName),
+      m_nameParser(),
       m_documentType()
 {
 }
@@ -49,32 +47,16 @@ DocumentTypeParser::DocumentTypeParser(ParsingBuffer *parsingBuffer)
  */
 DocumentTypeParser::~DocumentTypeParser()
 {
-    if (m_nameParser != NULL)
-    {
-        delete m_nameParser;
-        m_nameParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get processing instruction
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Processing instruction
  */
-bool DocumentTypeParser::isValid() const
+EmbeddedStAX::Common::DocumentType DocumentTypeParser::documentType() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        if (option() != Option_None)
-        {
-            valid = false;
-        }
-    }
-
-    return valid;
+    return m_documentType;
 }
 
 /**
@@ -88,7 +70,7 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -99,20 +81,6 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
 
             switch (m_state)
             {
-                case State_Idle:
-                {
-                    // Start reading name
-                    if (m_nameParser != NULL)
-                    {
-                        delete m_nameParser;
-                    }
-
-                    m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
-                    nextState = State_ReadingName;
-                    finishParsing = false;
-                    break;
-                }
-
                 case State_ReadingName:
                 {
                     // Reading name of the root element
@@ -144,7 +112,6 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                     break;
                 }
 
-
                 case State_ReadingEnd:
                 {
                     // Reading end of document type
@@ -164,6 +131,7 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                             result = Result_Success;
                             break;
                         }
+
                         default:
                         {
                             // Error
@@ -171,6 +139,12 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                             break;
                         }
                     }
+                    break;
+                }
+
+                case State_Finished:
+                {
+                    result = Result_Success;
                     break;
                 }
 
@@ -197,13 +171,18 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
 }
 
 /**
- * Get processing instruction
+ * Initialize parser's additional data
  *
- * \return Processing instruction
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::DocumentType DocumentTypeParser::documentType() const
+bool DocumentTypeParser::initializeAdditionalData()
 {
-    return m_documentType;
+    m_state = State_ReadingName;
+    m_documentType.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+
+    return m_nameParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
 }
 
 /**
@@ -223,7 +202,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
         finishParsing = true;
 
         // Parse
-        const Result result = m_nameParser->parse();
+        const Result result = m_nameParser.parse();
 
         switch (result)
         {
@@ -236,10 +215,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
 
             case Result_Success:
             {
-                m_documentType.setName(m_nameParser->value());
-
-                delete m_nameParser;
-                m_nameParser = NULL;
+                m_documentType.setName(m_nameParser.value());
 
                 // Read end of document type
                 nextState = State_ReadingEnd;

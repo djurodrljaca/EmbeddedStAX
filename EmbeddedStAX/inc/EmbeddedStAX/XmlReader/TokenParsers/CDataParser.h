@@ -42,15 +42,31 @@ class CDataParser: public AbstractTokenParser
 {
 public:
     // Public API
-    CDataParser(ParsingBuffer *parsingBuffer);
+    CDataParser();
     ~CDataParser();
 
-    bool isValid() const;
-    Result parse();
     Common::UnicodeString text() const;
+
+    virtual Result parse();
+
+private:
+    // Private types
+    enum State
+    {
+        State_ReadingCData,
+        State_Finished,
+        State_Error
+    };
+
+private:
+    // Private API
+    virtual bool initializeAdditionalData();
+
+    State executeStateReadingCData();
 
 private:
     // Private data
+    State m_state;
     Common::UnicodeString m_text;
 };
 }

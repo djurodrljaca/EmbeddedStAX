@@ -32,14 +32,11 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-EndOfElementParser::EndOfElementParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Reference),
-      m_state(State_Idle),
-      m_nameParser(NULL),
+EndOfElementParser::EndOfElementParser()
+    : AbstractTokenParser(ParserType_Reference),
+      m_state(State_ReadingElementName),
+      m_nameParser(),
       m_elementName()
 {
 }
@@ -49,32 +46,16 @@ EndOfElementParser::EndOfElementParser(ParsingBuffer *parsingBuffer)
  */
 EndOfElementParser::~EndOfElementParser()
 {
-    if (m_nameParser != NULL)
-    {
-        delete m_nameParser;
-        m_nameParser = NULL;
-    }
 }
 
 /**
- * Check if parser is valid
+ * Get element name
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Element name
  */
-bool EndOfElementParser::isValid() const
+EmbeddedStAX::Common::UnicodeString EndOfElementParser::name() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        if (option() != Option_None)
-        {
-            valid = false;
-        }
-    }
-
-    return valid;
+    return m_elementName;
 }
 
 /**
@@ -88,7 +69,7 @@ AbstractTokenParser::Result EndOfElementParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -99,23 +80,6 @@ AbstractTokenParser::Result EndOfElementParser::parse()
 
             switch (m_state)
             {
-                case State_Idle:
-                {
-                    // Initialize name parser
-                    if (m_nameParser != NULL)
-                    {
-                        delete m_nameParser;
-                        m_nameParser = NULL;
-                    }
-
-                    m_nameParser = new NameParser(parsingBuffer(), Option_None);
-
-                    // Execute another cycle
-                    nextState = State_ReadingElementName;
-                    finishParsing = false;
-                    break;
-                }
-
                 case State_ReadingElementName:
                 {
                     // Reading element name
@@ -183,6 +147,12 @@ AbstractTokenParser::Result EndOfElementParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -206,13 +176,18 @@ AbstractTokenParser::Result EndOfElementParser::parse()
 }
 
 /**
- * Get element name
+ * Initialize parser's additional data
  *
- * \return Element name
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString EndOfElementParser::name() const
+bool EndOfElementParser::initializeAdditionalData()
 {
-    return m_elementName;
+    m_state = State_ReadingElementName;
+    m_elementName.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+
+    return m_nameParser.initialize(parsingBuffer());
 }
 
 /**
@@ -233,7 +208,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
     State nextState = State_Error;
 
     // Parse
-    const Result result = m_nameParser->parse();
+    const Result result = m_nameParser.parse();
 
     switch (result)
     {
@@ -252,11 +227,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
             if (uchar == static_cast<uint32_t>('>'))
             {
                 // End of element found
-                m_elementName = m_nameParser->value();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
+                m_elementName = m_nameParser.value();
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EndOfElement);
@@ -265,11 +236,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // End of element name, try to read end of element
-                m_elementName = m_nameParser->value();
-
-                delete m_nameParser;
-                m_nameParser = NULL;
-
+                m_elementName = m_nameParser.value();
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfElement;

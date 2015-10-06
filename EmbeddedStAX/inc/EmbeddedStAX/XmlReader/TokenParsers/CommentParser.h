@@ -41,15 +41,31 @@ class CommentParser: public AbstractTokenParser
 {
 public:
     // Public API
-    CommentParser(ParsingBuffer *parsingBuffer);
+    CommentParser();
     ~CommentParser();
 
-    bool isValid() const;
-    Result parse();
     Common::UnicodeString text() const;
+
+    virtual Result parse();
+
+private:
+    // Private types
+    enum State
+    {
+        State_ReadingComment,
+        State_Finished,
+        State_Error
+    };
+
+private:
+    // Private API
+    virtual bool initializeAdditionalData();
+
+    State executeStateReadingComment();
 
 private:
     // Private data
+    State m_state;
     Common::UnicodeString m_text;
 };
 }

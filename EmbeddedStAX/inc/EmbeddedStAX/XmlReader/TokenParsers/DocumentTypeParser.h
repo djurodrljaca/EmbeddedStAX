@@ -43,19 +43,17 @@ class DocumentTypeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    DocumentTypeParser(ParsingBuffer *parsingBuffer);
+    DocumentTypeParser();
     ~DocumentTypeParser();
 
-    bool isValid() const;
-    Result parse();
-
     Common::DocumentType documentType() const;
+
+    virtual Result parse();
 
 private:
     // Private types
     enum State
     {
-        State_Idle,
         State_ReadingName,
         // TODO: add support for reading the other parts of document type!
         State_ReadingEnd,
@@ -65,13 +63,15 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingName();
     State executeStateReadingEnd();
 
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
+    NameParser m_nameParser;
     Common::UnicodeString m_piTarget;
     Common::DocumentType m_documentType;
 };

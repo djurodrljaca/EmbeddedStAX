@@ -44,20 +44,18 @@ class StartOfElementParser: public AbstractTokenParser
 {
 public:
     // Public API
-    StartOfElementParser(ParsingBuffer *parsingBuffer);
+    StartOfElementParser();
     ~StartOfElementParser();
-
-    bool isValid() const;
-    Result parse();
 
     Common::UnicodeString name() const;
     std::list<Common::Attribute> attributeList() const;
+
+    Result parse();
 
 private:
     // Private types
     enum State
     {
-        State_Idle,
         State_ReadingElementName,
         State_ReadingAttributeName,
         State_ReadingEqualSign,
@@ -70,6 +68,8 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingElementName();
     State executeStateReadingAttributeName();
     State executeStateReadingEqualSign();
@@ -80,8 +80,8 @@ private:
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
-    AttributeValueParser *m_attributeValueParser;
+    NameParser m_nameParser;
+    AttributeValueParser m_attributeValueParser;
     Common::UnicodeString m_elementName;
     Common::UnicodeString m_attributeName;
     std::list<Common::Attribute> m_attributeList;

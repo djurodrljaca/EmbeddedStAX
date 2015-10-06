@@ -41,11 +41,9 @@ class TokenTypeParser: public AbstractTokenParser
 {
 public:
     // Public API
-    TokenTypeParser(ParsingBuffer *parsingBuffer, Option option = Option_None);
+    TokenTypeParser();
     ~TokenTypeParser();
 
-    bool isValid() const;
-    bool setOption(const Option parsingOption);
     Result parse();
 
 private:
@@ -64,6 +62,9 @@ private:
 
 private:
     // Private API
+    virtual bool setOption(const Option option);
+    virtual bool initializeAdditionalData();
+
     State executeStateWaitingForStartOfToken();
     State executeStateReadingTokenType();
     State executeStateReadingTokenTypeExclamationMark();

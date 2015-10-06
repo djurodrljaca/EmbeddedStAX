@@ -33,12 +33,9 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
- * \param option        Parsing option
  */
-NameParser::NameParser(ParsingBuffer *parsingBuffer, Option option)
-    : AbstractTokenParser(parsingBuffer, option, ParserType_Name),
+NameParser::NameParser()
+    : AbstractTokenParser(ParserType_Name),
       m_state(State_ReadingNameStartChar),
       m_value()
 {
@@ -52,69 +49,13 @@ NameParser::~NameParser()
 }
 
 /**
- * Check if parser is valid
+ * Get value string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Value string
  */
-bool NameParser::isValid() const
+EmbeddedStAX::Common::UnicodeString NameParser::value() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            case Option_IgnoreLeadingWhitespace:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Set parsing option
- *
- * \param parsingOption New parsing option
- *
- * \retval true     Parsing option set
- * \retval false    Parsing option not set
- */
-bool NameParser::setOption(const AbstractTokenParser::Option parsingOption)
-{
-    bool success = false;
-
-    switch (parsingOption)
-    {
-        case Option_None:
-        case Option_IgnoreLeadingWhitespace:
-        {
-            // Valid option
-            setOption(parsingOption);
-            success = true;
-            break;
-        }
-
-        default:
-        {
-            // Invalid option
-            break;
-        }
-    }
-
-    return success;
+    return m_value;
 }
 
 /**
@@ -128,7 +69,7 @@ AbstractTokenParser::Result NameParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
@@ -200,6 +141,12 @@ AbstractTokenParser::Result NameParser::parse()
                     break;
                 }
 
+                case State_Finished:
+                {
+                    result = Result_Success;
+                    break;
+                }
+
                 default:
                 {
                     // Error, invalid state
@@ -223,13 +170,50 @@ AbstractTokenParser::Result NameParser::parse()
 }
 
 /**
- * Get value string
+ * Set parsing option
  *
- * \return Value string
+ * \param option    New parsing option
+ *
+ * \retval true     Parsing option set
+ * \retval false    Parsing option not set
  */
-EmbeddedStAX::Common::UnicodeString NameParser::value() const
+bool NameParser::setOption(const Option option)
 {
-    return m_value;
+    bool success = false;
+
+    switch (option)
+    {
+        case Option_None:
+        case Option_IgnoreLeadingWhitespace:
+        {
+            // Valid option
+            AbstractTokenParser::setOption(option);
+            success = true;
+            break;
+        }
+
+        default:
+        {
+            // Invalid option
+            break;
+        }
+    }
+
+    return success;
+}
+
+/**
+ * Initialize parser's additional data
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool NameParser::initializeAdditionalData()
+{
+    m_state = State_ReadingNameStartChar;
+    m_value.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+    return true;
 }
 
 /**

@@ -44,20 +44,18 @@ class ProcessingInstructionParser: public AbstractTokenParser
 {
 public:
     // Public API
-    ProcessingInstructionParser(ParsingBuffer *parsingBuffer);
+    ProcessingInstructionParser();
     ~ProcessingInstructionParser();
-
-    bool isValid() const;
-    Result parse();
 
     Common::ProcessingInstruction processingInstruction() const;
     Common::XmlDeclaration xmlDeclaration() const;
+
+    virtual Result parse();
 
 private:
     // Private types
     enum State
     {
-        State_Idle,
         State_ReadingPiTarget,
         State_ReadingPiData,
         State_Finished,
@@ -66,13 +64,15 @@ private:
 
 private:
     // Private API
+    virtual bool initializeAdditionalData();
+
     State executeStateReadingPiTarget();
     State executeStateReadingPiData();
 
 private:
     // Private data
     State m_state;
-    NameParser *m_nameParser;
+    NameParser m_nameParser;
     Common::UnicodeString m_piTarget;
     Common::ProcessingInstruction m_processingInstruction;
     Common::XmlDeclaration m_xmlDeclaration;

@@ -32,11 +32,10 @@ using namespace EmbeddedStAX::XmlReader;
 
 /**
  * Constructor
- *
- * \param parsingBuffer Pointer to a parsing buffer
  */
-CommentParser::CommentParser(ParsingBuffer *parsingBuffer)
-    : AbstractTokenParser(parsingBuffer, Option_None, ParserType_Comment),
+CommentParser::CommentParser()
+    : AbstractTokenParser(ParserType_Comment),
+      m_state(State_ReadingComment),
       m_text()
 {
 }
@@ -49,35 +48,13 @@ CommentParser::~CommentParser()
 }
 
 /**
- * Check if parser is valid
+ * Get text string
  *
- * \retval true     Valid
- * \retval false    Invalid
+ * \return Text string
  */
-bool CommentParser::isValid() const
+EmbeddedStAX::Common::UnicodeString CommentParser::text() const
 {
-    bool valid = AbstractTokenParser::isValid();
-
-    if (valid)
-    {
-        switch (option())
-        {
-            case Option_None:
-            {
-                // Valid option
-                break;
-            }
-
-            default:
-            {
-                // Invalid option
-                valid = false;
-                break;
-            }
-        }
-    }
-
-    return valid;
+    return m_text;
 }
 
 /**
@@ -86,69 +63,68 @@ bool CommentParser::isValid() const
  * \retval Result_Success       Success
  * \retval Result_NeedMoreData  More data is needed
  * \retval Result_Error         Error
- *
- * Format:
- * \code{.unparsed}
- * Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
- * \endcode
  */
 AbstractTokenParser::Result CommentParser::parse()
 {
     Result result = Result_Error;
 
-    if (isValid())
+    if (isInitialized())
     {
         bool finishParsing = false;
 
         while (!finishParsing)
         {
             finishParsing = true;
+            State nextState = State_Error;
 
-            // Check if more data is needed
-            if (parsingBuffer()->isMoreDataNeeded())
+            switch (m_state)
             {
-                // More data is needed
-                result = Result_NeedMoreData;
-            }
-            else
-            {
-                // Check for "-->" sequence
-                const size_t position = parsingBuffer()->currentPosition();
-
-                if (position > 1U)
+                case State_ReadingComment:
                 {
-                    const uint32_t minusChar = static_cast<uint32_t>('-');
+                    // Reading Comment
+                    nextState = executeStateReadingComment();
 
-                    if ((parsingBuffer()->at(position - 2U) == minusChar) &&
-                        (parsingBuffer()->at(position - 1U) == minusChar))
+                    // Check transitions
+                    switch (nextState)
                     {
-                        // Sequence "--" found, now check if '>' char follows it
-                        if (parsingBuffer()->currentChar() == static_cast<uint32_t>('>'))
+                        case State_ReadingComment:
                         {
-                            // End of comment found
-                            m_text = parsingBuffer()->substring(0U, position - 2U);
-                            parsingBuffer()->incrementPosition();
+                            result = Result_NeedMoreData;
+                            break;
+                        }
+
+                        case State_Finished:
+                        {
                             result = Result_Success;
+                            break;
                         }
-                        else
+
+                        default:
                         {
-                            // Error, invalid character
+                            // Error
+                            nextState = State_Error;
+                            break;
                         }
                     }
-                    else
-                    {
-                        // Check next character
-                        parsingBuffer()->incrementPosition();
-                        finishParsing = false;
-                    }
+                    break;
                 }
-                else
+
+                case State_Finished:
                 {
-                    // Check next character
-                    parsingBuffer()->incrementPosition();
-                    finishParsing = false;
+                    result = Result_Success;
+                    break;
+                }
+
+                default:
+                {
+                    // Error, invalid state
+                    nextState = State_Error;
+                    break;
                 }
             }
+
+            // Update state
+            m_state = nextState;
         }
     }
 
@@ -162,11 +138,86 @@ AbstractTokenParser::Result CommentParser::parse()
 }
 
 /**
- * Get text string
+ * Initialize parser's additional data
  *
- * \return Text string
+ * \retval true     Success
+ * \retval false    Error
  */
-EmbeddedStAX::Common::UnicodeString CommentParser::text() const
+bool CommentParser::initializeAdditionalData()
 {
-    return m_text;
+    m_state = State_ReadingComment;
+    m_text.clear();
+    parsingBuffer()->eraseToCurrentPosition();
+    return true;
+}
+
+/**
+ * Execute state: Reading comment
+ *
+ * \retval State_ReadingComment Wait for more data
+ * \retval State_Finished       Comment found
+ * \retval State_Error          Error, unexpected character
+ *
+ * Format:
+ * \code{.unparsed}
+ * Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
+ * \endcode
+ */
+CommentParser::State CommentParser::executeStateReadingComment()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Check if more data is needed
+        if (parsingBuffer()->isMoreDataNeeded())
+        {
+            // More data is needed
+            nextState = State_ReadingComment;
+        }
+        else
+        {
+            // Check for "-->" sequence
+            const size_t position = parsingBuffer()->currentPosition();
+
+            if (position > 1U)
+            {
+                const uint32_t minusChar = static_cast<uint32_t>('-');
+
+                if ((parsingBuffer()->at(position - 2U) == minusChar) &&
+                    (parsingBuffer()->at(position - 1U) == minusChar))
+                {
+                    // Sequence "--" found, now check if '>' char follows it
+                    if (parsingBuffer()->currentChar() == static_cast<uint32_t>('>'))
+                    {
+                        // End of comment found
+                        m_text = parsingBuffer()->substring(0U, position - 2U);
+                        parsingBuffer()->incrementPosition();
+                        nextState = State_Finished;
+                    }
+                    else
+                    {
+                        // Error, invalid character
+                    }
+                }
+                else
+                {
+                    // Check next character
+                    parsingBuffer()->incrementPosition();
+                    finishParsing = false;
+                }
+            }
+            else
+            {
+                // Check next character
+                parsingBuffer()->incrementPosition();
+                finishParsing = false;
+            }
+        }
+    }
+
+    return nextState;
 }
