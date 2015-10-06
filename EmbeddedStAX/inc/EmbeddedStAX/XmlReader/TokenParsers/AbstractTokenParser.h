@@ -97,19 +97,24 @@ public:
     Option option() const;
     virtual bool setOption(const Option option);
     ParserType parserType() const;
-    TokenType tokenFound() const;
+    TokenType tokenType() const;
     uint32_t terminationChar() const;
     virtual Result parse() = 0;
 
 protected:
+    // Protected API
+    void setTokenType(const TokenType tokenType);
+    void setTerminationChar(const uint32_t uchar);
+
+protected:
     // Protected data
     ParsingBuffer *m_parsingBuffer;
-    TokenType m_tokenFound;
-    uint32_t m_terminationChar;
 
 private:
     // Private data
     Option m_option;
+    TokenType m_tokenType;
+    uint32_t m_terminationChar;
     const ParserType m_parserType;
 };
 }

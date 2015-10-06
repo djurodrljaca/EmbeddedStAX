@@ -331,7 +331,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
                             if (m_xmlDeclaration.isValid())
                             {
                                 // XML declaration read
-                                m_tokenFound = TokenType_XmlDeclaration;
+                                setTokenType(TokenType_XmlDeclaration);
                                 nextState = State_Finished;
                             }
                         }
@@ -343,7 +343,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
                             if (m_processingInstruction.isValid())
                             {
                                 // Processing instruction read
-                                m_tokenFound = TokenType_ProcessingInstruction;
+                                setTokenType(TokenType_ProcessingInstruction);
                                 nextState = State_Finished;
                             }
                             else
@@ -364,7 +364,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
             else
             {
                 // Error, invalid character read
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
         }
     }

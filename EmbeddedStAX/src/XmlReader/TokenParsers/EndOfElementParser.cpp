@@ -259,7 +259,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_EndOfElement;
+                setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
             else if (XmlValidator::isWhitespace(uchar))
@@ -277,7 +277,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
             else
             {
                 // Error, invalid character
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
             break;
         }
@@ -324,7 +324,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingEndOfElement()
                 // End of element found
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_EndOfElement;
+                setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
             else if (XmlValidator::isWhitespace(uchar))
@@ -337,7 +337,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingEndOfElement()
             else
             {
                 // Error, invalid character read
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
         }
     }

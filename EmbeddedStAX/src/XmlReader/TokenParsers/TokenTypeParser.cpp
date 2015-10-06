@@ -422,14 +422,14 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
                         else
                         {
                             // Parsing finished: Whitespace character found
-                            m_tokenFound = TokenType_Whitespace;
+                            setTokenType(TokenType_Whitespace);
                             nextState = State_Finished;
                         }
                     }
                     else
                     {
                         // Error, invalid character read
-                        m_terminationChar = uchar;
+                        setTerminationChar(uchar);
                     }
                 }
             }
@@ -485,7 +485,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
                 // Token found: Processing instruction
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_ProcessingInstruction;
+                setTokenType(TokenType_ProcessingInstruction);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('!'))
@@ -499,7 +499,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
             {
                 // Token found: Start of element
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_StartOfElement;
+                setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('/'))
@@ -507,7 +507,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
                 // Token found: End of element
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_EndOfElement;
+                setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
             else
@@ -633,7 +633,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
                     {
                         // Token found: Document type
                         m_parsingBuffer->eraseToCurrentPosition();
-                        m_tokenFound = TokenType_DocumentType;
+                        setTokenType(TokenType_DocumentType);
                         nextState = State_Finished;
                     }
                     else
@@ -696,7 +696,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeComment()
                 // Token found: Comment
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_Comment;
+                setTokenType(TokenType_Comment);
                 nextState = State_Finished;
             }
             else
@@ -756,7 +756,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
                     {
                         // Token found: CDATA
                         m_parsingBuffer->eraseToCurrentPosition();
-                        m_tokenFound = TokenType_CData;
+                        setTokenType(TokenType_CData);
                         nextState = State_Finished;
                     }
                     else

@@ -353,7 +353,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingStartOfReference()
         else
         {
             // Error, invalid character read
-            m_terminationChar = uchar;
+            setTerminationChar(uchar);
         }
     }
 
@@ -407,7 +407,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingReferenceType()
         else
         {
             // Error, invalid character read
-            m_terminationChar = uchar;
+            setTerminationChar(uchar);
         }
     }
 
@@ -457,7 +457,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_EntityReference;
+                setTokenType(TokenType_EntityReference);
                 nextState = State_Finished;
             }
             break;
@@ -519,7 +519,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceTyp
         else
         {
             // Error, invalid character read
-            m_terminationChar = uchar;
+            setTerminationChar(uchar);
         }
     }
 
@@ -567,7 +567,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceDec
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_CharacterReference;
+                setTokenType(TokenType_CharacterReference);
                 nextState = State_Finished;
             }
             else if (Common::parseDigit(uchar, 10U, &digitValue))
@@ -638,7 +638,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceHex
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_CharacterReference;
+                setTokenType(TokenType_CharacterReference);
                 nextState = State_Finished;
             }
             else if (Common::parseDigit(uchar, 16U, &digitValue))

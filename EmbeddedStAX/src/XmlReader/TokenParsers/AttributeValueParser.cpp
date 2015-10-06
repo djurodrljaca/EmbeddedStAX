@@ -336,7 +336,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMa
             else
             {
                 // Error, invalid character read
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
         }
     }
@@ -470,7 +470,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
         case Result_Success:
         {
             // End of reference found
-            switch (m_referenceParser->tokenFound())
+            switch (m_referenceParser->tokenType())
             {
                 case TokenType_EntityReference:
                 {

@@ -40,9 +40,9 @@ AbstractTokenParser::AbstractTokenParser(ParsingBuffer *parsingBuffer,
                                          const Option option,
                                          const ParserType parserType)
     : m_parsingBuffer(parsingBuffer),
-      m_tokenFound(TokenType_None),
-      m_terminationChar(0U),
       m_option(option),
+      m_tokenType(TokenType_None),
+      m_terminationChar(0U),
       m_parserType(parserType)
 {
 }
@@ -113,9 +113,9 @@ AbstractTokenParser::ParserType AbstractTokenParser::parserType() const
  *
  * \return Token type
  */
-AbstractTokenParser::TokenType AbstractTokenParser::tokenFound() const
+AbstractTokenParser::TokenType AbstractTokenParser::tokenType() const
 {
-    return m_tokenFound;
+    return m_tokenType;
 }
 
 /**
@@ -126,4 +126,24 @@ AbstractTokenParser::TokenType AbstractTokenParser::tokenFound() const
 uint32_t AbstractTokenParser::terminationChar() const
 {
     return m_terminationChar;
+}
+
+/**
+ * Set token type
+ *
+ * \param tokenType New token type
+ */
+void AbstractTokenParser::setTokenType(const AbstractTokenParser::TokenType tokenType)
+{
+    m_tokenType = tokenType;
+}
+
+/**
+ * Set termination character
+ *
+ * \param uchar Termination character
+ */
+void AbstractTokenParser::setTerminationChar(const uint32_t uchar)
+{
+    m_terminationChar = uchar;
 }

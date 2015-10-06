@@ -725,7 +725,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTokenType()
             case AbstractTokenParser::Result_Success:
             {
                 // Check token type
-                const AbstractTokenParser::TokenType tokenType = m_tokenParser->tokenFound();
+                const AbstractTokenParser::TokenType tokenType = m_tokenParser->tokenType();
 
                 switch (tokenType)
                 {
@@ -937,7 +937,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingProcessingInstructi
         case AbstractTokenParser::Result_Success:
         {
             // Check token type
-            const AbstractTokenParser::TokenType tokenType = m_tokenParser->tokenFound();
+            const AbstractTokenParser::TokenType tokenType = m_tokenParser->tokenType();
 
             switch (tokenType)
             {
@@ -1228,7 +1228,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingStartOfElement()
                         }
 
                         const AbstractTokenParser::TokenType tokenFound =
-                                startOfElementParser->tokenFound();
+                                startOfElementParser->tokenType();
 
                         switch (tokenFound)
                         {

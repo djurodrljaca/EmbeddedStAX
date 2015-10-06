@@ -352,7 +352,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
         case Result_Success:
         {
             // End of reference found
-            switch (m_referenceParser->tokenFound())
+            switch (m_referenceParser->tokenType())
             {
                 case TokenType_EntityReference:
                 {

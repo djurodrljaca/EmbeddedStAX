@@ -280,13 +280,13 @@ NameParser::State NameParser::executeStateReadingNameStartChar()
                     else
                     {
                         // Error, invalid character read
-                        m_terminationChar = uchar;
+                        setTerminationChar(uchar);
                     }
                 }
                 else
                 {
                     // Error, invalid character read
-                    m_terminationChar = uchar;
+                    setTerminationChar(uchar);
                 }
             }
         }

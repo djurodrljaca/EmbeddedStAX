@@ -420,7 +420,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_StartOfElement;
+                setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('/'))
@@ -454,7 +454,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
             else
             {
                 // Error, invalid character
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
             break;
         }
@@ -519,7 +519,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
 
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_StartOfElement;
+                setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (terminationChar == static_cast<uint32_t>('/'))
@@ -535,7 +535,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
             else
             {
                 // Error, invalid character
-                m_terminationChar = terminationChar;
+                setTerminationChar(terminationChar);
             }
             break;
         }
@@ -606,7 +606,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEqualSign()
             else
             {
                 // Error, invalid character
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
         }
     }
@@ -694,7 +694,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribu
                 // End of start of element found
                 m_parsingBuffer->incrementPosition();
                 m_parsingBuffer->eraseToCurrentPosition();
-                m_tokenFound = TokenType_StartOfElement;
+                setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('/'))
@@ -721,7 +721,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribu
             else
             {
                 // Error, invalid character
-                m_terminationChar = uchar;
+                setTerminationChar(uchar);
             }
         }
     }
@@ -756,13 +756,13 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEndOfEmptyE
             // End of empty element found
             m_parsingBuffer->incrementPosition();
             m_parsingBuffer->eraseToCurrentPosition();
-            m_tokenFound = TokenType_EmptyElement;
+            setTokenType(TokenType_EmptyElement);
             nextState = State_Finished;
         }
         else
         {
             // Error, invalid character read
-            m_terminationChar = uchar;
+            setTerminationChar(uchar);
         }
     }
 
