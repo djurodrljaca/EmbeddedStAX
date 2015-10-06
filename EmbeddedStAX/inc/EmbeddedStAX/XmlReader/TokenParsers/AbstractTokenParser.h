@@ -103,16 +103,15 @@ public:
 
 protected:
     // Protected API
+    ParsingBuffer *parsingBuffer();
     void setTokenType(const TokenType tokenType);
     void setTerminationChar(const uint32_t uchar);
 
-protected:
-    // Protected data
-    ParsingBuffer *m_parsingBuffer;
 
 private:
     // Private data
     Option m_option;
+    ParsingBuffer *m_parsingBuffer;
     TokenType m_tokenType;
     uint32_t m_terminationChar;
     const ParserType m_parserType;

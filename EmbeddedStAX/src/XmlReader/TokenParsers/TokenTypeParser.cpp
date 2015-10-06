@@ -353,7 +353,7 @@ AbstractTokenParser::Result TokenTypeParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -382,7 +382,7 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_WaitingForStartOfToken;
@@ -390,13 +390,13 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('<'))
             {
                 // Start of token found, now start reading the token type
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingTokenType;
             }
             else
@@ -404,8 +404,8 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
                 if (option() == Option_Synchronization)
                 {
                     // On synchronization option ignore all other characters
-                    m_parsingBuffer->incrementPosition();
-                    m_parsingBuffer->eraseToCurrentPosition();
+                    parsingBuffer()->incrementPosition();
+                    parsingBuffer()->eraseToCurrentPosition();
                     finishParsing = false;
                 }
                 else
@@ -415,8 +415,8 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
                         if (option() == Option_IgnoreLeadingWhitespace)
                         {
                             // We are allowed to ignore whitespace characters
-                            m_parsingBuffer->incrementPosition();
-                            m_parsingBuffer->eraseToCurrentPosition();
+                            parsingBuffer()->incrementPosition();
+                            parsingBuffer()->eraseToCurrentPosition();
                             finishParsing = false;
                         }
                         else
@@ -470,7 +470,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingTokenType;
@@ -478,35 +478,35 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenType()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('?'))
             {
                 // Token found: Processing instruction
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_ProcessingInstruction);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('!'))
             {
                 // Start reading a token type with exclamation mark
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingTokenTypeExclamationMark;
             }
             else if (XmlValidator::isNameStartChar(uchar))
             {
                 // Token found: Start of element
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('/'))
             {
                 // Token found: End of element
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
@@ -548,7 +548,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeExclamationM
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingTokenTypeExclamationMark;
@@ -556,24 +556,24 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeExclamationM
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('D'))
             {
                 // Start reading document type token type
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 nextState = State_ReadingTokenTypeDocumentType;
             }
             else if (uchar == static_cast<uint32_t>('-'))
             {
                 // Start reading comment token type
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 nextState = State_ReadingTokenTypeComment;
             }
             else if (uchar == static_cast<uint32_t>('['))
             {
                 // Start reading CData token type
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 nextState = State_ReadingTokenTypeCData;
             }
             else
@@ -609,7 +609,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingTokenTypeDocumentType;
@@ -617,8 +617,8 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
         else
         {
             // Check character
-            const size_t position = m_parsingBuffer->currentPosition();
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const size_t position = parsingBuffer()->currentPosition();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (position < 7U)
             {
@@ -627,12 +627,12 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeDocumentType
                 if (doctypeChar == uchar)
                 {
                     // Correct character found
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
 
                     if (position == 6U)
                     {
                         // Token found: Document type
-                        m_parsingBuffer->eraseToCurrentPosition();
+                        parsingBuffer()->eraseToCurrentPosition();
                         setTokenType(TokenType_DocumentType);
                         nextState = State_Finished;
                     }
@@ -681,7 +681,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeComment()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingTokenTypeComment;
@@ -689,13 +689,13 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeComment()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('-'))
             {
                 // Token found: Comment
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_Comment);
                 nextState = State_Finished;
             }
@@ -732,7 +732,7 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingTokenTypeCData;
@@ -740,8 +740,8 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
         else
         {
             // Check character
-            const size_t position = m_parsingBuffer->currentPosition();
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const size_t position = parsingBuffer()->currentPosition();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (position < 7U)
             {
@@ -750,12 +750,12 @@ TokenTypeParser::State TokenTypeParser::executeStateReadingTokenTypeCData()
                 if (cdataChar == uchar)
                 {
                     // Correct character found
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
 
                     if (position == 6U)
                     {
                         // Token found: CDATA
-                        m_parsingBuffer->eraseToCurrentPosition();
+                        parsingBuffer()->eraseToCurrentPosition();
                         setTokenType(TokenType_CData);
                         nextState = State_Finished;
                     }

@@ -261,7 +261,7 @@ AbstractTokenParser::Result AttributeValueParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -299,7 +299,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMa
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingAttributeValue;
@@ -307,22 +307,22 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMa
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('"'))
             {
                 // Quote found, now start reading the attribute value
                 m_quotationMark = Common::QuotationMark_Quote;
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingAttributeValue;
             }
             else if (uchar == static_cast<uint32_t>('\''))
             {
                 // Apostrophe found, now start reading the attribute value
                 m_quotationMark = Common::QuotationMark_Apostrophe;
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingAttributeValue;
             }
             else if (XmlValidator::isWhitespace(uchar))
@@ -368,7 +368,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingAttributeValue;
@@ -376,17 +376,17 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('<'))
             {
                 // Invalid character found
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
             }
             else if (uchar == static_cast<uint32_t>('&'))
             {
                 // Possible start of Reference found, parse it
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
                 if (m_referenceParser != NULL)
                 {
@@ -394,17 +394,17 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
                     m_referenceParser = NULL;
                 }
 
-                m_referenceParser = new ReferenceParser(m_parsingBuffer);
+                m_referenceParser = new ReferenceParser(parsingBuffer());
                 nextState = State_ReadingReference;
             }
             else if (uchar == static_cast<uint32_t>('"'))
             {
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
 
                 if (m_quotationMark == Common::QuotationMark_Quote)
                 {
                     // End of attribute value found
-                    m_parsingBuffer->eraseToCurrentPosition();
+                    parsingBuffer()->eraseToCurrentPosition();
                     nextState = State_Finished;
                 }
                 else
@@ -416,12 +416,12 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
             }
             else if (uchar == static_cast<uint32_t>('\''))
             {
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
 
                 if (m_quotationMark == Common::QuotationMark_Apostrophe)
                 {
                     // End of attribute value found
-                    m_parsingBuffer->eraseToCurrentPosition();
+                    parsingBuffer()->eraseToCurrentPosition();
                     nextState = State_Finished;
                 }
                 else
@@ -434,7 +434,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingAttributeVa
             else
             {
                 // Add character to value
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 m_value.push_back(uchar);
                 finishParsing = false;
             }

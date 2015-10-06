@@ -106,7 +106,7 @@ AbstractTokenParser::Result CDataParser::parse()
             finishParsing = true;
 
             // Check if more data is needed
-            if (m_parsingBuffer->isMoreDataNeeded())
+            if (parsingBuffer()->isMoreDataNeeded())
             {
                 // More data is needed
                 result = Result_NeedMoreData;
@@ -114,11 +114,11 @@ AbstractTokenParser::Result CDataParser::parse()
             else
             {
                 // Check for "]]>" sequence
-                const uint32_t uchar = m_parsingBuffer->currentChar();
+                const uint32_t uchar = parsingBuffer()->currentChar();
 
                 if (uchar == static_cast<uint32_t>('>'))
                 {
-                    const size_t position = m_parsingBuffer->currentPosition();
+                    const size_t position = parsingBuffer()->currentPosition();
 
                     if (position < 2U)
                     {
@@ -128,20 +128,20 @@ AbstractTokenParser::Result CDataParser::parse()
                     else
                     {
                         const Common::UnicodeString sequence =
-                                m_parsingBuffer->substring(position - 2U, position);
+                                parsingBuffer()->substring(position - 2U, position);
 
                         if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
                         {
                             // End of CDATA found
-                            m_text.append(m_parsingBuffer->substring(0U, position - 2U));
-                            m_parsingBuffer->incrementPosition();
-                            m_parsingBuffer->eraseToCurrentPosition();
+                            m_text.append(parsingBuffer()->substring(0U, position - 2U));
+                            parsingBuffer()->incrementPosition();
+                            parsingBuffer()->eraseToCurrentPosition();
                             result = Result_Success;
                         }
                         else
                         {
                             // Continue
-                            m_parsingBuffer->incrementPosition();
+                            parsingBuffer()->incrementPosition();
                             finishParsing = false;
                         }
                     }
@@ -149,7 +149,7 @@ AbstractTokenParser::Result CDataParser::parse()
                 else if (XmlValidator::isChar(uchar))
                 {
                     // Check next character
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
                 else
@@ -163,7 +163,7 @@ AbstractTokenParser::Result CDataParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;

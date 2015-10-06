@@ -117,7 +117,7 @@ AbstractTokenParser::Result TextNodeParser::parse()
                 case State_Idle:
                 {
                     // Erase all characters to the current position and start reading text
-                    m_parsingBuffer->eraseToCurrentPosition();
+                    parsingBuffer()->eraseToCurrentPosition();
                     m_text.clear();
                     nextState = State_ReadingText;
                     finishParsing = false;
@@ -208,7 +208,7 @@ AbstractTokenParser::Result TextNodeParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -248,7 +248,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingText;
@@ -256,26 +256,26 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('<'))
             {
                 // Add text
-                const size_t size = m_parsingBuffer->currentPosition();
-                m_text.append(m_parsingBuffer->substring(0U, size));
+                const size_t size = parsingBuffer()->currentPosition();
+                m_text.append(parsingBuffer()->substring(0U, size));
 
                 // End of text node found
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('&'))
             {
                 // Add text
-                const size_t size = m_parsingBuffer->currentPosition();
-                m_text.append(m_parsingBuffer->substring(0U, size));
+                const size_t size = parsingBuffer()->currentPosition();
+                m_text.append(parsingBuffer()->substring(0U, size));
 
                 // Possible start of Reference found, parse it
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
                 if (m_referenceParser != NULL)
                 {
@@ -283,23 +283,23 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
                     m_referenceParser = NULL;
                 }
 
-                m_referenceParser = new ReferenceParser(m_parsingBuffer);
+                m_referenceParser = new ReferenceParser(parsingBuffer());
                 nextState = State_ReadingReference;
             }
             else if (uchar == static_cast<uint32_t>('>'))
             {
                 // Check if this character is part of the "]]>" sequence
-                const size_t position = m_parsingBuffer->currentPosition();
+                const size_t position = parsingBuffer()->currentPosition();
 
                 if (position < 2U)
                 {
                     // Valid text character, continue
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
                 else
                 {
-                    const Common::UnicodeString sequence = m_parsingBuffer->substring(position - 2U,
+                    const Common::UnicodeString sequence = parsingBuffer()->substring(position - 2U,
                                                                                       position);
 
                     if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
@@ -309,7 +309,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
                     else
                     {
                         // Valid sequence, continue
-                        m_parsingBuffer->incrementPosition();
+                        parsingBuffer()->incrementPosition();
                         finishParsing = false;
                     }
                 }
@@ -317,7 +317,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
             else
             {
                 // Valid character, continue, continue
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 finishParsing = false;
             }
         }

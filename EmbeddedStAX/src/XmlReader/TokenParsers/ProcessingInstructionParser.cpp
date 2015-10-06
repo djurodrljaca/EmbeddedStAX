@@ -108,7 +108,7 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
                         delete m_nameParser;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer);
+                    m_nameParser = new NameParser(parsingBuffer());
                     nextState = State_ReadingPiTarget;
                     finishParsing = false;
                     break;
@@ -191,7 +191,7 @@ AbstractTokenParser::Result ProcessingInstructionParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -290,7 +290,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingPiData;
@@ -298,29 +298,29 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (XmlValidator::isChar(uchar))
             {
                 // Check for "?>" sequence
-                const size_t currentPosition = m_parsingBuffer->currentPosition();
+                const size_t currentPosition = parsingBuffer()->currentPosition();
 
                 if (currentPosition == 0U)
                 {
                     // Check next character
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
                 else
                 {
                     if ((uchar == static_cast<uint32_t>('>')) &&
-                        (m_parsingBuffer->at(currentPosition - 1U) == static_cast<uint32_t>('?')))
+                        (parsingBuffer()->at(currentPosition - 1U) == static_cast<uint32_t>('?')))
                     {
                         // End of PI Data found
                         const Common::UnicodeString piData =
-                                m_parsingBuffer->substring(0U, currentPosition - 1U);
-                        m_parsingBuffer->incrementPosition();
-                        m_parsingBuffer->eraseToCurrentPosition();
+                                parsingBuffer()->substring(0U, currentPosition - 1U);
+                        parsingBuffer()->incrementPosition();
+                        parsingBuffer()->eraseToCurrentPosition();
 
                         // Check for XML declaration
                         if (XmlValidator::isXmlDeclaration(m_piTarget))
@@ -356,7 +356,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
                     else
                     {
                         // Check next character
-                        m_parsingBuffer->incrementPosition();
+                        parsingBuffer()->incrementPosition();
                         finishParsing = false;
                     }
                 }

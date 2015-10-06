@@ -105,7 +105,7 @@ AbstractTokenParser::Result CommentParser::parse()
             finishParsing = true;
 
             // Check if more data is needed
-            if (m_parsingBuffer->isMoreDataNeeded())
+            if (parsingBuffer()->isMoreDataNeeded())
             {
                 // More data is needed
                 result = Result_NeedMoreData;
@@ -113,21 +113,21 @@ AbstractTokenParser::Result CommentParser::parse()
             else
             {
                 // Check for "-->" sequence
-                const size_t position = m_parsingBuffer->currentPosition();
+                const size_t position = parsingBuffer()->currentPosition();
 
                 if (position > 1U)
                 {
                     const uint32_t minusChar = static_cast<uint32_t>('-');
 
-                    if ((m_parsingBuffer->at(position - 2U) == minusChar) &&
-                        (m_parsingBuffer->at(position - 1U) == minusChar))
+                    if ((parsingBuffer()->at(position - 2U) == minusChar) &&
+                        (parsingBuffer()->at(position - 1U) == minusChar))
                     {
                         // Sequence "--" found, now check if '>' char follows it
-                        if (m_parsingBuffer->currentChar() == static_cast<uint32_t>('>'))
+                        if (parsingBuffer()->currentChar() == static_cast<uint32_t>('>'))
                         {
                             // End of comment found
-                            m_text = m_parsingBuffer->substring(0U, position - 2U);
-                            m_parsingBuffer->incrementPosition();
+                            m_text = parsingBuffer()->substring(0U, position - 2U);
+                            parsingBuffer()->incrementPosition();
                             result = Result_Success;
                         }
                         else
@@ -138,14 +138,14 @@ AbstractTokenParser::Result CommentParser::parse()
                     else
                     {
                         // Check next character
-                        m_parsingBuffer->incrementPosition();
+                        parsingBuffer()->incrementPosition();
                         finishParsing = false;
                     }
                 }
                 else
                 {
                     // Check next character
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
             }
@@ -155,7 +155,7 @@ AbstractTokenParser::Result CommentParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;

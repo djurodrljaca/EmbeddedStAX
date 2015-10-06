@@ -216,7 +216,7 @@ AbstractTokenParser::Result NameParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -249,7 +249,7 @@ NameParser::State NameParser::executeStateReadingNameStartChar()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingNameStartChar;
@@ -257,13 +257,13 @@ NameParser::State NameParser::executeStateReadingNameStartChar()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (XmlValidator::isNameStartChar(uchar))
             {
                 // Name start character found, now start reading the token type
-                m_parsingBuffer->eraseToCurrentPosition();
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
                 nextState = State_ReadingNameChars;
             }
             else
@@ -273,8 +273,8 @@ NameParser::State NameParser::executeStateReadingNameStartChar()
                     if (option() == Option_IgnoreLeadingWhitespace)
                     {
                         // We are allowed to ignore whitespace characters
-                        m_parsingBuffer->incrementPosition();
-                        m_parsingBuffer->eraseToCurrentPosition();
+                        parsingBuffer()->incrementPosition();
+                        parsingBuffer()->eraseToCurrentPosition();
                         finishParsing = false;
                     }
                     else
@@ -312,7 +312,7 @@ NameParser::State NameParser::executeStateReadingNameChars()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingNameChars;
@@ -320,21 +320,21 @@ NameParser::State NameParser::executeStateReadingNameChars()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (XmlValidator::isNameChar(uchar))
             {
                 // Name character found, check for next one
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 finishParsing = false;
             }
             else
             {
                 // End of name found
-                const size_t size = m_parsingBuffer->currentPosition();
-                m_value = m_parsingBuffer->substring(0U, size);
+                const size_t size = parsingBuffer()->currentPosition();
+                m_value = parsingBuffer()->substring(0U, size);
 
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_Finished;
             }
         }

@@ -117,7 +117,7 @@ AbstractTokenParser::Result StartOfElementParser::parse()
                         m_nameParser = NULL;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer, Option_None);
+                    m_nameParser = new NameParser(parsingBuffer(), Option_None);
 
                     // Execute another cycle
                     nextState = State_ReadingElementName;
@@ -347,7 +347,7 @@ AbstractTokenParser::Result StartOfElementParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -407,7 +407,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
         case Result_Success:
         {
             // Check for end of entity reference
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
             {
@@ -418,8 +418,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
@@ -432,8 +432,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfEmptyElement;
             }
             else if (XmlValidator::isWhitespace(uchar))
@@ -445,10 +445,10 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
-                m_nameParser = new NameParser(m_parsingBuffer, Option_IgnoreLeadingWhitespace);
+                m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeName;
             }
             else
@@ -517,8 +517,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
@@ -528,8 +528,8 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfEmptyElement;
             }
             else
@@ -572,7 +572,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEqualSign()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingEqualSign;
@@ -580,27 +580,27 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEqualSign()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('='))
             {
                 // Equal sign found
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
                 if (m_attributeValueParser != NULL)
                 {
                     delete m_attributeValueParser;
                 }
 
-                m_attributeValueParser = new AttributeValueParser(m_parsingBuffer,
+                m_attributeValueParser = new AttributeValueParser(parsingBuffer(),
                                                                   Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeValue;
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // Ignore leading whitespace
-                m_parsingBuffer->incrementPosition();
+                parsingBuffer()->incrementPosition();
                 finishParsing = false;
             }
             else
@@ -679,7 +679,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribu
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingEqualSign;
@@ -687,35 +687,35 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribu
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
             {
                 // End of start of element found
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_StartOfElement);
                 nextState = State_Finished;
             }
             else if (uchar == static_cast<uint32_t>('/'))
             {
                 // End of empty element found
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfEmptyElement;
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // Whitespace found, try to read attribute name
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
                 if (m_nameParser != NULL)
                 {
                     m_nameParser = NULL;
                 }
 
-                m_nameParser = new NameParser(m_parsingBuffer, Option_IgnoreLeadingWhitespace);
+                m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                 nextState = State_ReadingAttributeName;
             }
             else
@@ -741,7 +741,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEndOfEmptyE
     State nextState = State_Error;
 
     // Check if more data is needed
-    if (m_parsingBuffer->isMoreDataNeeded())
+    if (parsingBuffer()->isMoreDataNeeded())
     {
         // More data is needed
         nextState = State_ReadingEndOfEmptyElement;
@@ -749,13 +749,13 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingEndOfEmptyE
     else
     {
         // Check character
-        const uint32_t uchar = m_parsingBuffer->currentChar();
+        const uint32_t uchar = parsingBuffer()->currentChar();
 
         if (uchar == static_cast<uint32_t>('>'))
         {
             // End of empty element found
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
+            parsingBuffer()->incrementPosition();
+            parsingBuffer()->eraseToCurrentPosition();
             setTokenType(TokenType_EmptyElement);
             nextState = State_Finished;
         }

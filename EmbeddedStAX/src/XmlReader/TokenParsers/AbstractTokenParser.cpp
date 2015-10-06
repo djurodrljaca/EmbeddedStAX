@@ -129,6 +129,16 @@ uint32_t AbstractTokenParser::terminationChar() const
 }
 
 /**
+ * Get parsing buffer
+ *
+ * \return Parsing buffer
+ */
+ParsingBuffer *AbstractTokenParser::parsingBuffer()
+{
+    return m_parsingBuffer;
+}
+
+/**
  * Set token type
  *
  * \param tokenType New token type

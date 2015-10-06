@@ -303,7 +303,7 @@ AbstractTokenParser::Result ReferenceParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -333,7 +333,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingStartOfReference()
     State nextState = State_Error;
 
     // Check if more data is needed
-    if (m_parsingBuffer->isMoreDataNeeded())
+    if (parsingBuffer()->isMoreDataNeeded())
     {
         // More data is needed
         nextState = State_ReadingStartOfReference;
@@ -341,13 +341,13 @@ ReferenceParser::State ReferenceParser::executeStateReadingStartOfReference()
     else
     {
         // Check character
-        const uint32_t uchar = m_parsingBuffer->currentChar();
+        const uint32_t uchar = parsingBuffer()->currentChar();
 
         if (uchar == static_cast<uint32_t>('&'))
         {
             // Start of reference found, now start reading the referece type
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
+            parsingBuffer()->incrementPosition();
+            parsingBuffer()->eraseToCurrentPosition();
             nextState = State_ReadingReferenceType;
         }
         else
@@ -376,7 +376,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingReferenceType()
     State nextState = State_Error;
 
     // Check if more data is needed
-    if (m_parsingBuffer->isMoreDataNeeded())
+    if (parsingBuffer()->isMoreDataNeeded())
     {
         // More data is needed
         nextState = State_ReadingStartOfReference;
@@ -384,13 +384,13 @@ ReferenceParser::State ReferenceParser::executeStateReadingReferenceType()
     else
     {
         // Check character
-        const uint32_t uchar = m_parsingBuffer->currentChar();
+        const uint32_t uchar = parsingBuffer()->currentChar();
 
         if (uchar == static_cast<uint32_t>('#'))
         {
             // Character reference found, now start reading the character referece type
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
+            parsingBuffer()->incrementPosition();
+            parsingBuffer()->eraseToCurrentPosition();
             nextState = State_ReadingCharacterReferenceType;
         }
         else if (XmlValidator::isNameStartChar(uchar))
@@ -401,7 +401,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingReferenceType()
                 delete m_nameParser;
             }
 
-            m_nameParser = new NameParser(m_parsingBuffer);
+            m_nameParser = new NameParser(parsingBuffer());
             nextState = State_ReadingEntityReferenceName;
         }
         else
@@ -445,7 +445,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
         case Result_Success:
         {
             // Check for end of entity reference
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>(';'))
             {
@@ -455,8 +455,8 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EntityReference);
                 nextState = State_Finished;
             }
@@ -492,7 +492,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceTyp
     State nextState = State_Error;
 
     // Check if more data is needed
-    if (m_parsingBuffer->isMoreDataNeeded())
+    if (parsingBuffer()->isMoreDataNeeded())
     {
         // More data is needed
         nextState = State_ReadingStartOfReference;
@@ -500,13 +500,13 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceTyp
     else
     {
         // Check character
-        const uint32_t uchar = m_parsingBuffer->currentChar();
+        const uint32_t uchar = parsingBuffer()->currentChar();
 
         if (uchar == static_cast<uint32_t>('x'))
         {
             // Hexadecimal character reference found, now start reading it
-            m_parsingBuffer->incrementPosition();
-            m_parsingBuffer->eraseToCurrentPosition();
+            parsingBuffer()->incrementPosition();
+            parsingBuffer()->eraseToCurrentPosition();
             m_charRefValue = 0U;
             nextState = State_ReadingCharacterReferenceHexadecimal;
         }
@@ -548,7 +548,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceDec
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingCharacterReferenceDecimal;
@@ -556,7 +556,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceDec
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
             uint32_t digitValue;
 
             if (uchar == static_cast<uint32_t>(';'))
@@ -565,8 +565,8 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceDec
                 m_value.clear();
                 m_value.push_back(uchar);
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_CharacterReference);
                 nextState = State_Finished;
             }
@@ -578,7 +578,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceDec
                 if (Common::isUnicodeChar(m_charRefValue))
                 {
                     // Check next digit
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
                 else
@@ -619,7 +619,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceHex
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingCharacterReferenceHexadecimal;
@@ -627,7 +627,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceHex
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
             uint32_t digitValue;
 
             if (uchar == static_cast<uint32_t>(';'))
@@ -636,8 +636,8 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceHex
                 m_value.clear();
                 m_value.push_back(uchar);
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_CharacterReference);
                 nextState = State_Finished;
             }
@@ -649,7 +649,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingCharacterReferenceHex
                 if (Common::isUnicodeChar(m_charRefValue))
                 {
                     // Check next digit
-                    m_parsingBuffer->incrementPosition();
+                    parsingBuffer()->incrementPosition();
                     finishParsing = false;
                 }
                 else

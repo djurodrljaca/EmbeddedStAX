@@ -107,7 +107,7 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
                         delete m_nameParser;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer, Option_IgnoreLeadingWhitespace);
+                    m_nameParser = new NameParser(parsingBuffer(), Option_IgnoreLeadingWhitespace);
                     nextState = State_ReadingName;
                     finishParsing = false;
                     break;
@@ -190,7 +190,7 @@ AbstractTokenParser::Result DocumentTypeParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -274,7 +274,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingEnd;
@@ -282,12 +282,12 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
             {
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
 
                 if (m_documentType.isValid())
                 {
@@ -302,8 +302,8 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingEnd()
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // We are allowed to ignore whitespace characters
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 finishParsing = false;
             }
             else

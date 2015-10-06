@@ -108,7 +108,7 @@ AbstractTokenParser::Result EndOfElementParser::parse()
                         m_nameParser = NULL;
                     }
 
-                    m_nameParser = new NameParser(m_parsingBuffer, Option_None);
+                    m_nameParser = new NameParser(parsingBuffer(), Option_None);
 
                     // Execute another cycle
                     nextState = State_ReadingElementName;
@@ -199,7 +199,7 @@ AbstractTokenParser::Result EndOfElementParser::parse()
     if ((result == Result_Success) ||
         (result == Result_Error))
     {
-        m_parsingBuffer->eraseToCurrentPosition();
+        parsingBuffer()->eraseToCurrentPosition();
     }
 
     return result;
@@ -247,7 +247,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
         case Result_Success:
         {
             // Check for end of entity reference
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
             {
@@ -257,8 +257,8 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
@@ -270,8 +270,8 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
                 delete m_nameParser;
                 m_nameParser = NULL;
 
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_ReadingEndOfElement;
             }
             else
@@ -309,7 +309,7 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingEndOfElement()
         finishParsing = true;
 
         // Check if more data is needed
-        if (m_parsingBuffer->isMoreDataNeeded())
+        if (parsingBuffer()->isMoreDataNeeded())
         {
             // More data is needed
             nextState = State_ReadingEndOfElement;
@@ -317,21 +317,21 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingEndOfElement()
         else
         {
             // Check character
-            const uint32_t uchar = m_parsingBuffer->currentChar();
+            const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
             {
                 // End of element found
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EndOfElement);
                 nextState = State_Finished;
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
                 // Ignore trailing whitespace
-                m_parsingBuffer->incrementPosition();
-                m_parsingBuffer->eraseToCurrentPosition();
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
                 finishParsing = false;
             }
             else
