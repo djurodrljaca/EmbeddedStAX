@@ -40,9 +40,9 @@ AbstractTokenParser::AbstractTokenParser(ParsingBuffer *parsingBuffer,
                                          const Option option,
                                          const ParserType parserType)
     : m_parsingBuffer(parsingBuffer),
-      m_option(option),
       m_tokenFound(TokenType_None),
       m_terminationChar(0U),
+      m_option(option),
       m_parserType(parserType)
 {
 }

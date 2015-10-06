@@ -104,12 +104,12 @@ public:
 protected:
     // Protected data
     ParsingBuffer *m_parsingBuffer;
-    Option m_option;
     TokenType m_tokenFound;
     uint32_t m_terminationChar;
 
 private:
     // Private data
+    Option m_option;
     const ParserType m_parserType;
 };
 }

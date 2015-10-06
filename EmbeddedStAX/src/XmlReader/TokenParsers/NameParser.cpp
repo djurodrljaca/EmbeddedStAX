@@ -63,7 +63,7 @@ bool NameParser::isValid() const
 
     if (valid)
     {
-        switch (m_option)
+        switch (option())
         {
             case Option_None:
             case Option_IgnoreLeadingWhitespace:
@@ -102,7 +102,7 @@ bool NameParser::setOption(const AbstractTokenParser::Option parsingOption)
         case Option_IgnoreLeadingWhitespace:
         {
             // Valid option
-            m_option = parsingOption;
+            setOption(parsingOption);
             success = true;
             break;
         }
@@ -270,7 +270,7 @@ NameParser::State NameParser::executeStateReadingNameStartChar()
             {
                 if (XmlValidator::isWhitespace(uchar))
                 {
-                    if (m_option == Option_IgnoreLeadingWhitespace)
+                    if (option() == Option_IgnoreLeadingWhitespace)
                     {
                         // We are allowed to ignore whitespace characters
                         m_parsingBuffer->incrementPosition();

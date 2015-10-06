@@ -80,9 +80,11 @@ int main(int argc, char **argv)
             {
                 const Common::ProcessingInstruction processingInstruction =
                         xmlReader.processingInstruction();
+                const std::string name = Common::Utf8::toUtf8(processingInstruction.piTarget());
+                const std::string data = Common::Utf8::toUtf8(processingInstruction.piData());
 
-                std::cout << "Processing Instruction: name = " << processingInstruction.piTarget()
-                          << ", data = " << processingInstruction.piData() << std::endl;
+                std::cout << "Processing Instruction: name = " << name << ", data = " << data
+                          << std::endl;
                 break;
             }
 

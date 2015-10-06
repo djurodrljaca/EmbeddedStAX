@@ -70,7 +70,7 @@ bool AttributeValueParser::isValid() const
 
     if (valid)
     {
-        switch (m_option)
+        switch (option())
         {
             case Option_None:
             case Option_IgnoreLeadingWhitespace:
@@ -109,7 +109,7 @@ bool AttributeValueParser::setOption(const AbstractTokenParser::Option parsingOp
         case Option_IgnoreLeadingWhitespace:
         {
             // Valid option
-            m_option = parsingOption;
+            setOption(parsingOption);
             success = true;
             break;
         }
@@ -327,7 +327,7 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingQuotationMa
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
-                if (m_option == Option_IgnoreLeadingWhitespace)
+                if (option() == Option_IgnoreLeadingWhitespace)
                 {
                     // Ignore leading whitespace
                     finishParsing = false;

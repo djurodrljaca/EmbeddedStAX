@@ -60,7 +60,7 @@ bool CommentParser::isValid() const
 
     if (valid)
     {
-        switch (m_option)
+        switch (option())
         {
             case Option_None:
             {

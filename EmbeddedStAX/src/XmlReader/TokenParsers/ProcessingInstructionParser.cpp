@@ -69,7 +69,7 @@ bool ProcessingInstructionParser::isValid() const
 
     if (valid)
     {
-        if (m_option != Option_None)
+        if (option() != Option_None)
         {
             valid = false;
         }
@@ -337,8 +337,8 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
                         }
                         else
                         {
-                            m_processingInstruction.setPiTarget(Common::Utf8::toUtf8(m_piTarget));
-                            m_processingInstruction.setPiData(Common::Utf8::toUtf8(piData));
+                            m_processingInstruction.setPiTarget(m_piTarget);
+                            m_processingInstruction.setPiData(piData);
 
                             if (m_processingInstruction.isValid())
                             {

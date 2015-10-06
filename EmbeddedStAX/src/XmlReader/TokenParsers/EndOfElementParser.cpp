@@ -68,7 +68,7 @@ bool EndOfElementParser::isValid() const
 
     if (valid)
     {
-        if (m_option != Option_None)
+        if (option() != Option_None)
         {
             valid = false;
         }

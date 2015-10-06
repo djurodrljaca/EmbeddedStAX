@@ -62,7 +62,7 @@ bool TokenTypeParser::isValid() const
 
     if (valid)
     {
-        switch (m_option)
+        switch (option())
         {
             case Option_None:
             case Option_IgnoreLeadingWhitespace:
@@ -103,7 +103,7 @@ bool TokenTypeParser::setOption(const AbstractTokenParser::Option parsingOption)
         case Option_Synchronization:
         {
             // Valid option
-            m_option = parsingOption;
+            setOption(parsingOption);
             success = true;
             break;
         }
@@ -401,7 +401,7 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
             }
             else
             {
-                if (m_option == Option_Synchronization)
+                if (option() == Option_Synchronization)
                 {
                     // On synchronization option ignore all other characters
                     m_parsingBuffer->incrementPosition();
@@ -412,7 +412,7 @@ TokenTypeParser::State TokenTypeParser::executeStateWaitingForStartOfToken()
                 {
                     if (XmlValidator::isWhitespace(uchar))
                     {
-                        if (m_option == Option_IgnoreLeadingWhitespace)
+                        if (option() == Option_IgnoreLeadingWhitespace)
                         {
                             // We are allowed to ignore whitespace characters
                             m_parsingBuffer->incrementPosition();

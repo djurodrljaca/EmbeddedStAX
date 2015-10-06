@@ -28,7 +28,7 @@
 #ifndef EMBEDDEDSTAX_COMMON_PROCESSINGINSTRUCTION_H
 #define EMBEDDEDSTAX_COMMON_PROCESSINGINSTRUCTION_H
 
-#include <string>
+#include <EmbeddedStAX/Common/Utf.h>
 #include <stdint.h>
 
 namespace EmbeddedStAX
@@ -39,22 +39,22 @@ class ProcessingInstruction
 {
 public:
     // Public API
-    ProcessingInstruction(const std::string &piTarget = std::string(),
-                          const std::string &piData = std::string());
+    ProcessingInstruction(const UnicodeString &piTarget = UnicodeString(),
+                          const UnicodeString &piData = UnicodeString());
 
     bool isValid() const;
     void clear();
 
-    std::string piTarget() const;
-    void setPiTarget(const std::string &piTarget);
+    UnicodeString piTarget() const;
+    void setPiTarget(const UnicodeString &piTarget);
 
-    std::string piData() const;
-    void setPiData(const std::string &piData);
+    UnicodeString piData() const;
+    void setPiData(const UnicodeString &piData);
 
 private:
     // Private data
-    std::string m_piTarget;
-    std::string m_piData;
+    UnicodeString m_piTarget;
+    UnicodeString m_piData;
 };
 }
 }

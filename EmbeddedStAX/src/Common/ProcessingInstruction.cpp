@@ -36,8 +36,8 @@ using namespace EmbeddedStAX::Common;
  * \param piTarget  Processing instruction name
  * \param piData    Processing instruction data
  */
-ProcessingInstruction::ProcessingInstruction(const std::string &piTarget,
-                                             const std::string &piData)
+ProcessingInstruction::ProcessingInstruction(const UnicodeString &piTarget,
+                                             const UnicodeString &piData)
     : m_piTarget(piTarget),
       m_piData(piData)
 {
@@ -75,7 +75,7 @@ void ProcessingInstruction::clear()
  *
  * \return Processing instruction name
  */
-std::string ProcessingInstruction::piTarget() const
+UnicodeString ProcessingInstruction::piTarget() const
 {
     return m_piTarget;
 }
@@ -85,7 +85,7 @@ std::string ProcessingInstruction::piTarget() const
  *
  * \param piTarget  Processing instruction name
  */
-void ProcessingInstruction::setPiTarget(const std::string &piTarget)
+void ProcessingInstruction::setPiTarget(const UnicodeString &piTarget)
 {
     m_piTarget = piTarget;
 }
@@ -95,7 +95,7 @@ void ProcessingInstruction::setPiTarget(const std::string &piTarget)
  *
  * \return Processing instruction data
  */
-std::string ProcessingInstruction::piData() const
+UnicodeString ProcessingInstruction::piData() const
 {
     return m_piData;
 }
@@ -105,7 +105,7 @@ std::string ProcessingInstruction::piData() const
  *
  * \param piData    Processing instruction data
  */
-void ProcessingInstruction::setPiData(const std::string &piData)
+void ProcessingInstruction::setPiData(const UnicodeString &piData)
 {
     m_piData = piData;
 }
