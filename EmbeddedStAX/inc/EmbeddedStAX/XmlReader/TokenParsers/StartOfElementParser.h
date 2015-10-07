@@ -57,10 +57,10 @@ private:
     enum State
     {
         State_ReadingElementName,
+        State_ReadingNextItem,
         State_ReadingAttributeName,
         State_ReadingEqualSign,
         State_ReadingAttributeValue,
-        State_ReadingNextAttribute,
         State_ReadingEndOfEmptyElement,
         State_Finished,
         State_Error
@@ -69,12 +69,13 @@ private:
 private:
     // Private API
     virtual bool initializeAdditionalData();
+    virtual void deinitializeAdditionalData();
 
     State executeStateReadingElementName();
+    State executeStateReadingNextItem();
     State executeStateReadingAttributeName();
     State executeStateReadingEqualSign();
     State executeStateReadingAttributeValue();
-    State executeStateReadingNextAttribute();
     State executeStateReadingEndOfEmptyElement();
 
 private:

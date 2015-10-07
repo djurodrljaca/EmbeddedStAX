@@ -80,14 +80,14 @@ void XmlReader::startNewDocument()
     m_attributeList.clear();
     m_openElementList.clear();
 
-    m_cDataParser.initialize(&m_parsingBuffer);
-    m_commentParser.initialize(&m_parsingBuffer);
-    m_documentTypeParser.initialize(&m_parsingBuffer);
-    m_endOfElementParser.initialize(&m_parsingBuffer);
-    m_processingInstructionParser.initialize(&m_parsingBuffer);
-    m_startOfElementParser.initialize(&m_parsingBuffer);
-    m_tokenTypeParser.initialize(&m_parsingBuffer);
-    m_textNodeParser.initialize(&m_parsingBuffer);
+    m_cDataParser.deinitialize();
+    m_commentParser.deinitialize();
+    m_documentTypeParser.deinitialize();
+    m_endOfElementParser.deinitialize();
+    m_processingInstructionParser.deinitialize();
+    m_startOfElementParser.deinitialize();
+    m_tokenTypeParser.deinitialize();
+    m_textNodeParser.deinitialize();
 }
 
 /**
@@ -438,7 +438,8 @@ XmlReader::ParsingResult XmlReader::parse()
                     m_documentState = DocumentState_EndOfDocument;
                 }
 
-                m_name.clear();
+                // Name must not be cleared (it holds the name of the "closed" empty element), but
+                // the attributes can be cleared
                 m_attributeList.clear();
 
                 // For an empty element, just return the "end of element" result
@@ -1291,7 +1292,7 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingTextNode()
         case TextNodeParser::Result_Success:
         {
             // Save text node
-            m_text = m_textNodeParser.text();;
+            m_text = m_textNodeParser.text();
             nextState = ParsingState_TextNodeRead;
             break;
         }
@@ -1332,7 +1333,8 @@ XmlReader::ParsingState XmlReader::executeParsingStateReadingCData()
         case CDataParser::Result_Success:
         {
             // Save CDATA text
-            m_text = m_cDataParser.text();;
+            m_text = m_cDataParser.text();
+            m_cDataParser.deinitialize();
             nextState = ParsingState_CDataRead;
             break;
         }

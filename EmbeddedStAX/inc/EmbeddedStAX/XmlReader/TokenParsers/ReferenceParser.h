@@ -65,6 +65,7 @@ private:
 private:
     // Private API
     virtual bool initializeAdditionalData();
+    virtual void deinitializeAdditionalData();
 
     State executeStateReadingStartOfReference();
     State executeStateReadingReferenceType();

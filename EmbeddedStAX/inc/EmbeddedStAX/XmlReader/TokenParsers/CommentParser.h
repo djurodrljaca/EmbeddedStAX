@@ -60,6 +60,7 @@ private:
 private:
     // Private API
     virtual bool initializeAdditionalData();
+    virtual void deinitializeAdditionalData();
 
     State executeStateReadingComment();
 

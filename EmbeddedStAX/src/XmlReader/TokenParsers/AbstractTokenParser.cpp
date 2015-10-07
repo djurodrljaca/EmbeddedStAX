@@ -120,18 +120,30 @@ bool AbstractTokenParser::initialize(ParsingBuffer *parsingBuffer,
         m_terminationChar = 0U;
 
         success = setOption(option);
-    }
 
-    if (success)
-    {
-        // It is important that everyting else is initialized up to this point
-        success = initializeAdditionalData();
+        if (success)
+        {
+            success = initializeAdditionalData();
+        }
     }
 
     // Update initialized flag
     m_initialized = success;
 
     return success;
+}
+
+/**
+ * Deinitialize the parser
+ */
+void AbstractTokenParser::deinitialize()
+{
+    deinitializeAdditionalData();
+    m_initialized = false;
+    m_parsingBuffer = NULL;
+    m_option = Option_None;
+    m_tokenType = TokenType_None;
+    m_terminationChar = 0U;
 }
 
 /**
@@ -189,17 +201,4 @@ void AbstractTokenParser::setTokenType(const AbstractTokenParser::TokenType toke
 void AbstractTokenParser::setTerminationChar(const uint32_t uchar)
 {
     m_terminationChar = uchar;
-}
-
-/**
- * Initialize parser's additional data
- *
- * \retval true     Success
- * \retval false    Error
- *
- * \note It has to be overriden in a derived class if it contains any additional data!
- */
-bool AbstractTokenParser::initializeAdditionalData()
-{
-    return true;
 }

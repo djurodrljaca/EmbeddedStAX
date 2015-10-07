@@ -199,6 +199,17 @@ bool ProcessingInstructionParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void ProcessingInstructionParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingPiTarget;
+    m_processingInstruction.clear();
+    m_xmlDeclaration.clear();
+    m_nameParser.deinitialize();
+}
+
+/**
  * Execute state: Reading PITarget
  *
  * \retval State_ReadingPiTarget        Wait for more data
@@ -229,6 +240,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
             case Result_Success:
             {
                 m_piTarget = m_nameParser.value();
+                m_nameParser.deinitialize();
                 nextState = State_ReadingPiData;
                 break;
             }
@@ -236,6 +248,7 @@ ProcessingInstructionParser::State ProcessingInstructionParser::executeStateRead
             default:
             {
                 // Error
+                m_nameParser.deinitialize();
                 break;
             }
         }

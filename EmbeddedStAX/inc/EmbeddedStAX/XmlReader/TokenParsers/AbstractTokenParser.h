@@ -97,6 +97,7 @@ public:
 
     bool initialize(ParsingBuffer *parsingBuffer, const Option option = Option_None);
     virtual Result parse() = 0;
+    void deinitialize();
 
 protected:
     // Protected API
@@ -105,7 +106,8 @@ protected:
     ParsingBuffer *parsingBuffer();
     void setTokenType(const TokenType tokenType);
     void setTerminationChar(const uint32_t uchar);
-    virtual bool initializeAdditionalData();
+    virtual bool initializeAdditionalData() = 0;
+    virtual void deinitializeAdditionalData() = 0;
 
 private:
     // Private data

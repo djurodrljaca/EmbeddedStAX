@@ -254,8 +254,19 @@ bool AttributeValueParser::initializeAdditionalData()
     m_value.clear();
     m_quotationMark = Common::QuotationMark_None;
     parsingBuffer()->eraseToCurrentPosition();
+    m_referenceParser.deinitialize();
+    return true;
+}
 
-    return m_referenceParser.initialize(parsingBuffer());;
+/**
+ * Deinitialize parser's additional data
+ */
+void AttributeValueParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingQuotationMark;
+    m_value.clear();
+    m_quotationMark = Common::QuotationMark_None;
+    m_referenceParser.deinitialize();
 }
 
 /**
@@ -509,12 +520,15 @@ AttributeValueParser::State AttributeValueParser::executeStateReadingReference()
                     break;
                 }
             }
+
+            m_referenceParser.deinitialize();
             break;
         }
 
         default:
         {
             // Error
+            m_referenceParser.deinitialize();
             break;
         }
     }

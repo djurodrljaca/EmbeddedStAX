@@ -152,6 +152,15 @@ bool CommentParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void CommentParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingComment;
+    m_text.clear();
+}
+
+/**
  * Execute state: Reading comment
  *
  * \retval State_ReadingComment Wait for more data

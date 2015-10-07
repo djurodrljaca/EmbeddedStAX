@@ -186,6 +186,16 @@ bool DocumentTypeParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void DocumentTypeParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingName;
+    m_documentType.clear();
+    m_nameParser.deinitialize();
+}
+
+/**
  * Execute state: Reading name of the root element
  *
  * \retval State_ReadingName    Wait for more data
@@ -216,6 +226,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
             case Result_Success:
             {
                 m_documentType.setName(m_nameParser.value());
+                m_nameParser.deinitialize();
 
                 // Read end of document type
                 nextState = State_ReadingEnd;
@@ -225,6 +236,7 @@ DocumentTypeParser::State DocumentTypeParser::executeStateReadingName()
             default:
             {
                 // Error
+                m_nameParser.deinitialize();
                 break;
             }
         }

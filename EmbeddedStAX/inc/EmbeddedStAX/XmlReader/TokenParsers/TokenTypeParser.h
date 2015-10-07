@@ -64,6 +64,7 @@ private:
     // Private API
     virtual bool setOption(const Option option);
     virtual bool initializeAdditionalData();
+    virtual void deinitializeAdditionalData();
 
     State executeStateWaitingForStartOfToken();
     State executeStateReadingTokenType();

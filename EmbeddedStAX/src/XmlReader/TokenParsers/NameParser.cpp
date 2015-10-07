@@ -217,6 +217,15 @@ bool NameParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void NameParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingNameStartChar;
+    m_value.clear();
+}
+
+/**
  * Execute state: Reading name start character
  *
  * \retval State_ReadingNameStartChar   Wait for more data

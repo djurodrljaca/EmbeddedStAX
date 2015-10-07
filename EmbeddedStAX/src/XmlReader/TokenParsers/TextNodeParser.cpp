@@ -192,8 +192,18 @@ bool TextNodeParser::initializeAdditionalData()
     m_state = State_ReadingText;
     m_text.clear();
     parsingBuffer()->eraseToCurrentPosition();
+    m_referenceParser.deinitialize();
+    return true;
+}
 
-    return m_referenceParser.initialize(parsingBuffer());
+/**
+ * Deinitialize parser's additional data
+ */
+void TextNodeParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingText;
+    m_text.clear();
+    m_referenceParser.deinitialize();
 }
 
 /**
@@ -375,12 +385,15 @@ TextNodeParser::State TextNodeParser::executeStateReadingReference()
                     break;
                 }
             }
+
+            m_referenceParser.deinitialize();
             break;
         }
 
         default:
         {
             // Error
+            m_referenceParser.deinitialize();
             break;
         }
     }

@@ -341,6 +341,14 @@ bool TokenTypeParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void TokenTypeParser::deinitializeAdditionalData()
+{
+    m_state = State_WaitingForStartOfToken;
+}
+
+/**
  * Execute state: Waiting for start of token
  *
  * \retval State_WaitingForStartOfToken Wait for more data

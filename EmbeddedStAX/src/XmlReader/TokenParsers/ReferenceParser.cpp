@@ -308,8 +308,19 @@ bool ReferenceParser::initializeAdditionalData()
     m_value.clear();
     m_charRefValue = 0U;
     parsingBuffer()->eraseToCurrentPosition();
+    m_nameParser.deinitialize();
+    return true;
+}
 
-    return m_nameParser.initialize(parsingBuffer());
+/**
+ * Deinitialize parser's additional data
+ */
+void ReferenceParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingStartOfReference;
+    m_value.clear();
+    m_charRefValue = 0U;
+    m_nameParser.deinitialize();
 }
 
 /**
@@ -445,6 +456,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
             {
                 // End of entity reference found
                 m_value = m_nameParser.value();
+                m_nameParser.deinitialize();
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
                 setTokenType(TokenType_EntityReference);
@@ -456,6 +468,7 @@ ReferenceParser::State ReferenceParser::executeStateReadingEntityReferenceName()
         default:
         {
             // Error
+            m_nameParser.deinitialize();
             break;
         }
     }

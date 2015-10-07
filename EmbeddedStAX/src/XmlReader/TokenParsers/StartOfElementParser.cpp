@@ -27,6 +27,7 @@
 
 #include <EmbeddedStAX/XmlReader/TokenParsers/StartOfElementParser.h>
 #include <EmbeddedStAX/XmlValidator/Common.h>
+#include <EmbeddedStAX/XmlValidator/Name.h>
 
 using namespace EmbeddedStAX::XmlReader;
 
@@ -107,7 +108,46 @@ AbstractTokenParser::Result StartOfElementParser::parse()
                             break;
                         }
 
+                        case State_ReadingNextItem:
+                        case State_ReadingEndOfEmptyElement:
+                        {
+                            // Execute another cycle
+                            finishParsing = false;
+                            break;
+                        }
+
+                        case State_Finished:
+                        {
+                            result = Result_Success;
+                            break;
+                        }
+
+                        default:
+                        {
+                            // Error
+                            nextState = State_Error;
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                case State_ReadingNextItem:
+                {
+                    // Reading next item
+                    nextState = executeStateReadingNextItem();
+
+                    // Check transitions
+                    switch (nextState)
+                    {
+                        case State_ReadingNextItem:
+                        {
+                            result = Result_NeedMoreData;
+                            break;
+                        }
+
                         case State_ReadingAttributeName:
+                        case State_ReadingElementName:
                         case State_ReadingEndOfEmptyElement:
                         {
                             // Execute another cycle
@@ -214,48 +254,10 @@ AbstractTokenParser::Result StartOfElementParser::parse()
                             break;
                         }
 
-                        case State_ReadingNextAttribute:
+                        case State_ReadingNextItem:
                         {
                             // Execute another cycle
                             finishParsing = false;
-                            break;
-                        }
-
-                        default:
-                        {
-                            // Error
-                            nextState = State_Error;
-                            break;
-                        }
-                    }
-                    break;
-                }
-
-                case State_ReadingNextAttribute:
-                {
-                    // Reading next attribute
-                    nextState = executeStateReadingNextAttribute();
-
-                    // Check transitions
-                    switch (nextState)
-                    {
-                        case State_ReadingNextAttribute:
-                        {
-                            result = Result_NeedMoreData;
-                            break;
-                        }
-
-                        case State_ReadingAttributeName:
-                        case State_ReadingElementName:
-                        {
-                            // Execute another cycle
-                            finishParsing = false;
-                            break;
-                        }
-
-                        case State_Finished:
-                        {
-                            result = Result_Success;
                             break;
                         }
 
@@ -340,22 +342,29 @@ bool StartOfElementParser::initializeAdditionalData()
     m_attributeName.clear();
     m_attributeList.clear();
     parsingBuffer()->eraseToCurrentPosition();
+    m_attributeValueParser.deinitialize();
 
-    bool success = m_nameParser.initialize(parsingBuffer());
+    return m_nameParser.initialize(parsingBuffer());
+}
 
-    if (success)
-    {
-        success = m_attributeValueParser.initialize(parsingBuffer());
-    }
-
-    return success;
+/**
+ * Deinitialize parser's additional data
+ */
+void StartOfElementParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingElementName;
+    m_elementName.clear();
+    m_attributeName.clear();
+    m_attributeList.clear();
+    m_nameParser.deinitialize();
+    m_attributeValueParser.deinitialize();
 }
 
 /**
  * Execute state: Reading element name
  *
  * \retval State_ReadingElementName         Wait for more data
- * \retval State_ReadingAttributeName       Whitespace found
+ * \retval State_ReadingNextItem            Whitespace found
  * \retval State_ReadingEndOfEmptyElement   End of empty element found
  * \retval State_Finished                   End of start of element found
  * \retval State_Error                      Error, unexpected character
@@ -384,7 +393,6 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
 
         case Result_Success:
         {
-            // Check for end of entity reference
             const uint32_t uchar = parsingBuffer()->currentChar();
 
             if (uchar == static_cast<uint32_t>('>'))
@@ -408,27 +416,97 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingElementName
             }
             else if (XmlValidator::isWhitespace(uchar))
             {
-                // End of element name, try to read attribute name
+                // End of element name, start reading next item
                 m_elementName = m_nameParser.value();
                 m_attributeList.clear();
                 parsingBuffer()->incrementPosition();
                 parsingBuffer()->eraseToCurrentPosition();
-
-                m_nameParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
-                nextState = State_ReadingAttributeName;
+                nextState = State_ReadingNextItem;
             }
             else
             {
                 // Error, invalid character
                 setTerminationChar(uchar);
             }
+
+            m_nameParser.deinitialize();
             break;
         }
 
         default:
         {
             // Error
+            m_nameParser.deinitialize();
             break;
+        }
+    }
+
+    return nextState;
+}
+
+/**
+ * Execute state: Reading next item
+ *
+ * \retval State_ReadingNextItem            Wait for more data
+ * \retval State_ReadingAttributeName       Start of attribute name found
+ * \retval State_ReadingEndOfEmptyElement   End of empty element found
+ * \retval State_ReadingFinished            End of start of element found
+ * \retval State_Error                      Error, unexpected character
+ */
+StartOfElementParser::State StartOfElementParser::executeStateReadingNextItem()
+{
+    State nextState = State_Error;
+    bool finishParsing = false;
+
+    while (!finishParsing)
+    {
+        finishParsing = true;
+
+        // Check if more data is needed
+        if (parsingBuffer()->isMoreDataNeeded())
+        {
+            // More data is needed
+            nextState = State_ReadingNextItem;
+        }
+        else
+        {
+            // Check character
+            const uint32_t uchar = parsingBuffer()->currentChar();
+
+            if (uchar == static_cast<uint32_t>('>'))
+            {
+                // End of start of element found
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
+                setTokenType(TokenType_StartOfElement);
+                nextState = State_Finished;
+            }
+            else if (uchar == static_cast<uint32_t>('/'))
+            {
+                // End of empty element found
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
+                nextState = State_ReadingEndOfEmptyElement;
+            }
+            else if (XmlValidator::isNameStartChar(uchar))
+            {
+                // Start of attribute name found, start reading the next attribute
+                parsingBuffer()->eraseToCurrentPosition();
+                m_nameParser.initialize(parsingBuffer());
+                nextState = State_ReadingAttributeName;
+            }
+            else if (XmlValidator::isWhitespace(uchar))
+            {
+                // Whitespace found, ignore it
+                parsingBuffer()->incrementPosition();
+                parsingBuffer()->eraseToCurrentPosition();
+                finishParsing = false;
+            }
+            else
+            {
+                // Error, invalid character
+                setTerminationChar(uchar);
+            }
         }
     }
 
@@ -464,6 +542,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
         {
             // End of attribute name found
             m_attributeName = m_nameParser.value();
+            m_nameParser.deinitialize();
             nextState = State_ReadingEqualSign;
             break;
         }
@@ -472,6 +551,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
         {
             // Check for end of entity reference
             const uint32_t terminationChar = m_nameParser.terminationChar();
+            m_nameParser.deinitialize();
 
             if (terminationChar == static_cast<uint32_t>('>'))
             {
@@ -498,7 +578,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeNa
 
         default:
         {
-            // Error
+            // Should never be reached! (defensive programing)
             break;
         }
     }
@@ -589,79 +669,19 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeVa
         case Result_Success:
         {
             // Add attribute to the attribute list
-            Common::Attribute attribute(m_attributeName, m_attributeValueParser.value());
+            const Common::Attribute attribute(m_attributeName, m_attributeValueParser.value());
             m_attributeList.push_back(attribute);
-            nextState = State_ReadingNextAttribute;
+            m_attributeName.clear();
+            m_attributeValueParser.deinitialize();
+            nextState = State_ReadingNextItem;
             break;
         }
 
         default:
         {
             // Error
+            m_attributeValueParser.deinitialize();
             break;
-        }
-    }
-
-    return nextState;
-}
-
-/**
- * Execute state: Reading next attribute
- *
- * \retval State_ReadingNextAttribute       Wait for more data
- * \retval State_ReadingAttributeName       Start of attribute name found
- * \retval State_ReadingEndOfEmptyElement   End of empty element found
- * \retval State_ReadingFinished            End of start of element found
- * \retval State_Error                      Error, unexpected character
- */
-StartOfElementParser::State StartOfElementParser::executeStateReadingNextAttribute()
-{
-    State nextState = State_Error;
-    bool finishParsing = false;
-
-    while (!finishParsing)
-    {
-        finishParsing = true;
-
-        // Check if more data is needed
-        if (parsingBuffer()->isMoreDataNeeded())
-        {
-            // More data is needed
-            nextState = State_ReadingEqualSign;
-        }
-        else
-        {
-            // Check character
-            const uint32_t uchar = parsingBuffer()->currentChar();
-
-            if (uchar == static_cast<uint32_t>('>'))
-            {
-                // End of start of element found
-                parsingBuffer()->incrementPosition();
-                parsingBuffer()->eraseToCurrentPosition();
-                setTokenType(TokenType_StartOfElement);
-                nextState = State_Finished;
-            }
-            else if (uchar == static_cast<uint32_t>('/'))
-            {
-                // End of empty element found
-                parsingBuffer()->incrementPosition();
-                parsingBuffer()->eraseToCurrentPosition();
-                nextState = State_ReadingEndOfEmptyElement;
-            }
-            else if (XmlValidator::isWhitespace(uchar))
-            {
-                // Whitespace found, try to read attribute name
-                parsingBuffer()->incrementPosition();
-                parsingBuffer()->eraseToCurrentPosition();
-                m_nameParser.initialize(parsingBuffer(), Option_IgnoreLeadingWhitespace);
-                nextState = State_ReadingAttributeName;
-            }
-            else
-            {
-                // Error, invalid character
-                setTerminationChar(uchar);
-            }
         }
     }
 

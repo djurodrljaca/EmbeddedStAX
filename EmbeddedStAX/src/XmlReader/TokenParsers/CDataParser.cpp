@@ -152,6 +152,15 @@ bool CDataParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void CDataParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingCData;
+    m_text.clear();
+}
+
+/**
  * Execute state: Reading CDATA
  *
  * \retval State_ReadingCData   Wait for more data

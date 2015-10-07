@@ -191,6 +191,16 @@ bool EndOfElementParser::initializeAdditionalData()
 }
 
 /**
+ * Deinitialize parser's additional data
+ */
+void EndOfElementParser::deinitializeAdditionalData()
+{
+    m_state = State_ReadingElementName;
+    m_elementName.clear();
+    m_nameParser.deinitialize();
+}
+
+/**
  * Execute state: Reading element name
  *
  * \retval State_ReadingElementName     Wait for more data
@@ -246,12 +256,15 @@ EndOfElementParser::State EndOfElementParser::executeStateReadingElementName()
                 // Error, invalid character
                 setTerminationChar(uchar);
             }
+
+            m_nameParser.deinitialize();
             break;
         }
 
         default:
         {
             // Error
+            m_nameParser.deinitialize();
             break;
         }
     }
