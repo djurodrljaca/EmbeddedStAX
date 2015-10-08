@@ -76,7 +76,6 @@ private:
     ReferenceParser m_referenceParser;
     Common::UnicodeString m_value;
     Common::QuotationMark m_quotationMark;
-    // TODO: add a flag for unprocessed entity references?
 };
 }
 }

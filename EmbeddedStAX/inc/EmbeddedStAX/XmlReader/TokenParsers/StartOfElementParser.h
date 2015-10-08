@@ -31,7 +31,6 @@
 #include <EmbeddedStAX/XmlReader/TokenParsers/NameParser.h>
 #include <EmbeddedStAX/XmlReader/TokenParsers/AttributeValueParser.h>
 #include <EmbeddedStAX/Common/Attribute.h>
-#include <list>
 
 namespace EmbeddedStAX
 {
@@ -48,7 +47,7 @@ public:
     ~StartOfElementParser();
 
     Common::UnicodeString name() const;
-    std::list<Common::Attribute> attributeList() const;
+    const Common::AttributeList &attributeList() const;
 
     Result parse();
 
@@ -85,7 +84,7 @@ private:
     AttributeValueParser m_attributeValueParser;
     Common::UnicodeString m_elementName;
     Common::UnicodeString m_attributeName;
-    std::list<Common::Attribute> m_attributeList;
+    Common::AttributeList m_attributeList;
 };
 }
 }

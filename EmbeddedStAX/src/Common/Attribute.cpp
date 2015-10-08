@@ -51,6 +51,30 @@ Attribute::Attribute(const UnicodeString &name,
 }
 
 /**
+ * Copy constructor
+ *
+ * \param attribute Attribute
+ */
+Attribute::Attribute(const Attribute &other)
+    : m_name(other.m_name),
+      m_value(other.m_value),
+      m_quotationMark(other.m_quotationMark)
+{
+}
+
+Attribute &Attribute::operator=(const Attribute &other)
+{
+    if (this != &other)
+    {
+        m_name = other.m_name;
+        m_value = other.m_value;
+        m_quotationMark = other.m_quotationMark;
+    }
+
+    return *this;
+}
+
+/**
  * Check if attribute is valid
  *
  * \retval true     Valid
@@ -132,7 +156,302 @@ QuotationMark Attribute::valueQuotationMark() const
     return m_quotationMark;
 }
 
+/**
+ * Set attribute value's quotation mark
+ *
+ * \param quotationMark Attribute value's quotation mark
+ */
 void Attribute::setValueQuotationMark(const QuotationMark &quotationMark)
 {
     m_quotationMark = quotationMark;
+}
+
+/**
+ * Constructor
+ */
+AttributeList::Node::Node()
+    : item(),
+      next(NULL)
+{
+}
+
+/**
+ * Constructor
+ *
+ * \param attribute Attribute
+ */
+AttributeList::Node::Node(const Attribute &attribute)
+    : item(attribute),
+      next(NULL)
+{
+}
+
+/**
+ * Constructor
+ *
+ * \note Should only be used from the AttributeList class
+ */
+AttributeList::Iterator::Iterator(const Node *node)
+    : m_node(node)
+{
+}
+
+/**
+ * Copy constructor
+ *
+ * \param other The input instance
+ */
+AttributeList::Iterator::Iterator(const Iterator &other)
+    : m_node(other.m_node)
+{
+}
+
+/**
+ * Assignment operator
+ *
+ * \param other The input instance
+ *
+ * \return Constant reference to this instance
+ */
+AttributeList::Iterator &AttributeList::Iterator::operator=(const Iterator &other)
+{
+    if (this != &other)
+    {
+        this->m_node = other.m_node;
+    }
+
+    return *this;
+}
+
+/**
+ * Get next attribute in the list
+ */
+void AttributeList::Iterator::next()
+{
+    if (m_node != NULL)
+    {
+        m_node = m_node->next;
+    }
+}
+
+/**
+ * Check if the current attribute in the iterator is valid
+ *
+ * \retval true     Attribute is valid
+ * \retval false    Attribute is not valid
+ */
+bool AttributeList::Iterator::isValid()
+{
+    bool valid = false;
+
+    if (m_node != NULL)
+    {
+        valid = true;
+    }
+
+    return valid;
+}
+
+/**
+ * Get current attribute
+ *
+ * \return Current attribute or NULL pointer if iterator doesn't point to a valid list item
+ */
+const Attribute *AttributeList::Iterator::value() const
+{
+    const Attribute *attribute = NULL;
+
+    if (m_node != NULL)
+    {
+        attribute = &(m_node->item);
+    }
+
+    return attribute;
+}
+
+/**
+ * Constructor
+ */
+AttributeList::AttributeList()
+    : m_size(0U),
+      m_firstNode(NULL),
+      m_lastNode(NULL)
+{
+}
+
+/**
+ * Copy constructor
+ *
+ * \param other The input instance
+ */
+AttributeList::AttributeList(const AttributeList &other)
+    : m_size(0U),
+      m_firstNode(NULL),
+      m_lastNode(NULL)
+{
+    for (Iterator it = other.first(); it.isValid(); it.next())
+    {
+        const Attribute *attribute = it.value();
+
+        if (attribute != NULL)
+        {
+            add(*attribute);
+        }
+        else
+        {
+            clear();
+        }
+    }
+}
+
+/**
+ * Destructor
+ */
+AttributeList::~AttributeList()
+{
+    clear();
+}
+
+/**
+ * Assignment operator
+ *
+ * \param other The input instance
+ *
+ * \return Constant reference to this instance
+ */
+AttributeList &AttributeList::operator=(AttributeList other)
+{
+    // Input instance is created with a copy constructor, so we can just swap the member data
+    const size_t tempSize = this->m_size;
+    this->m_size = other.m_size;
+    other.m_size = tempSize;
+
+    Node * tempFirstNode = this->m_firstNode;
+    this->m_firstNode = other.m_firstNode;
+    other.m_firstNode = tempFirstNode;
+
+    Node * tempLastNode = this->m_lastNode;
+    this->m_lastNode = other.m_lastNode;
+    other.m_lastNode = tempLastNode;
+
+    return *this;
+}
+
+/**
+ * Clear the list
+ */
+void AttributeList::clear()
+{
+    Node *node = m_firstNode;
+
+    m_size = 0U;
+    m_firstNode = NULL;
+    m_lastNode = NULL;
+
+    while (node != NULL)
+    {
+        Node *nextNode = node->next;
+        delete node;
+        node = nextNode;
+    }
+}
+
+/**
+ * Get size of the list
+ */
+size_t AttributeList::size() const
+{
+    return m_size;
+}
+
+/**
+ * Add attribute to the list
+ *
+ * \param attribute Attribute to add
+ */
+void AttributeList::add(const Attribute &attribute)
+{
+    // Create new node
+    Node *node = new Node(attribute);
+
+    if (m_firstNode == NULL)
+    {
+        m_firstNode = node;
+        m_lastNode = node;
+        m_size = 1U;
+    }
+    else
+    {
+        m_lastNode->next = node;
+        m_lastNode = node;
+        m_size++;
+    }
+}
+
+/**
+ * Search for attribute by name
+ *
+ * \param name  Name of the requested attribute
+ *
+ * \return Requested attribute or NULL if an attribute with the selected name was not found
+ */
+const Attribute *AttributeList::attribute(const UnicodeString &name)
+{
+    const Attribute *attribute = NULL;
+    Node *node = m_firstNode;
+
+    while (node != NULL)
+    {
+        if (name == node->item.name())
+        {
+            attribute = &(node->item);
+            break;
+        }
+
+        node = node->next;
+    }
+
+    return attribute;
+}
+
+/**
+ * Search for attribute by index
+ *
+ * \param index Index of the requested attribute
+ *
+ * \return Requested attribute or NULL if an attribute with the selected index was not found
+ */
+const Attribute *AttributeList::attribute(const size_t index)
+{
+    const Attribute *attribute = NULL;
+
+    if (index < m_size)
+    {
+        Node *node = m_firstNode;
+        size_t currentIndex = 0U;
+
+        while (node != NULL)
+        {
+            if (currentIndex == index)
+            {
+                attribute = &(node->item);
+                break;
+            }
+
+            node = node->next;
+            currentIndex++;
+        }
+    }
+
+    return attribute;
+}
+
+/**
+ * Get iterator that points to the first attribute in the list
+ *
+ * \return Attribute list iterator
+ */
+AttributeList::Iterator AttributeList::first() const
+{
+    return Iterator(m_firstNode);
 }

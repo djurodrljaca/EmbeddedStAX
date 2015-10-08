@@ -86,7 +86,7 @@ public:
     Common::DocumentType documentType() const;
     Common::UnicodeString text() const;
     Common::UnicodeString name() const;
-    std::list<Common::Attribute> attributeList() const;
+    Common::AttributeList attributeList() const;
 
 private:
     // Private types
@@ -147,8 +147,9 @@ private:
     Common::DocumentType m_documentType;
     Common::UnicodeString m_text;
     Common::UnicodeString m_name;
-    std::list<Common::Attribute> m_attributeList;
+    Common::AttributeList m_attributeList;
     std::list<Common::UnicodeString> m_openElementList;
+    // TODO: replace std::list with a list class based on AttributeList?
 
     CDataParser m_cDataParser;
     CommentParser m_commentParser;

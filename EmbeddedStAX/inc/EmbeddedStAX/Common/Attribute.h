@@ -42,6 +42,9 @@ public:
     Attribute(const UnicodeString &name = UnicodeString(),
               const UnicodeString &value = UnicodeString(),
               const QuotationMark quotationMark = QuotationMark_Quote);
+    Attribute(const Attribute &other);
+
+    Attribute &operator=(const Attribute &other);
 
     bool isValid() const;
     void clear();
@@ -63,8 +66,61 @@ private:
     QuotationMark m_quotationMark;
 };
 
-// TODO: create attribute list class (add search by name and index)
+class AttributeList
+{
+private:
+    // Private types
+    struct Node
+    {
+        Node();
+        Node(const Attribute &attribute);
 
+        Attribute item;
+        Node *next;
+    };
+
+public:
+    // Public types
+    class Iterator
+    {
+    public:
+        // Public API
+        Iterator(const Node *node);
+        Iterator(const Iterator &other);
+
+        Iterator &operator=(const Iterator &other);
+
+        void next();
+        bool isValid();
+        const Attribute *value() const;
+
+    private:
+        // Private data
+        const Node *m_node;
+    };
+
+public:
+    // Public API
+    AttributeList();
+    AttributeList(const AttributeList &other);
+    ~AttributeList();
+
+    AttributeList &operator=(AttributeList other);
+
+    void clear();
+    size_t size() const;
+
+    void add(const Attribute &attribute);
+    const Attribute *attribute(const UnicodeString &name);
+    const Attribute *attribute(const size_t index);
+    Iterator first() const;
+
+private:
+    // Private data
+    size_t m_size;
+    Node *m_firstNode;
+    Node *m_lastNode;
+};
 }
 }
 

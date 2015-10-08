@@ -726,7 +726,7 @@ EmbeddedStAX::Common::UnicodeString XmlReader::name() const
  *
  * \return Attribute list
  */
-std::list<EmbeddedStAX::Common::Attribute> XmlReader::attributeList() const
+EmbeddedStAX::Common::AttributeList XmlReader::attributeList() const
 {
     return m_attributeList;
 }

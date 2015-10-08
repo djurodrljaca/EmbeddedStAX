@@ -67,7 +67,7 @@ EmbeddedStAX::Common::UnicodeString StartOfElementParser::name() const
  *
  * \return Attribute list
  */
-std::list<EmbeddedStAX::Common::Attribute> StartOfElementParser::attributeList() const
+const EmbeddedStAX::Common::AttributeList &StartOfElementParser::attributeList() const
 {
     return m_attributeList;
 }
@@ -670,7 +670,7 @@ StartOfElementParser::State StartOfElementParser::executeStateReadingAttributeVa
         {
             // Add attribute to the attribute list
             const Common::Attribute attribute(m_attributeName, m_attributeValueParser.value());
-            m_attributeList.push_back(attribute);
+            m_attributeList.add(attribute);
             m_attributeName.clear();
             m_attributeValueParser.deinitialize();
             nextState = State_ReadingNextItem;
