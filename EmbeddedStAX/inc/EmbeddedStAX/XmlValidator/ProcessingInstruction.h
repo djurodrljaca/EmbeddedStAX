@@ -35,11 +35,7 @@ namespace EmbeddedStAX
 namespace XmlValidator
 {
 bool isXmlDeclaration(const Common::UnicodeString &piTarget);
-
-bool validatePiTarget(const std::string &piTarget);
 bool validatePiTarget(const Common::UnicodeString &piTarget);
-
-bool validatePiData(const std::string &piData);
 bool validatePiData(const Common::UnicodeString &piData);
 }
 }

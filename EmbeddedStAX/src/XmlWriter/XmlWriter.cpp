@@ -1,649 +1,611 @@
-///*
-// * This is free and unencumbered software released into the public domain.
-// *
-// * Anyone is free to copy, modify, publish, use, compile, sell, or
-// * distribute this software, either in source code form or as a compiled
-// * binary, for any purpose, commercial or non-commercial, and by any
-// * means.
-// *
-// * In jurisdictions that recognize copyright laws, the author or authors
-// * of this software dedicate any and all copyright interest in the
-// * software to the public domain. We make this dedication for the benefit
-// * of the public at large and to the detriment of our heirs and
-// * successors. We intend this dedication to be an overt act of
-// * relinquishment in perpetuity of all present and future rights to this
-// * software under copyright law.
-// *
-// * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-// * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-// * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// * OTHER DEALINGS IN THE SOFTWARE.
-// *
-// * For more information, please refer to <http://unlicense.org>
-// */
+/*
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
-//#include "XmlWriter.h"
-//#include <Common/Utf.h>
-//#include <Common/XmlValidator.h>
+#include <EmbeddedStAX/XmlWriter/XmlWriter.h>
+#include <EmbeddedStAX/XmlValidator/Name.h>
+#include <EmbeddedStAX/XmlValidator/Comment.h>
 //#include <Common/Common.h>
 
-//using namespace EmbeddedStAX;
-
-///**
-// * Constructor
-// */
-//XmlWriter::XmlWriter()
-//{
-//    clearDocument();
-//}
-
-///**
-// * Clear XML document
-// */
-//void XmlWriter::clearDocument()
-//{
-//    m_state = State_Empty;
-//    m_xmlDeclarationSet = false;
-//    m_documentType;
-//    m_openedElementList.clear();
-//    m_currentElementInfo = ElementInfo();
-//    m_attributeNameList.clear();
-//    m_xmlString.clear();
-//}
-
-///**
-// * Get XML string
-// *
-// * \return XML string
-// * \return Empty string on error
-// *
-// * \note XML string will only be returned if XML document has been fully completed (root element
-// *       has to be ended), otherwise an empty string will be returned.
-// */
-//std::string XmlWriter::getXmlString() const
-//{
-//    std::string xmlString;
-
-//    if (m_state == State_DocumentEnded)
-//    {
-//        xmlString = m_xmlString;
-//    }
-
-//    return xmlString;
-//}
-
-///**
-// * Sets XML Declaration in the XML document
-// *
-// * \retval true     Success
-// * \retval false    Error, XML document is not empty
-// *
-// * \note Currently only XML Declaration with parameters version 1.0 with encoding "UTF-8" are
-// *       supported!
-// */
-//bool XmlWriter::setXmlDeclaration()
-//{
-//    bool success = false;
-
-//    if (m_state == State_Empty)
-//    {
-//        // TODO: add the "standalone" attribute?
-
-//        // Set XML Declaration string
-//        m_xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-
-//        m_xmlDeclarationSet = true;
-//        m_state = State_DocumentStarted;
-//        success = true;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Sets Document Type in the XML document
-// *
-// * \param documentType  Document type name
-// *
-// * \retval true     Success
-// * \retval false    Error
-// *
-// * \note If the document type name is set then the root element name must match the document type
-// *       name!
-// */
-//bool XmlWriter::setDocumentType(const std::string &documentType)
-//{
-//    bool success = false;
-
-//    if (m_documentType.empty())
-//    {
-//        if ((m_state == State_Empty) ||
-//            (m_state == State_DocumentStarted))
-//        {
-//            if (XmlValidator::validateNameString(documentType))
-//            {
-//                // Create Document Type string
-//                m_xmlString.append("<!DOCTYPE ").append(documentType).append(">");
-
-//                m_documentType = documentType;
-//                m_state = State_DocumentStarted;
-//                success = true;
-//            }
-//        }
-//    }
-
-//    return success;
-//}
-
-///**
-// * Add a comment to the XML document
-// *
-// * \param commentText   Text that should be written to the comment
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::addComment(const std::string &commentText)
-//{
-//    bool success = false;
-//    bool closeStartTag = false;
-//    State nextState = m_state;
-
-//    if (XmlValidator::validateCommentString(commentText))
-//    {
-//        switch (m_state)
-//        {
-//            case State_Empty:
-//            {
-//                nextState = State_DocumentStarted;
-//                success = true;
-//                break;
-//            }
-
-//            case State_ElementStarted:
-//            {
-//                // Close start tag of current element
-//                closeStartTag = true;
-//                nextState = State_InElement;
-//                success = true;
-//                break;
-//            }
-
-//            case State_DocumentStarted:
-//            case State_InElement:
-//            case State_DocumentEnded:
-//            {
-//                success = true;
-//                break;
-//            }
-
-//            default:
-//            {
-//                break;
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        if (closeStartTag)
-//        {
-//            m_xmlString.append(">");
-//            m_currentElementInfo.contentEmpty = false;
-//            m_attributeNameList.clear();
-//        }
-
-//        m_xmlString.append("<!--").append(commentText).append("-->");
-//        m_state = nextState;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Adds a new processing instruction in the XML document
-// *
-// * \param piTarget  Processing instruction target name
-// * \param piValue   Processing instruction value
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::addProcessingInstruction(const std::string &piTarget, const std::string &piValue)
-//{
-//    bool success = false;
-//    bool closeStartTag = false;
-//    State nextState = m_state;
-
-//    if (XmlValidator::validatePiTargetString(piTarget))
-//    {
-//        if (XmlValidator::validatePiValueString(piValue))
-//        {
-//            switch (m_state)
-//            {
-//                case State_Empty:
-//                {
-//                    nextState = State_DocumentStarted;
-//                    success = true;
-//                    break;
-//                }
-
-//                case State_DocumentStarted:
-//                case State_InElement:
-//                case State_DocumentEnded:
-//                {
-//                    success = true;
-//                    break;
-//                }
-
-//                case State_ElementStarted:
-//                {
-//                    // Close start tag of current element
-//                    closeStartTag = true;
-//                    nextState = State_InElement;
-//                    success = true;
-//                    break;
-//                }
-
-//                default:
-//                {
-//                    break;
-//                }
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        if (closeStartTag)
-//        {
-//            m_xmlString.append(">");
-//            m_currentElementInfo.contentEmpty = false;
-//            m_attributeNameList.clear();
-//        }
-
-//        m_xmlString.append("<?").append(piTarget);
-
-//        if (!piValue.empty())
-//        {
-//            m_xmlString.append(" ").append(piValue);
-//        }
-
-//        m_xmlString.append("?>");
-//        m_state = nextState;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Starts a new root element in the XML document
-// *
-// * \param rootElementName   Root element name
-// *
-// * \retval true     Success
-// * \retval false    Error
-// *
-// * \note If Document Type is set then the root element name must match it!
-// */
-//bool XmlWriter::startRootElement(const std::string &rootElementName)
-//{
-//    bool success = false;
-
-//    if (XmlValidator::validateNameString(rootElementName))
-//    {
-//        switch (m_state)
-//        {
-//            case State_DocumentStarted:
-//            {
-//                // No validation of root element name is required if document type is not set
-//                if (m_documentType.empty())
-//                {
-//                    success = true;
-//                }
-//                // Check if element name matches the document type
-//                else if (rootElementName == m_documentType)
-//                {
-//                    success = true;
-//                }
-//                else
-//                {
-//                    // Error, invalid root element name
-//                }
-//                break;
-//            }
-
-//            case State_Empty:
-//            {
-//                success = true;
-//                break;
-//            }
-
-//            default:
-//            {
-//                break;
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        // Open start tag
-//        m_xmlString.append("<").append(rootElementName);
-
-//        m_attributeNameList.clear();
-//        m_currentElementInfo = ElementInfo(rootElementName);
-//        m_state = State_ElementStarted;
-//        success = true;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Starts a new child element in the XML document
-// *
-// * \param elementName   Element name
-// *
-// * \retval true     Success
-// * \retval false    Error
-// *
-// * \note This method cannot start a root element, to do that use the startRootElement method!
-// */
-//bool XmlWriter::startChildElement(const std::string &elementName)
-//{
-//    bool success = false;
-//    bool closeStartTag = false;
-
-//    if (XmlValidator::validateNameString(elementName))
-//    {
-//        switch (m_state)
-//        {
-//            case State_ElementStarted:
-//            {
-//                // Close start tag of current element
-//                closeStartTag = true;
-//                success = true;
-//                break;
-//            }
-
-//            case State_InElement:
-//            {
-//                success = true;
-//                break;
-//            }
-
-//            default:
-//            {
-//                break;
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        if (closeStartTag)
-//        {
-//            m_xmlString.append(">");
-//            m_currentElementInfo.contentEmpty = false;
-//        }
-
-//        // Add current element info to opened element list
-//        m_openedElementList.push_back(m_currentElementInfo);
-
-//        // Open start tag
-//        m_xmlString.append("<").append(elementName);
-
-//        m_attributeNameList.clear();
-//        m_currentElementInfo = ElementInfo(elementName);
-//        m_state = State_ElementStarted;
-//        success = true;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Add the attribute to the current element
-// *
-// * \param attribute     Attribute
-// * \param quotationMark Quotation mark
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::addAttribute(const std::string &name,
-//                             const std::string &value,
-//                             const Common::QuotationMark quotationMark)
-//{
-//    bool success = false;
-
-//    if (m_state == State_ElementStarted)
-//    {
-//        if (XmlValidator::validateNameString(name))
-//        {
-//            // Check if an attribute with the same name has already been added to the element
-//            bool attributeNameFound = false;
-
-//            for (std::list<std::string>::const_iterator it = m_attributeNameList.begin();
-//                 it != m_attributeNameList.end();
-//                 it++)
-//            {
-//                const std::string &attributeName = *it;
-
-//                if (name == attributeName)
-//                {
-//                    // Error, an attribute with the same name is already in the list
-//                    attributeNameFound = true;
-//                    break;
-//                }
-//            }
-
-//            // Attribute names must be unique within an elements start tag
-//            if (!attributeNameFound)
-//            {
-//                if (XmlValidator::validateAttValueString(value, quotationMark))
-//                {
-//                    char quotationMarkCharacter;
-
-//                    switch (quotationMark)
-//                    {
-//                        case Common::QuotationMark_Quote:
-//                        {
-//                            quotationMarkCharacter = '"';
-//                            success = true;
-//                            break;
-//                        }
-
-//                        case Common::QuotationMark_Apostrophe:
-//                        {
-//                            quotationMarkCharacter = '\'';
-//                            success = true;
-//                            break;
-//                        }
-
-//                        default:
-//                        {
-//                            // Error, invalid quotation mark
-//                            break;
-//                        }
-//                    }
-
-//                    if (success)
-//                    {
-//                        m_attributeNameList.push_back(name);
-
-//                        m_xmlString.append(" ").append(name);
-//                        m_xmlString.append("=").append(1U, quotationMarkCharacter);
-//                        m_xmlString.append(value).append(1U, quotationMarkCharacter);
-//                        success = true;
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-//    return success;
-//}
-
-///**
-// * Add a text node
-// *
-// * \param textNode  UTF-8 encoded string
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::addTextNode(const std::string &textNode)
-//{
-//    bool success = false;
-//    bool closeStartTag = false;
-
-//    if (XmlValidator::validateTextNodeString(textNode))
-//    {
-//        switch (m_state)
-//        {
-//            case State_InElement:
-//            {
-//                success = true;
-//                break;
-//            }
-
-//            case State_ElementStarted:
-//            {
-//                // Close start tag of current element
-//                closeStartTag = true;
-//                success = true;
-//                break;
-//            }
-
-//            default:
-//            {
-//                break;
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        if (closeStartTag)
-//        {
-//            m_xmlString.append(">");
-//            m_currentElementInfo.contentEmpty = false;
-//            m_attributeNameList.clear();
-//        }
-
-//        m_xmlString.append(textNode);
-//        m_state = State_InElement;
-//        success = true;
-//    }
-
-//    return success;
-//}
-
-///**
-// * Add a CDATA section
-// *
-// * \param cData UTF-8 encoded string
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::addCDataSection(const std::string &cData)
-//{
-//    bool success = false;
-//    bool closeStartTag = false;
-
-//    if (XmlValidator::validateCDataString(cData))
-//    {
-//        switch (m_state)
-//        {
-//            case State_InElement:
-//            {
-//                success = true;
-//                break;
-//            }
-
-//            case State_ElementStarted:
-//            {
-//                // Close start tag of current element
-//                closeStartTag = true;
-//                success = true;
-//                break;
-//            }
-
-//            default:
-//            {
-//                break;
-//            }
-//        }
-//    }
-
-//    if (success)
-//    {
-//        if (closeStartTag)
-//        {
-//            m_xmlString.append(">");
-//            m_currentElementInfo.contentEmpty = false;
-//            m_attributeNameList.clear();
-//        }
-
-//        m_xmlString.append("<![CDATA[").append(cData).append("]]>");
-//        m_state = State_InElement;
-//        success = true;
-//    }
-
-//    return success;
-//}
-
-///**
-// *
-// * Ends an element in the XML document
-// *
-// * \param elementName   Element name
-// *
-// * \retval true     Success
-// * \retval false    Error
-// */
-//bool XmlWriter::endElement()
-//{
-//    bool success = false;
-
-//    if ((m_state == State_ElementStarted) ||
-//        (m_state == State_InElement))
-//    {
-//        // Close the current element
-//        if (m_currentElementInfo.contentEmpty)
-//        {
-//            // Close an empty element
-//            m_xmlString.append("/>");
-//        }
-//        else
-//        {
-//            // Close a non-empty element
-//            m_xmlString.append("</").append(m_currentElementInfo.name).append(">");
-//        }
-
-//        // Discard the current element
-//        if (m_openedElementList.empty())
-//        {
-//            // Currently open element is the root element - close it and end the XML document
-//            m_currentElementInfo = ElementInfo();
-//            m_state = State_DocumentEnded;
-//        }
-//        else
-//        {
-//            // Replace the current element with its parent
-//            m_currentElementInfo = m_openedElementList.back();
-//            m_openedElementList.pop_back();
-//            m_state = State_InElement;
-//        }
-
-//        success = true;
-//    }
-
-//    return success;
-//}
+using namespace EmbeddedStAX;
+
+/**
+ * Constructor
+ */
+XmlWriter::XmlWriter::XmlWriter()
+{
+    clearDocument();
+}
+
+/**
+ * Clear XML document
+ */
+void XmlWriter::XmlWriter::clearDocument()
+{
+    m_state = State_Empty;
+    m_documentType;
+    m_openedElementList.clear();
+    m_xmlString.clear();
+}
+
+/**
+ * Get XML string
+ *
+ * \return XML string
+ * \return Empty string on error
+ */
+Common::UnicodeString XmlWriter::XmlWriter::xmlString() const
+{
+    return m_xmlString;
+}
+
+/**
+ * Write XML Declaration in the XML document
+ *
+ * \retval true     Success
+ * \retval false    Error, XML document is not empty
+ *
+ * \note Currently only XML Declaration with parameters version 1.0 with encoding "UTF-8" are
+ *       supported!
+ */
+bool XmlWriter::XmlWriter::writeXmlDeclaration()
+{
+    bool success = false;
+
+    if (m_state == State_Empty)
+    {
+        // TODO: add the "standalone" attribute?
+
+        // Set XML Declaration
+        m_xmlString = Common::Utf8::toUnicodeString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        m_state = State_DocumentStarted;
+        success = true;
+    }
+    else
+    {
+        // Error, invalid state
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Document Type in the XML document
+ *
+ * \param documentType  Document type name
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note If the document type name is set then the root element name must match the document type
+ *       name!
+ */
+bool XmlWriter::XmlWriter::writeDocumentType(const Common::UnicodeString &documentType)
+{
+    bool success = false;
+
+    if (m_documentType.empty())
+    {
+        if ((m_state == State_Empty) ||
+            (m_state == State_DocumentStarted))
+        {
+            if (XmlValidator::validateName(documentType))
+            {
+                // Create Document Type
+                m_xmlString.append(Common::Utf8::toUnicodeString("<!DOCTYPE "));
+                m_xmlString.append(documentType);
+                m_xmlString.push_back(static_cast<uint32_t>('>'));
+
+                m_documentType = documentType;
+                m_state = State_DocumentStarted;
+                success = true;
+            }
+        }
+    }
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Comment in the XML document
+ *
+ * \param commentText   Text that should be written to the comment
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeComment(const Common::UnicodeString &commentText)
+{
+    bool success = false;
+    State nextState = m_state;
+
+    if (XmlValidator::validateCommentText(commentText))
+    {
+        switch (m_state)
+        {
+            case State_Empty:
+            {
+                nextState = State_DocumentStarted;
+                success = true;
+                break;
+            }
+
+            case State_DocumentStarted:
+            case State_Element:
+            case State_DocumentEnded:
+            {
+                success = true;
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid state
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        // Write Comment
+        m_xmlString.append(Common::Utf8::toUnicodeString("<!--"));
+        m_xmlString.append(commentText);
+        m_xmlString.append(Common::Utf8::toUnicodeString("-->"));
+        m_state = nextState;
+    }
+    else
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Processing Instruction in the XML document
+ *
+ * \param piTarget  Processing instruction target name
+ * \param piValue   Processing instruction value
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeProcessingInstruction(const Common::ProcessingInstruction &pi)
+{
+    bool success = false;
+    State nextState = m_state;
+
+    if (pi.isValid())
+    {
+        switch (m_state)
+        {
+            case State_Empty:
+            {
+                nextState = State_DocumentStarted;
+                success = true;
+                break;
+            }
+
+            case State_DocumentStarted:
+            case State_Element:
+            case State_DocumentEnded:
+            {
+                success = true;
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid state
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        // Write Processing Instruction
+        m_xmlString.append(Common::Utf8::toUnicodeString("<?"));
+        m_xmlString.append(pi.piTarget());
+
+        const Common::UnicodeString piData = pi.piData();
+
+        if (!piData.empty())
+        {
+            m_xmlString.push_back(static_cast<uint32_t>(' '));
+            m_xmlString.append(piData);
+        }
+
+        m_xmlString.append(Common::Utf8::toUnicodeString("?>"));
+        m_state = nextState;
+    }
+    else
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Empty Element in the XML document
+ *
+ * \param elementName   Element name
+ * \param attributeList Attribute list
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note If Document Type is set then the root element name must match it!
+ */
+bool XmlWriter::XmlWriter::writeEmptyElement(const Common::UnicodeString &elementName,
+                                  const Common::AttributeList &attributeList)
+{
+    bool success = false;
+    State nextState = State_Error;
+
+    if (XmlValidator::validateName(elementName))
+    {
+        switch (m_state)
+        {
+            case State_Empty:
+            case State_DocumentStarted:
+            {
+                // Check for root element
+                if (m_openedElementList.size() == 0U)
+                {
+                    // Root element
+                    // No validation of root element name is required if document type is not set
+                    if (m_documentType.empty())
+                    {
+                        nextState = State_DocumentEnded;
+                        success = true;
+                    }
+                    // Check if element name matches the document type
+                    else if (elementName == m_documentType)
+                    {
+                        nextState = State_DocumentEnded;
+                        success = true;
+                    }
+                    else
+                    {
+                        // Error, invalid root element name
+                    }
+                }
+                else
+                {
+                    // Error, there should be no open elements in the current state
+                }
+                break;
+            }
+
+            case State_Element:
+            {
+                // Child element
+                success = true;
+                nextState = State_Element;
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid state
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        // Write Start of Element
+        m_xmlString.push_back(static_cast<uint32_t>('<'));
+        m_xmlString.append(elementName);
+
+        // Write Attributes
+        success = writeAttributeList(attributeList);
+
+        // Write end of Empty Element
+        if (success)
+        {
+            m_xmlString.append(Common::Utf8::toUnicodeString("/>"));
+            m_state = nextState;
+        }
+    }
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Start of Element in the XML document
+ *
+ * \param elementName   Element name
+ * \param attributeList Attribute list
+ *
+ * \retval true     Success
+ * \retval false    Error
+ *
+ * \note If Document Type is set then the root element name must match it!
+ */
+bool XmlWriter::XmlWriter::writeStartOfElement(const Common::UnicodeString &elementName,
+                                    const Common::AttributeList &attributeList)
+{
+    bool success = false;
+
+    if (XmlValidator::validateName(elementName))
+    {
+        switch (m_state)
+        {
+            case State_Empty:
+            case State_DocumentStarted:
+            {
+                // Check for root element
+                if (m_openedElementList.empty())
+                {
+                    // Root element
+                    // No validation of root element name is required if document type is not set
+                    if (m_documentType.empty())
+                    {
+                        success = true;
+                    }
+                    // Check if element name matches the document type
+                    else if (elementName == m_documentType)
+                    {
+                        success = true;
+                    }
+                    else
+                    {
+                        // Error, invalid root element name
+                    }
+                }
+                else
+                {
+                    // Error, there should be no open elements in the current state
+                }
+                break;
+            }
+
+            case State_Element:
+            {
+                // Child element
+                success = true;
+                break;
+            }
+
+            default:
+            {
+                // Error, invalid state
+                break;
+            }
+        }
+    }
+
+    if (success)
+    {
+        // Write Start of Element
+        m_xmlString.push_back(static_cast<uint32_t>('<'));
+        m_xmlString.append(elementName);
+
+        // Write Attributes
+        success = writeAttributeList(attributeList);
+
+        // Write end of Start of Element
+        if (success)
+        {
+            m_xmlString.push_back(static_cast<uint32_t>('>'));
+
+            m_openedElementList.push_back(elementName);
+            m_state = State_Element;
+        }
+    }
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Text Node
+ *
+ * \param textNode  Text node
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeTextNode(const Common::UnicodeString &textNode)
+{
+    bool success = false;
+
+    // TODO: validate?
+    // TODO: escape?
+    //if (XmlValidator::validateTextNode(textNode))
+    //{
+    if (m_state == State_Element)
+    {
+        m_xmlString.append(textNode);
+        success = true;
+    }
+    else
+    {
+        // Error, invalid state
+    }
+    //}
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write CDATA Section
+ *
+ * \param cdata     CDATA text
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeCDataSection(const Common::UnicodeString &cdata)
+{
+    bool success = false;
+
+    // TODO: validate?
+    //if (XmlValidator::validateCDataSection(textNode))
+    //{
+    if (m_state == State_Element)
+    {
+        m_xmlString.append(Common::Utf8::toUnicodeString("<![CDATA["));
+        m_xmlString.append(cdata);
+        m_xmlString.append(Common::Utf8::toUnicodeString("]]>"));
+        success = true;
+    }
+    else
+    {
+        // Error, invalid state
+    }
+    //}
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Writes end of the currently open element in the XML document
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeEndOfElement()
+{
+    bool success = false;
+
+    if (m_state == State_Element)
+    {
+        if (m_openedElementList.empty())
+        {
+            // Error, there should be at least one open element in the current state
+        }
+        else
+        {
+            // Write End of Element
+            m_xmlString.append(Common::Utf8::toUnicodeString("</"));
+            m_xmlString.append(m_openedElementList.back());
+            m_openedElementList.pop_back();
+            m_xmlString.push_back(static_cast<uint32_t>('>'));
+
+            // Check for end of root element
+            if (m_openedElementList.empty())
+            {
+                m_state = State_DocumentEnded;
+            }
+
+            success = true;
+        }
+    }
+
+    if (!success)
+    {
+        // Error
+        m_state = State_Error;
+    }
+
+    return success;
+}
+
+/**
+ * Write Attribute List in the XML document
+ *
+ * \param attributeList Attribute list
+ *
+ * \retval true     Success
+ * \retval false    Error
+ */
+bool XmlWriter::XmlWriter::writeAttributeList(const Common::AttributeList &attributeList)
+{
+    bool success = true;
+
+    if (attributeList.size() > 0U)
+    {
+        for (Common::AttributeList::Iterator it = attributeList.first();
+             it.isValid() && success;
+             it.next())
+        {
+            success = false;
+            const Common::Attribute *attribute = it.value();
+
+            if (attribute != NULL)
+            {
+                if (attribute->isValid())
+                {
+                    uint32_t quote = static_cast<uint32_t>('"');
+
+                    if (attribute->valueQuotationMark() == Common::QuotationMark_Apostrophe)
+                    {
+                        quote = static_cast<uint32_t>('\'');
+                    }
+
+                    m_xmlString.push_back(static_cast<uint32_t>(' '));
+                    m_xmlString.append(attribute->name());
+                    m_xmlString.push_back(static_cast<uint32_t>('='));
+                    m_xmlString.push_back(quote);
+                    m_xmlString.append(attribute->value());
+                    m_xmlString.push_back(quote);
+
+                    success = true;
+                }
+            }
+        }
+    }
+
+    return success;
+}

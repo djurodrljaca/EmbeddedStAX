@@ -35,49 +35,6 @@ using namespace EmbeddedStAX;
 /**
  * Validate a Reference
  *
- * \param      value            UTF-8 encoded string
- * \param      startPosition    Start position in the value string
- * \param[out] nextPosition     Optional output parameter for the position of the character after
- *                              the validated value
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * Reference ::= EntityRef | CharRef
- * \endcode
- */
-bool XmlValidator::validateReferece(const std::string &value,
-                                    const size_t startPosition,
-                                    size_t *nextPosition)
-{
-    bool valid = false;
-
-    if (startPosition < value.size())
-    {
-        // Convert the UTF-8 encoded string to unicode string
-        const Common::UnicodeString usValue =
-                Common::Utf8::toUnicodeString(value.substr(startPosition));
-
-        // Validate
-        size_t usValueNextPosition = 0U;
-        valid = validateReferece(usValue, 0U, &usValueNextPosition);
-
-        // Calculate next position
-        if (valid && (nextPosition != NULL))
-        {
-            const size_t utf8Size = Common::Utf8::calculateSize(usValue, 0U, usValueNextPosition);
-            *nextPosition = startPosition + utf8Size;
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Validate a Reference
- *
  * \param      value            Unicode string
  * \param      startPosition    Start position in the value string
  * \param[out] nextPosition     Optional output parameter for the position of the character after
@@ -100,15 +57,15 @@ bool XmlValidator::validateReferece(const Common::UnicodeString &value,
     if (startPosition < (value.size() + 2U))
     {
         // Check for start of a refernece
-        if (value.at(0U) == static_cast<uint32_t>('&'))
+        if (value.at(startPosition) == static_cast<uint32_t>('&'))
         {
             // Check for a character reference
-            if (value.at(1U) == static_cast<uint32_t>('#'))
+            if (value.at(startPosition + 1U) == static_cast<uint32_t>('#'))
             {
                 valid = validateCharacterReferece(value, startPosition, nextPosition);
             }
             // Check for a entity reference
-            else if (isNameStartChar(value.at(1U)))
+            else if (isNameStartChar(value.at(startPosition + 1U)))
             {
                 valid = validateEntityReferece(value, startPosition, nextPosition);
             }
@@ -116,49 +73,6 @@ bool XmlValidator::validateReferece(const Common::UnicodeString &value,
             {
                 // Error, not a valid reference
             }
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Validate a Entity Reference
- *
- * \param      value            UTF-8 encoded string
- * \param      startPosition    Start position in the value string
- * \param[out] nextPosition     Optional output parameter for the position of the character after
- *                              the validated value
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * EntityRef ::= '&' Name ';'
- * \endcode
- */
-bool XmlValidator::validateEntityReferece(const std::string &value,
-                                          const size_t startPosition,
-                                          size_t *nextPosition)
-{
-    bool valid = false;
-
-    if (startPosition < value.size())
-    {
-        // Convert the UTF-8 encoded string to unicode string
-        const Common::UnicodeString usValue =
-                Common::Utf8::toUnicodeString(value.substr(startPosition));
-
-        // Validate
-        size_t usValueNextPosition = 0U;
-        valid = validateEntityReferece(usValue, 0U, &usValueNextPosition);
-
-        // Calculate next position
-        if (valid && (nextPosition != NULL))
-        {
-            const size_t utf8Size = Common::Utf8::calculateSize(usValue, 0U, usValueNextPosition);
-            *nextPosition = startPosition + utf8Size;
         }
     }
 
@@ -190,15 +104,15 @@ bool XmlValidator::validateEntityReferece(const Common::UnicodeString &value,
     if (startPosition < (value.size() + 3U))
     {
         // Check for start of a refernece
-        if (value.at(0U) == static_cast<uint32_t>('&'))
+        if (value.at(startPosition) == static_cast<uint32_t>('&'))
         {
             // Check for a start of entity reference name
-            if (isNameStartChar(value.at(1U)))
+            if (isNameStartChar(value.at(startPosition + 1U)))
             {
                 // Check for the rest of entity reference name
                 bool validationFinished = false;
 
-                for (size_t i = 2U; (i < value.size()) && !validationFinished; i++)
+                for (size_t i = startPosition + 2U; (i < value.size()) && !validationFinished; i++)
                 {
                     if (value.at(i) == static_cast<uint32_t>(';'))
                     {
@@ -226,50 +140,6 @@ bool XmlValidator::validateEntityReferece(const Common::UnicodeString &value,
             {
                 // Error, not a valid reference
             }
-        }
-    }
-
-    return valid;
-}
-
-/**
- * Validate a Character Reference
- *
- * \param      value            UTF-8 encoded string
- * \param      startPosition    Start position in the value string
- * \param[out] nextPosition     Optional output parameter for the position of the character after
- *                              the validated value
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * CharRef ::= '&#' [0-9]+ ';'
-            |  '&#x' [0-9a-fA-F]+ ';'
- * \endcode
- */
-bool XmlValidator::validateCharacterReferece(const std::string &value,
-                                             const size_t startPosition,
-                                             size_t *nextPosition)
-{
-    bool valid = false;
-
-    if (startPosition < value.size())
-    {
-        // Convert the UTF-8 encoded string to unicode string
-        const Common::UnicodeString usValue =
-                Common::Utf8::toUnicodeString(value.substr(startPosition));
-
-        // Validate
-        size_t usValueNextPosition = 0U;
-        valid = validateCharacterReferece(usValue, 0U, &usValueNextPosition);
-
-        // Calculate next position
-        if (valid && (nextPosition != NULL))
-        {
-            const size_t utf8Size = Common::Utf8::calculateSize(usValue, 0U, usValueNextPosition);
-            *nextPosition = startPosition + utf8Size;
         }
     }
 

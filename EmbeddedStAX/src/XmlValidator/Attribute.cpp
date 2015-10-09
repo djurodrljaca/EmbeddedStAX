@@ -33,35 +33,6 @@ using namespace EmbeddedStAX;
 /**
  * Validate an Attribute Value
  *
- * \param attributeValue    UTF-8 encoded string
- * \param quotationMark     Quotation mark
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * AttValue ::= '"' ([^<&"] | Reference)* '"'
- *           |  "'" ([^<&'] | Reference)* "'"
- * \endcode
- */
-bool XmlValidator::validateAttributeValue(const std::string &attributeValue,
-                                          const Common::QuotationMark quotationMark)
-{
-    bool valid = true;
-
-    if (!attributeValue.empty())
-    {
-        valid = validateAttributeValue(Common::Utf8::toUnicodeString(attributeValue),
-                                       quotationMark);
-    }
-
-    return valid;
-}
-
-/**
- * Validate an Attribute Value
- *
  * \param attributeValue    Unicode string
  * \param quotationMark     Quotation mark
  *
@@ -89,7 +60,6 @@ bool XmlValidator::validateAttributeValue(const Common::UnicodeString &attribute
             // Check if valid attribute value character
             switch (attributeValue.at(position))
             {
-                case static_cast<uint32_t>('^'):
                 case static_cast<uint32_t>('<'):
                 {
                     // Error, invalid character
@@ -106,6 +76,11 @@ bool XmlValidator::validateAttributeValue(const Common::UnicodeString &attribute
                         valid = false;
                         validationFinished = true;
                     }
+                    else
+                    {
+                        // Valid character
+                        position++;
+                    }
                     break;
                 }
 
@@ -116,6 +91,11 @@ bool XmlValidator::validateAttributeValue(const Common::UnicodeString &attribute
                         // Error, invalid character
                         valid = false;
                         validationFinished = true;
+                    }
+                    else
+                    {
+                        // Valid character
+                        position++;
                     }
                     break;
                 }

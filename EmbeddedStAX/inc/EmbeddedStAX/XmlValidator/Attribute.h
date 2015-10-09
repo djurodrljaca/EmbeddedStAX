@@ -35,8 +35,6 @@ namespace EmbeddedStAX
 {
 namespace XmlValidator
 {
-bool validateAttributeValue(const std::string &attributeValue,
-                            const Common::QuotationMark quotationMark);
 bool validateAttributeValue(const Common::UnicodeString &attributeValue,
                             const Common::QuotationMark quotationMark);
 }

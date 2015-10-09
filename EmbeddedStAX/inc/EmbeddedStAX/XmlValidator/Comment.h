@@ -25,8 +25,8 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-#ifndef EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
-#define EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
+#ifndef EMBEDDEDSTAX_XMLVALIDATOR_COMMENT_H
+#define EMBEDDEDSTAX_XMLVALIDATOR_COMMENT_H
 
 #include <EmbeddedStAX/Common/Utf.h>
 
@@ -34,8 +34,7 @@ namespace EmbeddedStAX
 {
 namespace XmlValidator
 {
-bool validateCommentText(const std::string &commentText);
 bool validateCommentText(const Common::UnicodeString &commentText);
 }
 }
-#endif // EMBEDDEDSTAX_XMLVALIDATOR_NAME_H
+#endif // EMBEDDEDSTAX_XMLVALIDATOR_COMMENT_H

@@ -37,7 +37,6 @@ namespace XmlValidator
 bool isNameStartChar(const uint32_t character);
 bool isNameChar(const uint32_t character);
 
-bool validateName(const std::string &name);
 bool validateName(const Common::UnicodeString &name);
 }
 }

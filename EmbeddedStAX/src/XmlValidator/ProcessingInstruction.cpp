@@ -59,31 +59,6 @@ bool XmlValidator::isXmlDeclaration(const Common::UnicodeString &piTarget)
 /**
  * Validate a PITarget
  *
- * \param piTarget  UTF-8 encoded PITarget
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * PITarget ::= Name - (('X' | 'x') ('M' | 'm') ('L' | 'l'))
- * \endcode
- */
-bool XmlValidator::validatePiTarget(const std::string &piTarget)
-{
-    bool valid = false;
-
-    if (!piTarget.empty())
-    {
-        valid = validatePiTarget(Common::Utf8::toUnicodeString(piTarget));
-    }
-
-    return valid;
-}
-
-/**
- * Validate a PITarget
- *
  * \param piTarget  PITarget (unicode) string
  *
  * \retval true     Valid
@@ -112,24 +87,6 @@ bool XmlValidator::validatePiTarget(const Common::UnicodeString &piTarget)
     }
 
     return valid;
-}
-
-/**
- * Validate a PI Data
- *
- * \param piData    UTF-8 encoded PI Data
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * PI Data ::= (Char* - (Char* '?>' Char*))
- * \endcode
- */
-bool XmlValidator::validatePiData(const std::string &piData)
-{
-    return validatePiData(Common::Utf8::toUnicodeString(piData));
 }
 
 /**

@@ -34,23 +34,12 @@ namespace EmbeddedStAX
 {
 namespace XmlValidator
 {
-bool validateReferece(const std::string &value,
-                      const size_t startPosition = 0U,
-                      size_t *nextPosition = NULL);
 bool validateReferece(const Common::UnicodeString &value,
                       const size_t startPosition = 0U,
                       size_t *nextPosition = NULL);
-
-bool validateEntityReferece(const std::string &value,
-                            const size_t startPosition = 0U,
-                            size_t *nextPosition = NULL);
 bool validateEntityReferece(const Common::UnicodeString &value,
                             const size_t startPosition = 0U,
                             size_t *nextPosition = NULL);
-
-bool validateCharacterReferece(const std::string &value,
-                               const size_t startPosition = 0U,
-                               size_t *nextPosition = NULL);
 bool validateCharacterReferece(const Common::UnicodeString &value,
                                const size_t startPosition = 0U,
                                size_t *nextPosition = NULL);

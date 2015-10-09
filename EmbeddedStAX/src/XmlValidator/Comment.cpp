@@ -32,31 +32,6 @@ using namespace EmbeddedStAX;
 /**
  * Validate a Comment Text
  *
- * \param commentText   UTF-8 encoded Comment Text
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * Comment Text ::= ((Char - '-') | ('-' (Char - '-')))*
- * \endcode
- */
-bool XmlValidator::validateCommentText(const std::string &commentText)
-{
-    bool valid = true;
-
-    if (!commentText.empty())
-    {
-        valid = validateCommentText(Common::Utf8::toUnicodeString(commentText));
-    }
-
-    return valid;
-}
-
-/**
- * Validate a Comment Text
- *
  * \param commentText   Comment Text (unicode) string
  *
  * \retval true     Valid

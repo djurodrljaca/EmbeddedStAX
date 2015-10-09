@@ -246,6 +246,8 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
                 const size_t size = parsingBuffer()->currentPosition();
                 m_text.append(parsingBuffer()->substring(0U, size));
 
+                // TODO: validate?
+
                 // End of text node found
                 parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_Finished;

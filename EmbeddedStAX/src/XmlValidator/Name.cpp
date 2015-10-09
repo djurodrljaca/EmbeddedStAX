@@ -190,31 +190,6 @@ bool XmlValidator::isNameChar(const uint32_t character)
 /**
  * Validate a Name
  *
- * \param name  UTF-8 encoded Name
- *
- * \retval true     Valid
- * \retval false    Invalid
- *
- * Format:
- * \code{.unparsed}
- * Name ::= NameStartChar (NameChar)*
- * \endcode
- */
-bool XmlValidator::validateName(const std::string &name)
-{
-    bool valid = false;
-
-    if (!name.empty())
-    {
-        valid = validateName(Common::Utf8::toUnicodeString(name));
-    }
-
-    return valid;
-}
-
-/**
- * Validate a Name
- *
  * \param name  Name (unicode) string
  *
  * \retval true     Valid

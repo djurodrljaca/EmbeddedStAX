@@ -211,6 +211,9 @@ CDataParser::State CDataParser::executeStateReadingCData()
                     {
                         // End of CDATA found
                         m_text.append(parsingBuffer()->substring(0U, position - 2U));
+
+                        // TODO: validate?
+
                         parsingBuffer()->incrementPosition();
                         parsingBuffer()->eraseToCurrentPosition();
                         nextState = State_Finished;
