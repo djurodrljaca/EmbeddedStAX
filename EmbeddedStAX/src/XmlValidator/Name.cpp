@@ -210,13 +210,16 @@ bool XmlValidator::validateName(const Common::UnicodeString &name)
         valid = isNameStartChar(name.at(0U));
 
         // Validate the rest of the characters
-        for (size_t i = 1U; i < name.size(); i++)
+        if (valid)
         {
-            valid = isNameChar(name.at(i));
-
-            if (!valid)
+            for (size_t i = 1U; i < name.size(); i++)
             {
-                break;
+                valid = isNameChar(name.at(i));
+
+                if (!valid)
+                {
+                    break;
+                }
             }
         }
     }
