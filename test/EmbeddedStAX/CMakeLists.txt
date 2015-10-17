@@ -9,7 +9,6 @@ set(testembeddedstax_EmbeddedStAX_INCLUDES
         PARENT_SCOPE
     )
 
-
 get_filename_component(embeddedstax_EmbeddedStAX_src_PATH
                        ${CMAKE_CURRENT_SOURCE_DIR}/../${embeddedstax_PATH}/EmbeddedStAX/src
                        ABSOLUTE)

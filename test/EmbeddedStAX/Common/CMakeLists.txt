@@ -2,8 +2,13 @@ cmake_minimum_required(VERSION 2.6)
 
 # Unit tests
 set(testembeddedstax_EmbeddedStAX_Common_SOURCES
+        ${embeddedstax_EmbeddedStAX_src_PATH}/Common/Attribute.cpp
         ${embeddedstax_EmbeddedStAX_src_PATH}/Common/Common.cpp
+        ${embeddedstax_EmbeddedStAX_src_PATH}/Common/Utf.cpp
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/Attribute_unittest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Common_unittest.cpp
+
         PARENT_SCOPE
     )
 

@@ -81,6 +81,7 @@ void Attribute::clear()
 {
     m_name.clear();
     m_value.clear();
+    m_quotationMark = QuotationMark_None;
 }
 
 /**
@@ -136,16 +137,6 @@ void Attribute::setValue(const UnicodeString &value, const QuotationMark quotati
 QuotationMark Attribute::valueQuotationMark() const
 {
     return m_quotationMark;
-}
-
-/**
- * Set attribute value's quotation mark
- *
- * \param quotationMark Attribute value's quotation mark
- */
-void Attribute::setValueQuotationMark(const QuotationMark &quotationMark)
-{
-    m_quotationMark = quotationMark;
 }
 
 /**

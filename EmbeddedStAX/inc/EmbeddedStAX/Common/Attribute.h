@@ -57,7 +57,6 @@ public:
                   const QuotationMark quotationMark = QuotationMark_Quote);
 
     QuotationMark valueQuotationMark() const;
-    void setValueQuotationMark(const QuotationMark &quotationMark);
 
 private:
     // Private data
