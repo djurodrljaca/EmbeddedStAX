@@ -64,20 +64,24 @@ set(embeddedstax_HEADERS_XmlReader_TokenParsers
 # Directory: XmlValidator
 set(embeddedstax_SOURCES_XmlValidator
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Attribute.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/CDataSection.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Comment.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Common.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Name.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/ProcessingInstruction.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/Reference.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/XmlValidator/TextNode.cpp
     )
 
 set(embeddedstax_HEADERS_XmlValidator
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Attribute.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Comment.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/CDataSection.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Common.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Name.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/ProcessingInstruction.h
         ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/Reference.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/EmbeddedStAX/XmlValidator/TextNode.h
     )
 
 # Directory: XmlWriter

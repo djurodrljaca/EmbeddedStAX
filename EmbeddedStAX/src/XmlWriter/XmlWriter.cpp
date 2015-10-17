@@ -26,8 +26,12 @@
  */
 
 #include <EmbeddedStAX/XmlWriter/XmlWriter.h>
-#include <EmbeddedStAX/XmlValidator/Name.h>
+#include <EmbeddedStAX/XmlValidator/Attribute.h>
+#include <EmbeddedStAX/XmlValidator/CDataSection.h>
 #include <EmbeddedStAX/XmlValidator/Comment.h>
+#include <EmbeddedStAX/XmlValidator/Name.h>
+#include <EmbeddedStAX/XmlValidator/Reference.h>
+#include <EmbeddedStAX/XmlValidator/TextNode.h>
 //#include <Common/Common.h>
 
 using namespace EmbeddedStAX;
@@ -272,7 +276,7 @@ bool XmlWriter::XmlWriter::writeProcessingInstruction(const Common::ProcessingIn
  * \note If Document Type is set then the root element name must match it!
  */
 bool XmlWriter::XmlWriter::writeEmptyElement(const Common::UnicodeString &elementName,
-                                  const Common::AttributeList &attributeList)
+                                             const Common::AttributeList &attributeList)
 {
     bool success = false;
     State nextState = State_Error;
@@ -366,7 +370,7 @@ bool XmlWriter::XmlWriter::writeEmptyElement(const Common::UnicodeString &elemen
  * \note If Document Type is set then the root element name must match it!
  */
 bool XmlWriter::XmlWriter::writeStartOfElement(const Common::UnicodeString &elementName,
-                                    const Common::AttributeList &attributeList)
+                                               const Common::AttributeList &attributeList)
 {
     bool success = false;
 
@@ -454,24 +458,28 @@ bool XmlWriter::XmlWriter::writeStartOfElement(const Common::UnicodeString &elem
  * \retval true     Success
  * \retval false    Error
  */
-bool XmlWriter::XmlWriter::writeTextNode(const Common::UnicodeString &textNode)
+bool XmlWriter::XmlWriter::writeTextNode(const Common::UnicodeString &text)
 {
     bool success = false;
 
-    // TODO: validate?
-    // TODO: escape?
-    //if (XmlValidator::validateTextNode(textNode))
-    //{
     if (m_state == State_Element)
     {
-        m_xmlString.append(textNode);
-        success = true;
+        const Common::UnicodeString escapedText = escapeTextNode(text);
+
+        if (XmlValidator::validateTextNode(escapedText))
+        {
+            m_xmlString.append(escapedText);
+            success = true;
+        }
+        else
+        {
+            // Error, invalid text
+        }
     }
     else
     {
         // Error, invalid state
     }
-    //}
 
     if (!success)
     {
@@ -494,21 +502,20 @@ bool XmlWriter::XmlWriter::writeCDataSection(const Common::UnicodeString &cdata)
 {
     bool success = false;
 
-    // TODO: validate?
-    //if (XmlValidator::validateCDataSection(textNode))
-    //{
     if (m_state == State_Element)
     {
-        m_xmlString.append(Common::Utf8::toUnicodeString("<![CDATA["));
-        m_xmlString.append(cdata);
-        m_xmlString.append(Common::Utf8::toUnicodeString("]]>"));
-        success = true;
+        if (XmlValidator::validateCDataSection(cdata))
+        {
+            m_xmlString.append(Common::Utf8::toUnicodeString("<![CDATA["));
+            m_xmlString.append(cdata);
+            m_xmlString.append(Common::Utf8::toUnicodeString("]]>"));
+            success = true;
+        }
     }
     else
     {
         // Error, invalid state
     }
-    //}
 
     if (!success)
     {
@@ -576,36 +583,208 @@ bool XmlWriter::XmlWriter::writeAttributeList(const Common::AttributeList &attri
 
     if (attributeList.size() > 0U)
     {
-        for (Common::AttributeList::Iterator it = attributeList.first();
-             it.isValid() && success;
-             it.next())
+        for (Common::AttributeList::ConstIterator it = attributeList.begin();
+             success && (it != attributeList.end());
+             it++)
         {
             success = false;
-            const Common::Attribute *attribute = it.value();
+            const Common::Attribute &attribute = *it;
+            const Common::UnicodeString name = attribute.name();
+            const Common::QuotationMark quotationMark = attribute.valueQuotationMark();
+            const Common::UnicodeString escapedValue = escapeAttributeValue(attribute.value(),
+                                                                            quotationMark);
 
-            if (attribute != NULL)
+            if (XmlValidator::validateName(name) &&
+                XmlValidator::validateAttributeValue(escapedValue, quotationMark) &&
+                ((quotationMark == Common::QuotationMark_Quote) ||
+                 (quotationMark == Common::QuotationMark_Apostrophe)))
             {
-                if (attribute->isValid())
+                uint32_t quoteChar = static_cast<uint32_t>('"');
+
+                if (attribute.valueQuotationMark() == Common::QuotationMark_Apostrophe)
                 {
-                    uint32_t quote = static_cast<uint32_t>('"');
-
-                    if (attribute->valueQuotationMark() == Common::QuotationMark_Apostrophe)
-                    {
-                        quote = static_cast<uint32_t>('\'');
-                    }
-
-                    m_xmlString.push_back(static_cast<uint32_t>(' '));
-                    m_xmlString.append(attribute->name());
-                    m_xmlString.push_back(static_cast<uint32_t>('='));
-                    m_xmlString.push_back(quote);
-                    m_xmlString.append(attribute->value());
-                    m_xmlString.push_back(quote);
-
-                    success = true;
+                    quoteChar = static_cast<uint32_t>('\'');
                 }
+
+                m_xmlString.push_back(static_cast<uint32_t>(' '));
+                m_xmlString.append(name);
+                m_xmlString.push_back(static_cast<uint32_t>('='));
+                m_xmlString.push_back(quoteChar);
+                m_xmlString.append(escapedValue);
+                m_xmlString.push_back(quoteChar);
+                success = true;
             }
         }
     }
 
     return success;
+}
+
+/**
+ * Esacpe attribute value (if needed)
+ *
+ * \param attributeValue    Attribute value to escape
+ * \param quotationMark     Attribute value's quotation mark
+ *
+ * \return Escaped string
+ */
+Common::UnicodeString XmlWriter::XmlWriter::escapeAttributeValue(
+        const Common::UnicodeString &attributeValue,
+        const Common::QuotationMark quotationMark) const
+{
+    Common::UnicodeString escapedValue;
+    escapedValue.reserve(attributeValue.size());
+
+    bool finished = false;
+    size_t position = 0U;
+
+    while ((position < attributeValue.size()) && !finished)
+    {
+        // Check if valid attribute value character
+        const uint32_t uchar = attributeValue.at(position);
+
+        switch (uchar)
+        {
+            case static_cast<uint32_t>('<'):
+            {
+                // Escape '<' character
+                escapedValue.append(Common::Utf8::toUnicodeString("&lt;"));
+                position++;
+                break;
+            }
+
+            case static_cast<uint32_t>('"'):
+            {
+                if (quotationMark == Common::QuotationMark_Quote)
+                {
+                    // Escape the '"' character
+                    escapedValue.append(Common::Utf8::toUnicodeString("&quot;"));
+                    finished = true;
+                }
+                else
+                {
+                    // Valid character
+                    escapedValue.push_back(uchar);
+                }
+
+                position++;
+                break;
+            }
+
+            case static_cast<uint32_t>('\''):
+            {
+                if (quotationMark == Common::QuotationMark_Apostrophe)
+                {
+                    // Escape the '\'' character
+                    escapedValue.append(Common::Utf8::toUnicodeString("&apos;"));
+                    finished = true;
+                }
+                else
+                {
+                    // Valid character
+                    escapedValue.push_back(uchar);
+                }
+
+                position++;
+                break;
+            }
+
+            case static_cast<uint32_t>('&'):
+            {
+                // Escape '&' character
+                escapedValue.append(Common::Utf8::toUnicodeString("&amp;"));
+                position++;
+                break;
+            }
+
+            default:
+            {
+                // Valid character
+                escapedValue.push_back(uchar);
+                position++;
+                break;
+            }
+        }
+    }
+
+    return escapedValue;
+}
+
+/**
+ * Esacpe text node (if needed)
+ *
+ * \param text  Text to escape
+ *
+ * \return Escaped string
+ */
+Common::UnicodeString XmlWriter::XmlWriter::escapeTextNode(const Common::UnicodeString &text) const
+{
+    Common::UnicodeString escapedValue;
+    escapedValue.reserve(text.size());
+
+    bool finished = false;
+    size_t position = 0U;
+
+    while ((position < text.size()) && !finished)
+    {
+        // Check if valid text node character
+        const uint32_t uchar = text.at(position);
+
+        switch (uchar)
+        {
+            case static_cast<uint32_t>('<'):
+            {
+                // Escape '<' character
+                escapedValue.append(Common::Utf8::toUnicodeString("&lt;"));
+                position++;
+                break;
+            }
+
+            case static_cast<uint32_t>('&'):
+            {
+                // Escape '&' character
+                escapedValue.append(Common::Utf8::toUnicodeString("&amp;"));
+                position++;
+                break;
+            }
+
+            case static_cast<uint32_t>('>'):
+            {
+                // Check if '>' character needs to be escaped (only if part of ']]>' sequence)
+                bool escapeChar = false;
+
+                if (position >= 2U)
+                {
+                    // Check for ']]>' sequence
+                    if (Common::compareUnicodeString(position - 2U, text, "]]"))
+                    {
+                        escapeChar = true;
+                    }
+                }
+
+                if (escapeChar)
+                {
+                    // Escape '>' character
+                    escapedValue.append(Common::Utf8::toUnicodeString("&gt;"));
+                }
+                else
+                {
+                    // Valid character
+                    escapedValue.push_back(uchar);
+                }
+                position++;
+                break;
+            }
+
+            default:
+            {
+                // Valid character
+                escapedValue.push_back(uchar);
+                position++;
+                break;
+            }
+        }
+    }
+
+    return escapedValue;
 }

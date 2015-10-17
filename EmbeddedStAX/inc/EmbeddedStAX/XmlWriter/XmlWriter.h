@@ -46,6 +46,8 @@ public:
     // Public API
     XmlWriter();
 
+    // TODO: replace writting to m_xmlString with writing to "AbstractXmlOutputStream" or externally supplied string output?
+
     void clearDocument();
     Common::UnicodeString xmlString() const;
 
@@ -57,13 +59,16 @@ public:
                            const Common::AttributeList &attributeList = Common::AttributeList());
     bool writeStartOfElement(const Common::UnicodeString &elementName,
                              const Common::AttributeList &attributeList = Common::AttributeList());
-    bool writeTextNode(const Common::UnicodeString &textNode);
+    bool writeTextNode(const Common::UnicodeString &text);
     bool writeCDataSection(const Common::UnicodeString &cdata);
     bool writeEndOfElement();
 
 private:
     // Private API
     bool writeAttributeList(const Common::AttributeList &attributeList);
+    Common::UnicodeString escapeAttributeValue(const Common::UnicodeString &attributeValue,
+                                               const Common::QuotationMark quotationMark) const;
+    Common::UnicodeString escapeTextNode(const Common::UnicodeString &text) const;
 
 private:
     // Private types
@@ -80,7 +85,7 @@ private:
     // Private data
     State m_state;
     Common::UnicodeString m_documentType;
-    std::list<Common::UnicodeString> m_openedElementList; // TODO: replace with custom list object?
+    std::list<Common::UnicodeString> m_openedElementList;
     Common::UnicodeString m_xmlString;
 };
 }

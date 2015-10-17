@@ -76,6 +76,8 @@ public:
 
     void clear();
     void startNewDocument();
+
+    // TODO: replace writting data to XmlReader with reading data from an "AbstractXmlInputStream" or externally supplied string input?
     size_t writeData(const std::string &data);
 
     ParsingResult parse();
@@ -149,7 +151,6 @@ private:
     Common::UnicodeString m_name;
     Common::AttributeList m_attributeList;
     std::list<Common::UnicodeString> m_openElementList;
-    // TODO: replace std::list with a list class based on AttributeList?
 
     CDataParser m_cDataParser;
     CommentParser m_commentParser;

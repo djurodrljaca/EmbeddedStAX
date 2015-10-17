@@ -30,6 +30,7 @@
 
 #include <EmbeddedStAX/Common/Common.h>
 #include <EmbeddedStAX/Common/Utf.h>
+#include <list>
 
 namespace EmbeddedStAX
 {
@@ -46,7 +47,6 @@ public:
 
     Attribute &operator=(const Attribute &other);
 
-    bool isValid() const;
     void clear();
 
     UnicodeString name() const;
@@ -68,36 +68,9 @@ private:
 
 class AttributeList
 {
-private:
-    // Private types
-    struct Node
-    {
-        Node();
-        Node(const Attribute &attribute);
-
-        Attribute item;
-        Node *next;
-    };
-
 public:
     // Public types
-    class Iterator
-    {
-    public:
-        // Public API
-        Iterator(const Node *node);
-        Iterator(const Iterator &other);
-
-        Iterator &operator=(const Iterator &other);
-
-        void next();
-        bool isValid();
-        const Attribute *value() const;
-
-    private:
-        // Private data
-        const Node *m_node;
-    };
+    typedef std::list<Attribute>::const_iterator ConstIterator;
 
 public:
     // Public API
@@ -105,21 +78,19 @@ public:
     AttributeList(const AttributeList &other);
     ~AttributeList();
 
-    AttributeList &operator=(AttributeList other);
+    AttributeList &operator=(const AttributeList &other);
 
     void clear();
     size_t size() const;
 
     void add(const Attribute &attribute);
     const Attribute *attribute(const UnicodeString &name);
-    const Attribute *attribute(const size_t index);
-    Iterator first() const;
+    ConstIterator begin() const;
+    ConstIterator end() const;
 
 private:
     // Private data
-    size_t m_size;
-    Node *m_firstNode;
-    Node *m_lastNode;
+    std::list<Attribute> m_attributeList;
 };
 }
 }

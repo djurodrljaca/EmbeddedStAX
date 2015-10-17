@@ -283,25 +283,16 @@ void executeXmlReader(const std::string &xmlString)
 
                 const Common::AttributeList attributeList = xmlReader.attributeList();
 
-                for (Common::AttributeList::Iterator it = attributeList.first();
-                     it.isValid();
-                     it.next())
+                for (Common::AttributeList::ConstIterator it = attributeList.begin();
+                     it != attributeList.end();
+                     it++)
                 {
-                    const Common::Attribute *attribute = it.value();
+                    const Common::Attribute &attribute = *it;
+                    const std::string attributeName = Common::Utf8::toUtf8(attribute.name());
+                    const std::string attributeValue = Common::Utf8::toUtf8(attribute.value());
 
-                    if (attribute != NULL)
-                    {
-                        const std::string attributeName = Common::Utf8::toUtf8(attribute->name());
-                        const std::string attributeValue = Common::Utf8::toUtf8(attribute->value());
-
-                        std::cout << "    Attribute: name = " << attributeName << " value = "
-                                  << attributeValue << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "Error: null pointer found in AttributeList iterator"
-                                  << std::endl;
-                    }
+                    std::cout << "    Attribute: name = " << attributeName << " value = "
+                              << attributeValue << std::endl;
                 }
                 break;
             }

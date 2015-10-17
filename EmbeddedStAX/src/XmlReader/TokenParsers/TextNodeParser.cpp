@@ -246,9 +246,7 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
                 const size_t size = parsingBuffer()->currentPosition();
                 m_text.append(parsingBuffer()->substring(0U, size));
 
-                // TODO: validate?
-
-                // End of text node found
+                // End of text node found ()
                 parsingBuffer()->eraseToCurrentPosition();
                 nextState = State_Finished;
             }
@@ -267,28 +265,25 @@ TextNodeParser::State TextNodeParser::executeStateReadingText()
             {
                 // Check if this character is part of the "]]>" sequence
                 const size_t position = parsingBuffer()->currentPosition();
+                bool validChar = true;
 
-                if (position < 2U)
+                if (position > 2U)
+                {
+                    const Common::UnicodeString sequence =
+                            parsingBuffer()->substring(position - 2U, position - 1U);
+
+                    if (Common::compareUnicodeString(0U, sequence, std::string("]]")))
+                    {
+                        // Error, invalid sequence
+                        validChar = false;
+                    }
+                }
+
+                if (validChar)
                 {
                     // Valid text character, continue
                     parsingBuffer()->incrementPosition();
                     finishParsing = false;
-                }
-                else
-                {
-                    const Common::UnicodeString sequence = parsingBuffer()->substring(position - 2U,
-                                                                                      position);
-
-                    if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
-                    {
-                        // Error, Invalid sequence
-                    }
-                    else
-                    {
-                        // Valid sequence, continue
-                        parsingBuffer()->incrementPosition();
-                        finishParsing = false;
-                    }
                 }
             }
             else

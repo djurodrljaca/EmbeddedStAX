@@ -204,15 +204,13 @@ CDataParser::State CDataParser::executeStateReadingCData()
                 }
                 else
                 {
-                    const Common::UnicodeString sequence = parsingBuffer()->substring(position - 2U,
-                                                                                      position);
+                    const Common::UnicodeString sequence =
+                            parsingBuffer()->substring(position - 2U, position - 1U);
 
-                    if (Common::compareUnicodeString(0U, sequence, std::string("]]>")))
+                    if (Common::compareUnicodeString(0U, sequence, std::string("]]")))
                     {
                         // End of CDATA found
                         m_text.append(parsingBuffer()->substring(0U, position - 2U));
-
-                        // TODO: validate?
 
                         parsingBuffer()->incrementPosition();
                         parsingBuffer()->eraseToCurrentPosition();
