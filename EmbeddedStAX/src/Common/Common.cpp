@@ -70,13 +70,13 @@ bool Common::parseDigit(const uint32_t digitCharacter, const uint32_t base, uint
                 else if ((static_cast<uint32_t>('a') <= digitCharacter) &&
                          (digitCharacter <= static_cast<uint32_t>('f')))
                 {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('a'));
+                    *digitValue = (uint32_t)(10U + (digitCharacter - static_cast<uint32_t>('a')));
                     success = true;
                 }
                 else if ((static_cast<uint32_t>('A') <= digitCharacter) &&
                          (digitCharacter <= static_cast<uint32_t>('F')))
                 {
-                    *digitValue = (uint32_t)(digitCharacter - static_cast<uint32_t>('A'));
+                    *digitValue = (uint32_t)(10U + (digitCharacter - static_cast<uint32_t>('A')));
                     success = true;
                 }
                 else
