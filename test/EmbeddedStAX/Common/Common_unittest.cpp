@@ -18,8 +18,8 @@ struct TestData
     uint32_t expectedDigitValue;
 };
 
-// Testing decimal numbers
-TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalPositiveTests)
+// Testing decimal numbers *************************************************************************
+TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalPositiveTest)
 {
     std::queue<TestData> testDataQueue;
 
@@ -47,7 +47,7 @@ TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalPositiveTests)
     }
 }
 
-TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalNegativeTests)
+TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalNegativeTest)
 {
     std::queue<uint32_t> testDataQueue;
 
@@ -65,8 +65,8 @@ TEST(EmbeddedStAX_Common_Common_parseDigit, DecimalNegativeTests)
     }
 }
 
-// Testing hexadecimal numbers
-TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalPositiveTests)
+// Testing hexadecimal numbers *********************************************************************
+TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalPositiveTest)
 {
     std::queue<TestData> testDataQueue;
 
@@ -108,7 +108,7 @@ TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalPositiveTests)
     }
 }
 
-TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalNegativeTests)
+TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalNegativeTest)
 {
     std::queue<uint32_t> testDataQueue;
 
@@ -130,4 +130,35 @@ TEST(EmbeddedStAX_Common_Common_parseDigit, HexadecimalNegativeTests)
 
         testDataQueue.pop();
     }
+}
+
+// Testing base ************************************************************************************
+TEST(EmbeddedStAX_Common_Common_parseDigit, BaseNegativeTest)
+{
+    std::queue<uint32_t> testDataQueue;
+
+    testDataQueue.push(10U - 1U);
+    testDataQueue.push(10U + 1U);
+
+    testDataQueue.push(16U - 1U);
+    testDataQueue.push(16U + 1U);
+
+    while (!testDataQueue.empty())
+    {
+        uint32_t digitValue = 0U;
+        const bool success = parseDigit(static_cast<uint32_t>('0'),
+                                        testDataQueue.front(),
+                                        &digitValue);
+
+        EXPECT_FALSE(success);
+
+        testDataQueue.pop();
+    }
+}
+
+// Testing NULL pointer ****************************************************************************
+TEST(EmbeddedStAX_Common_Common_parseDigit, DigitValueNullTest)
+{
+    EXPECT_FALSE(parseDigit(static_cast<uint32_t>('0'), 10U, NULL));
+    EXPECT_FALSE(parseDigit(static_cast<uint32_t>('0'), 16U, NULL));
 }
