@@ -53,7 +53,7 @@ Attribute::Attribute(const UnicodeString &name,
 /**
  * Copy constructor
  *
- * \param attribute Attribute
+ * \param other Attribute
  */
 Attribute::Attribute(const Attribute &other)
     : m_name(other.m_name),
@@ -62,6 +62,11 @@ Attribute::Attribute(const Attribute &other)
 {
 }
 
+/**
+ * Assignment operator
+ *
+ * \param other Attribute
+ */
 Attribute &Attribute::operator=(const Attribute &other)
 {
     if (this != &other)

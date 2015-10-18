@@ -41,6 +41,31 @@ DocumentType::DocumentType(const UnicodeString &name)
 }
 
 /**
+ * Copy constructor
+ *
+ * \param other Document type
+ */
+DocumentType::DocumentType(const DocumentType &other)
+    : m_name(other.m_name)
+{
+}
+
+/**
+ * Assignment operator
+ *
+ * \param other Document type
+ */
+DocumentType &DocumentType::operator=(const DocumentType &other)
+{
+    if (this != &other)
+    {
+        m_name = other.m_name;
+    }
+
+    return *this;
+}
+
+/**
  * Check if processing instruction is valid
  *
  * \retval true     Valid

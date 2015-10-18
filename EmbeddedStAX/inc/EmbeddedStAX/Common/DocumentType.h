@@ -40,6 +40,9 @@ class DocumentType
 public:
     // Public API
     DocumentType(const UnicodeString &name = UnicodeString());
+    DocumentType(const DocumentType &other);
+
+    DocumentType &operator=(const DocumentType &other);
 
     bool isValid() const;
     void clear();

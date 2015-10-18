@@ -44,6 +44,33 @@ ProcessingInstruction::ProcessingInstruction(const UnicodeString &piTarget,
 }
 
 /**
+ * Copy constructor
+ *
+ * \param other Processing instruction
+ */
+ProcessingInstruction::ProcessingInstruction(const ProcessingInstruction &other)
+    : m_piTarget(other.m_piTarget),
+      m_piData(other.m_piData)
+{
+}
+
+/**
+ * Assignment operator
+ *
+ * \param other Processing instruction
+ */
+ProcessingInstruction &ProcessingInstruction::operator=(const ProcessingInstruction &other)
+{
+    if (this != &other)
+    {
+        m_piTarget = other.m_piTarget;
+        m_piData = other.m_piData;
+    }
+
+    return *this;
+}
+
+/**
  * Check if processing instruction is valid
  *
  * \retval true     Valid

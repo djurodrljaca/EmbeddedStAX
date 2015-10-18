@@ -41,6 +41,9 @@ public:
     // Public API
     ProcessingInstruction(const UnicodeString &piTarget = UnicodeString(),
                           const UnicodeString &piData = UnicodeString());
+    ProcessingInstruction(const ProcessingInstruction &other);
+
+    ProcessingInstruction &operator=(const ProcessingInstruction &other);
 
     bool isValid() const;
     void clear();

@@ -104,7 +104,7 @@ bool XmlValidator::validatePiTarget(const Common::UnicodeString &piTarget)
  */
 bool XmlValidator::validatePiData(const Common::UnicodeString &piData)
 {
-    bool valid = false;
+    bool valid = true;
 
     for (size_t i = 0U; i < piData.size(); i++)
     {
