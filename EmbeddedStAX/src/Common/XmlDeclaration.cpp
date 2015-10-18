@@ -43,6 +43,35 @@ XmlDeclaration::XmlDeclaration(const Version version,
 }
 
 /**
+ * Copy constructor
+ *
+ * \param other XML declaration
+ */
+XmlDeclaration::XmlDeclaration(const XmlDeclaration &other)
+    : m_version(other.m_version),
+      m_encoding(other.m_encoding),
+      m_standalone(other.m_standalone)
+{
+}
+
+/**
+ * Assignment operator
+ *
+ * \param other XML declaration
+ */
+XmlDeclaration &XmlDeclaration::operator=(const XmlDeclaration &other)
+{
+    if (this != &other)
+    {
+        m_version = other.m_version;
+        m_encoding = other.m_encoding;
+        m_standalone = other.m_standalone;
+    }
+
+    return *this;
+}
+
+/**
  * Check if processing instruction is valid
  *
  * \retval true     Valid
@@ -180,6 +209,10 @@ XmlDeclaration XmlDeclaration::fromPiData(const UnicodeString &piData)
         {
             xmlDeclaration.setVersion(Version_v1_0);
         }
+        else
+        {
+            xmlDeclaration.setVersion(Version_Invalid);
+        }
     }
 
     // Find encoding
@@ -199,7 +232,7 @@ XmlDeclaration XmlDeclaration::fromPiData(const UnicodeString &piData)
         }
         else
         {
-            xmlDeclaration.setEncoding(Encoding_Unknown);
+            xmlDeclaration.setEncoding(Encoding_Invalid);
         }
     }
 
@@ -224,7 +257,7 @@ XmlDeclaration XmlDeclaration::fromPiData(const UnicodeString &piData)
         }
         else
         {
-            xmlDeclaration.setStandalone(Standalone_Unknown);
+            xmlDeclaration.setStandalone(Standalone_Invalid);
         }
     }
 

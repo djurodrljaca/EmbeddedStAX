@@ -57,8 +57,8 @@ TEST(EmbeddedStAX_Common_ProcessingInstruction, CopyConstructorTest)
     const ProcessingInstruction pi1(target, data);
     const ProcessingInstruction pi2(pi1);
 
-    EXPECT_EQ(pi1.piTarget(), pi2.piTarget());
-    EXPECT_EQ(pi1.piData(), pi2.piData());
+    EXPECT_EQ(target, pi2.piTarget());
+    EXPECT_EQ(data, pi2.piData());
 }
 
 TEST(EmbeddedStAX_Common_ProcessingInstruction, AssignmentOperatorTest)
@@ -66,12 +66,19 @@ TEST(EmbeddedStAX_Common_ProcessingInstruction, AssignmentOperatorTest)
     const UnicodeString target = Utf8::toUnicodeString("target");
     const UnicodeString data = Utf8::toUnicodeString("data");
 
+    // Assignment
     const ProcessingInstruction pi1(target, data);
     ProcessingInstruction pi2;
     pi2 = pi1;
 
-    EXPECT_EQ(pi1.piTarget(), pi2.piTarget());
-    EXPECT_EQ(pi1.piData(), pi2.piData());
+    EXPECT_EQ(target, pi2.piTarget());
+    EXPECT_EQ(data, pi2.piData());
+
+    // Self-assignment
+    pi2 = pi2;
+
+    EXPECT_EQ(target, pi2.piTarget());
+    EXPECT_EQ(data, pi2.piData());
 }
 
 TEST(EmbeddedStAX_Common_ProcessingInstruction, ClearingTest)

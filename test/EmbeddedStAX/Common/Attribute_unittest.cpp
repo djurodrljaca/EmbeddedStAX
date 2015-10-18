@@ -65,9 +65,9 @@ TEST(EmbeddedStAX_Common_Attribute, CopyConstructorTest)
     const Attribute attribute1(name, value, qm);
     const Attribute attribute2(attribute1);
 
-    EXPECT_EQ(attribute1.name(), attribute2.name());
-    EXPECT_EQ(attribute1.value(), attribute2.value());
-    EXPECT_EQ(attribute1.valueQuotationMark(), attribute2.valueQuotationMark());
+    EXPECT_EQ(name, attribute2.name());
+    EXPECT_EQ(value, attribute2.value());
+    EXPECT_EQ(qm, attribute2.valueQuotationMark());
 }
 
 TEST(EmbeddedStAX_Common_Attribute, AssignmentOperatorTest)
@@ -76,13 +76,21 @@ TEST(EmbeddedStAX_Common_Attribute, AssignmentOperatorTest)
     const UnicodeString value = Utf8::toUnicodeString("value");
     const QuotationMark qm = QuotationMark_Apostrophe;
 
+    // Assignment
     const Attribute attribute1(name, value, qm);
     Attribute attribute2;
     attribute2 = attribute1;
 
-    EXPECT_EQ(attribute1.name(), attribute2.name());
-    EXPECT_EQ(attribute1.value(), attribute2.value());
-    EXPECT_EQ(attribute1.valueQuotationMark(), attribute2.valueQuotationMark());
+    EXPECT_EQ(name, attribute2.name());
+    EXPECT_EQ(value, attribute2.value());
+    EXPECT_EQ(qm, attribute2.valueQuotationMark());
+
+    // Self-assignment
+    attribute2 = attribute2;
+
+    EXPECT_EQ(name, attribute2.name());
+    EXPECT_EQ(value, attribute2.value());
+    EXPECT_EQ(qm, attribute2.valueQuotationMark());
 }
 
 TEST(EmbeddedStAX_Common_Attribute, ClearingTest)
@@ -255,7 +263,7 @@ TEST(EmbeddedStAX_Common_AttributeList, AssignmentOperatorTest)
         attributeList1.add(Attribute(*it, Utf8::toUnicodeString("value")));
     }
 
-    // Assign
+    // Assignment
     AttributeList attributeList2;
     attributeList2 = attributeList1;
 
@@ -264,6 +272,29 @@ TEST(EmbeddedStAX_Common_AttributeList, AssignmentOperatorTest)
     // Iterate and check
     AttributeList::ConstIterator attributeIterator1 = attributeList1.begin();
     AttributeList::ConstIterator attributeIterator2 = attributeList2.begin();
+
+    for (uint32_t i = 0U; i < attributeList1.size(); i++)
+    {
+        ASSERT_NE(attributeIterator1, attributeList1.end());
+        ASSERT_NE(attributeIterator2, attributeList2.end());
+
+        EXPECT_EQ(attributeIterator1->name(), attributeIterator2->name());
+        EXPECT_EQ(attributeIterator1->value(), attributeIterator2->value());
+        EXPECT_EQ(attributeIterator1->valueQuotationMark(),
+                  attributeIterator2->valueQuotationMark());
+        attributeIterator1++;
+        attributeIterator2++;
+    }
+
+
+    // Self-assignment
+    attributeList2 = attributeList2;
+
+    ASSERT_EQ(attributeList1.size(), attributeList2.size());
+
+    // Iterate and check
+    attributeIterator1 = attributeList1.begin();
+    attributeIterator2 = attributeList2.begin();
 
     for (uint32_t i = 0U; i < attributeList1.size(); i++)
     {

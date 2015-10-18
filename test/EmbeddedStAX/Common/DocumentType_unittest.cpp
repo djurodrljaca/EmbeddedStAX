@@ -47,18 +47,24 @@ TEST(EmbeddedStAX_Common_DocumentType, CopyConstructorTest)
     const DocumentType documentType1(name);
     const DocumentType documentType2(documentType1);
 
-    EXPECT_EQ(documentType1.name(), documentType2.name());
+    EXPECT_EQ(name, documentType2.name());
 }
 
 TEST(EmbeddedStAX_Common_DocumentType, AssignmentOperatorTest)
 {
     const UnicodeString name = Utf8::toUnicodeString("name");
 
+    // Assignment
     const DocumentType documentType1(name);
     DocumentType documentType2;
     documentType2 = documentType1;
 
-    EXPECT_EQ(documentType1.name(), documentType2.name());
+    EXPECT_EQ(name, documentType2.name());
+
+    // Self-assignment
+    documentType2 = documentType2;
+
+    EXPECT_EQ(name, documentType2.name());
 }
 
 TEST(EmbeddedStAX_Common_DocumentType, ClearingTest)

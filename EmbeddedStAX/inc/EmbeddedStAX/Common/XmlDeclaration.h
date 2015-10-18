@@ -41,21 +41,21 @@ public:
     enum Version
     {
         Version_None,
-        Version_Unknown,
+        Version_Invalid,
         Version_v1_0
     };
 
     enum Encoding
     {
         Encoding_None,
-        Encoding_Unknown,
+        Encoding_Invalid,
         Encoding_Utf8
     };
 
     enum Standalone
     {
         Standalone_None,
-        Standalone_Unknown,
+        Standalone_Invalid,
         Standalone_No,
         Standalone_Yes
     };
@@ -65,6 +65,9 @@ public:
     XmlDeclaration(const Version version = Version_None,
                    const Encoding encoding = Encoding_None,
                    const Standalone standalone = Standalone_None);
+    XmlDeclaration(const XmlDeclaration &other);
+
+    XmlDeclaration &operator=(const XmlDeclaration &other);
 
     bool isValid() const;
     void clear();
